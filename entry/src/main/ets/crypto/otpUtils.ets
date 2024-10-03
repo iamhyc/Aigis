@@ -1,0 +1,181 @@
+import { buffer } from '@kit.ArkTS';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
+
+type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
+type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
+
+interface OTPSchema {
+    type: string,
+    name: string,
+    issuer: string,
+    secret: string,
+    algorithm: AlgorithmSupport,
+    digits: number,
+    counter: number,
+}
+
+interface HOTPSchema extends OTPSchema {
+    type: 'hotp',
+    algorithm: AlgorithmModern,
+}
+
+interface TOTPSchema extends OTPSchema {
+    type: 'totp',
+    algorithm: AlgorithmModern,
+    period: number,
+}
+
+interface MOTPSchema extends OTPSchema {
+    type: 'motp',
+    algorithm: 'MD5',
+    period: 10,
+    digits: 6,
+    pin: string,
+}
+
+interface YAOTPSchema extends OTPSchema {
+    type: 'yandex',
+    algorithm: 'SHA256',
+    period: 30,
+    digits: 8,
+    pin: string,
+}
+
+function rfc4226Sec5_4Impl(hash: Uint8Array): number {
+    const offset = hash[hash.length - 1] & 0xf;
+    const otp = ((hash[offset] & 0x7f) << 24)
+        | ((hash[offset + 1] & 0xff) << 16)
+        | ((hash[offset + 2] & 0xff) << 8)
+        | (hash[offset + 3] & 0xff);
+    return otp;
+}
+
+function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
+    const byteArray = new Uint8Array(byteSize);
+    for (let i = 0; i < byteSize; i++) {
+        byteArray[byteSize - 1 - i] = num & 0xff;
+        num = num >> 8;
+    }
+    return byteArray;
+}
+
+abstract class OTP {
+    protected readonly schema: OTPSchema;
+
+    constructor(schema: OTPSchema) {
+        this.schema = schema;
+    }
+
+    abstract get uri(): string;
+    abstract generateOTP(): Promise<string>;
+
+    static parseURI(uri: string): Map<string, string> {
+        const re = /otpauth:\/\/(\w+)\/([^\?]+)\?(.+)/;
+        const results = re.exec(uri)!;
+        const type = results[0], issuer_name = decodeURIComponent(results[1]), args = results[2];
+        //
+        const name = issuer_name.split(':', 1)[1];
+        const args_array = args.split('&')
+            .map(x => x.split('='))
+            .map(x => [decodeURIComponent(x[0]), decodeURIComponent(x[1])])
+            .concat([['type', type], ['name', name]]) as [string, string][];
+        return new Map(args_array);
+    }
+
+    async generateHash(realCounter?: number): Promise<Uint8Array> {
+        realCounter = realCounter ?? this.schema.counter;
+        const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
+
+        const keyData = new Uint8Array(buffer.from(this.schema.secret, 'utf-8').buffer);
+        const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
+
+        const mac = cryptoFramework.createMac(this.schema.algorithm);
+        await mac.init(symKey);
+
+        await mac.update({data: counterBytes});
+        const macResult = await mac.doFinal();
+        return macResult.data;
+    }
+
+    otpToString(otp: number): string {
+        const _digits = this.schema.digits;
+        const code_num = otp % Math.pow(10, _digits);
+        let code_str = code_num.toString();
+        while (code_str.length < _digits) code_str = "0" + code_str;
+        return code_str;
+    }
+}
+
+export class HOTP extends OTP {
+    constructor(hotpSchema: HOTPSchema) {
+        super(hotpSchema);
+    }
+
+    static fromURI(uri: string): HOTP {
+        const args = OTP.parseURI(uri);
+        if (args.get('algorithm') !== undefined) {
+            const hotpSchema: HOTPSchema = {
+                type: 'hotp',
+                name: args.get('name') || '',
+                issuer: args.get('issuer') || '',
+                secret: args.get('secret') || '',
+                algorithm: args.get('algorithm') as AlgorithmModern,
+                digits: Number(args.get('digits') || 0),
+                counter:Number(args.get('counter') || 0),
+            }
+            return new HOTP(hotpSchema);
+        } else {
+            throw Error('Fail to parse HOTP schema from URI.');
+        }
+    }
+
+    get uri(): string {
+        const s = this.schema as HOTPSchema;
+        return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&counter=${s.counter}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
+    }
+
+    async generateOTP(): Promise<string> {
+        const hash = await this.generateHash();
+        const otp = rfc4226Sec5_4Impl(hash);
+        return this.otpToString(otp);
+    }
+}
+
+export class TOTP extends OTP {
+    constructor(totpSchema: TOTPSchema) {
+        super(totpSchema);
+    }
+
+    static fromURI(uri: string): TOTP {
+        const args = OTP.parseURI(uri);
+        if (args.get('algorithm') !== undefined) {
+            const totpSchema: TOTPSchema = {
+                type: 'totp',
+                name: args.get('name') || '',
+                issuer: args.get('issuer') || '',
+                secret: args.get('secret') || '',
+                algorithm: args.get('algorithm') as AlgorithmModern,
+                period: Number(args.get('period') || 0),
+                digits: Number(args.get('digits') || 0),
+                counter: 0,
+            };
+            return new TOTP(totpSchema);
+        } else {
+            throw Error('Fail to parse TOTP schema from URI.');
+        }
+    }
+
+    get uri(): string {
+        const s = this.schema as TOTPSchema;
+        return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
+    }
+
+    async generateOTP(): Promise<string> {
+        const period = (this.schema as TOTPSchema).period;
+        const realCounter = Math.floor(Date.now() / 1000 / period);
+        //
+        const hash = await this.generateHash(realCounter);
+        const otp = rfc4226Sec5_4Impl(hash);
+        return this.otpToString(otp);
+    }
+}

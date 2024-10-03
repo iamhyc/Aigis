@@ -1,0 +1,759 @@
+{
+    "uuid": "ebb2db29-287c-4986-9c61-2d9c55087bae",
+    "name": "Aigis Simple Icons Minimal",
+    "version": 174,
+    "icons": [
+        {
+            "name": "1Password",
+            "filename": "SVG/1password.svg",
+            "category": null,
+            "issuer": [
+                "1Password"
+            ]
+        },
+        {
+            "name": "ACM",
+            "filename": "SVG/acm.svg",
+            "category": null,
+            "issuer": [
+                "ACM"
+            ]
+        },
+        {
+            "name": "Adobe",
+            "filename": "SVG/adobe.svg",
+            "category": null,
+            "issuer": [
+                "Adobe"
+            ]
+        },
+        {
+            "name": "Amazon",
+            "filename": "SVG/amazon.svg",
+            "category": null,
+            "issuer": [
+                "Amazon"
+            ]
+        },
+        {
+            "name": "Apache",
+            "filename": "SVG/apache.svg",
+            "category": null,
+            "issuer": [
+                "Apache"
+            ]
+        },
+        {
+            "name": "Apple",
+            "filename": "SVG/apple.svg",
+            "category": null,
+            "issuer": [
+                "Apple"
+            ]
+        },
+        {
+            "name": "arXiv",
+            "filename": "SVG/arxiv.svg",
+            "category": null,
+            "issuer": [
+                "arXiv"
+            ]
+        },
+        {
+            "name": "Atlassian",
+            "filename": "SVG/atlassian.svg",
+            "category": null,
+            "issuer": [
+                "Atlassian"
+            ]
+        },
+        {
+            "name": "Chocolatey",
+            "filename": "SVG/chocolatey.svg",
+            "category": null,
+            "issuer": [
+                "Chocolatey"
+            ]
+        },
+        {
+            "name": "Cloudflare",
+            "filename": "SVG/cloudflare.svg",
+            "category": null,
+            "issuer": [
+                "Cloudflare"
+            ]
+        },
+        {
+            "name": "Conan",
+            "filename": "SVG/conan.svg",
+            "category": null,
+            "issuer": [
+                "Conan"
+            ]
+        },
+        {
+            "name": "Confluence",
+            "filename": "SVG/confluence.svg",
+            "category": null,
+            "issuer": [
+                "Confluence"
+            ]
+        },
+        {
+            "name": "dblp",
+            "filename": "SVG/dblp.svg",
+            "category": null,
+            "issuer": [
+                "dblp"
+            ]
+        },
+        {
+            "name": "Debian",
+            "filename": "SVG/debian.svg",
+            "category": null,
+            "issuer": [
+                "Debian"
+            ]
+        },
+        {
+            "name": "DeepL",
+            "filename": "SVG/deepl.svg",
+            "category": null,
+            "issuer": [
+                "DeepL"
+            ]
+        },
+        {
+            "name": "Discord",
+            "filename": "SVG/discord.svg",
+            "category": null,
+            "issuer": [
+                "Discord"
+            ]
+        },
+        {
+            "name": "Disqus",
+            "filename": "SVG/disqus.svg",
+            "category": null,
+            "issuer": [
+                "Disqus"
+            ]
+        },
+        {
+            "name": "DJI",
+            "filename": "SVG/dji.svg",
+            "category": null,
+            "issuer": [
+                "DJI"
+            ]
+        },
+        {
+            "name": "Docker",
+            "filename": "SVG/docker.svg",
+            "category": null,
+            "issuer": [
+                "Docker"
+            ]
+        },
+        {
+            "name": "DuckDuckGo",
+            "filename": "SVG/duckduckgo.svg",
+            "category": null,
+            "issuer": [
+                "DuckDuckGo"
+            ]
+        },
+        {
+            "name": "Element",
+            "filename": "SVG/element.svg",
+            "category": null,
+            "issuer": [
+                "Element"
+            ]
+        },
+        {
+            "name": "Enpass",
+            "filename": "SVG/enpass.svg",
+            "category": null,
+            "issuer": [
+                "Enpass"
+            ]
+        },
+        {
+            "name": "Facebook",
+            "filename": "SVG/facebook.svg",
+            "category": null,
+            "issuer": [
+                "Facebook"
+            ]
+        },
+        {
+            "name": "Fandom",
+            "filename": "SVG/fandom.svg",
+            "category": null,
+            "issuer": [
+                "Fandom"
+            ]
+        },
+        {
+            "name": "Firefox",
+            "filename": "SVG/firefox.svg",
+            "category": null,
+            "issuer": [
+                "Firefox"
+            ]
+        },
+        {
+            "name": "Flathub",
+            "filename": "SVG/flathub.svg",
+            "category": null,
+            "issuer": [
+                "Flathub"
+            ]
+        },
+        {
+            "name": "Flatpak",
+            "filename": "SVG/flatpak.svg",
+            "category": null,
+            "issuer": [
+                "Flatpak"
+            ]
+        },
+        {
+            "name": "GeeksforGeeks",
+            "filename": "SVG/geeksforgeeks.svg",
+            "category": null,
+            "issuer": [
+                "GeeksforGeeks"
+            ]
+        },
+        {
+            "name": "Git",
+            "filename": "SVG/git.svg",
+            "category": null,
+            "issuer": [
+                "Git"
+            ]
+        },
+        {
+            "name": "GitBook",
+            "filename": "SVG/gitbook.svg",
+            "category": null,
+            "issuer": [
+                "GitBook"
+            ]
+        },
+        {
+            "name": "Gitea",
+            "filename": "SVG/gitea.svg",
+            "category": null,
+            "issuer": [
+                "Gitea"
+            ]
+        },
+        {
+            "name": "Gitee",
+            "filename": "SVG/gitee.svg",
+            "category": null,
+            "issuer": [
+                "Gitee"
+            ]
+        },
+        {
+            "name": "GitHub",
+            "filename": "SVG/github.svg",
+            "category": null,
+            "issuer": [
+                "GitHub"
+            ]
+        },
+        {
+            "name": "GitKraken",
+            "filename": "SVG/gitkraken.svg",
+            "category": null,
+            "issuer": [
+                "GitKraken"
+            ]
+        },
+        {
+            "name": "GitLab",
+            "filename": "SVG/gitlab.svg",
+            "category": null,
+            "issuer": [
+                "GitLab"
+            ]
+        },
+        {
+            "name": "Git LFS",
+            "filename": "SVG/gitlfs.svg",
+            "category": null,
+            "issuer": [
+                "Git LFS"
+            ]
+        },
+        {
+            "name": "Gitpod",
+            "filename": "SVG/gitpod.svg",
+            "category": null,
+            "issuer": [
+                "Gitpod"
+            ]
+        },
+        {
+            "name": "Gitter",
+            "filename": "SVG/gitter.svg",
+            "category": null,
+            "issuer": [
+                "Gitter"
+            ]
+        },
+        {
+            "name": "Gmail",
+            "filename": "SVG/gmail.svg",
+            "category": null,
+            "issuer": [
+                "Gmail"
+            ]
+        },
+        {
+            "name": "GNOME",
+            "filename": "SVG/gnome.svg",
+            "category": null,
+            "issuer": [
+                "GNOME"
+            ]
+        },
+        {
+            "name": "Go",
+            "filename": "SVG/go.svg",
+            "category": null,
+            "issuer": [
+                "Go"
+            ]
+        },
+        {
+            "name": "GoDaddy",
+            "filename": "SVG/godaddy.svg",
+            "category": null,
+            "issuer": [
+                "GoDaddy"
+            ]
+        },
+        {
+            "name": "Godot Engine",
+            "filename": "SVG/godotengine.svg",
+            "category": null,
+            "issuer": [
+                "Godot Engine"
+            ]
+        },
+        {
+            "name": "Google",
+            "filename": "SVG/google.svg",
+            "category": null,
+            "issuer": [
+                "Google"
+            ]
+        },
+        {
+            "name": "Google Chrome",
+            "filename": "SVG/googlechrome.svg",
+            "category": null,
+            "issuer": [
+                "Google Chrome"
+            ]
+        },
+        {
+            "name": "Gradle",
+            "filename": "SVG/gradle.svg",
+            "category": null,
+            "issuer": [
+                "Gradle"
+            ]
+        },
+        {
+            "name": "Grammarly",
+            "filename": "SVG/grammarly.svg",
+            "category": null,
+            "issuer": [
+                "Grammarly"
+            ]
+        },
+        {
+            "name": "Gravatar",
+            "filename": "SVG/gravatar.svg",
+            "category": null,
+            "issuer": [
+                "Gravatar"
+            ]
+        },
+        {
+            "name": "Greasy Fork",
+            "filename": "SVG/greasyfork.svg",
+            "category": null,
+            "issuer": [
+                "Greasy Fork"
+            ]
+        },
+        {
+            "name": "HarmonyOS",
+            "filename": "SVG/harmonyos.svg",
+            "category": null,
+            "issuer": [
+                "HarmonyOS"
+            ]
+        },
+        {
+            "name": "Honor",
+            "filename": "SVG/honor.svg",
+            "category": null,
+            "issuer": [
+                "Honor"
+            ]
+        },
+        {
+            "name": "Huawei",
+            "filename": "SVG/huawei.svg",
+            "category": null,
+            "issuer": [
+                "Huawei"
+            ]
+        },
+        {
+            "name": "Hugging Face",
+            "filename": "SVG/huggingface.svg",
+            "category": null,
+            "issuer": [
+                "Hugging Face"
+            ]
+        },
+        {
+            "name": "IEEE",
+            "filename": "SVG/ieee.svg",
+            "category": null,
+            "issuer": [
+                "IEEE"
+            ]
+        },
+        {
+            "name": "IFTTT",
+            "filename": "SVG/ifttt.svg",
+            "category": null,
+            "issuer": [
+                "IFTTT"
+            ]
+        },
+        {
+            "name": "IntelliJ IDEA",
+            "filename": "SVG/intellijidea.svg",
+            "category": null,
+            "issuer": [
+                "IntelliJ IDEA"
+            ]
+        },
+        {
+            "name": "JetBrains",
+            "filename": "SVG/jetbrains.svg",
+            "category": null,
+            "issuer": [
+                "JetBrains"
+            ]
+        },
+        {
+            "name": "Ko-fi",
+            "filename": "SVG/kofi.svg",
+            "category": null,
+            "issuer": [
+                "Ko-fi"
+            ]
+        },
+        {
+            "name": "LeetCode",
+            "filename": "SVG/leetcode.svg",
+            "category": null,
+            "issuer": [
+                "LeetCode"
+            ]
+        },
+        {
+            "name": "LinkedIn",
+            "filename": "SVG/linkedin.svg",
+            "category": null,
+            "issuer": [
+                "LinkedIn"
+            ]
+        },
+        {
+            "name": "Matrix",
+            "filename": "SVG/matrix.svg",
+            "category": null,
+            "issuer": [
+                "Matrix"
+            ]
+        },
+        {
+            "name": "Mendeley",
+            "filename": "SVG/mendeley.svg",
+            "category": null,
+            "issuer": [
+                "Mendeley"
+            ]
+        },
+        {
+            "name": "Meta",
+            "filename": "SVG/meta.svg",
+            "category": null,
+            "issuer": [
+                "Meta"
+            ]
+        },
+        {
+            "name": "Mozilla",
+            "filename": "SVG/mozilla.svg",
+            "category": null,
+            "issuer": [
+                "Mozilla"
+            ]
+        },
+        {
+            "name": "Nintendo",
+            "filename": "SVG/nintendo.svg",
+            "category": null,
+            "issuer": [
+                "Nintendo"
+            ]
+        },
+        {
+            "name": "npm",
+            "filename": "SVG/npm.svg",
+            "category": null,
+            "issuer": [
+                "npm"
+            ]
+        },
+        {
+            "name": "NVIDIA",
+            "filename": "SVG/nvidia.svg",
+            "category": null,
+            "issuer": [
+                "NVIDIA"
+            ]
+        },
+        {
+            "name": "OpenAI",
+            "filename": "SVG/openai.svg",
+            "category": null,
+            "issuer": [
+                "OpenAI"
+            ]
+        },
+        {
+            "name": "ORCID",
+            "filename": "SVG/orcid.svg",
+            "category": null,
+            "issuer": [
+                "ORCID"
+            ]
+        },
+        {
+            "name": "Overleaf",
+            "filename": "SVG/overleaf.svg",
+            "category": null,
+            "issuer": [
+                "Overleaf"
+            ]
+        },
+        {
+            "name": "Patreon",
+            "filename": "SVG/patreon.svg",
+            "category": null,
+            "issuer": [
+                "Patreon"
+            ]
+        },
+        {
+            "name": "PayPal",
+            "filename": "SVG/paypal.svg",
+            "category": null,
+            "issuer": [
+                "PayPal"
+            ]
+        },
+        {
+            "name": "pixiv",
+            "filename": "SVG/pixiv.svg",
+            "category": null,
+            "issuer": [
+                "pixiv"
+            ]
+        },
+        {
+            "name": "PyPI",
+            "filename": "SVG/pypi.svg",
+            "category": null,
+            "issuer": [
+                "PyPI"
+            ]
+        },
+        {
+            "name": "Python",
+            "filename": "SVG/python.svg",
+            "category": null,
+            "issuer": [
+                "Python"
+            ]
+        },
+        {
+            "name": "Qiita",
+            "filename": "SVG/qiita.svg",
+            "category": null,
+            "issuer": [
+                "Qiita"
+            ]
+        },
+        {
+            "name": "Quora",
+            "filename": "SVG/quora.svg",
+            "category": null,
+            "issuer": [
+                "Quora"
+            ]
+        },
+        {
+            "name": "Read the Docs",
+            "filename": "SVG/readthedocs.svg",
+            "category": null,
+            "issuer": [
+                "Read the Docs"
+            ]
+        },
+        {
+            "name": "Reddit",
+            "filename": "SVG/reddit.svg",
+            "category": null,
+            "issuer": [
+                "Reddit"
+            ]
+        },
+        {
+            "name": "Rust",
+            "filename": "SVG/rust.svg",
+            "category": null,
+            "issuer": [
+                "Rust"
+            ]
+        },
+        {
+            "name": "Slack",
+            "filename": "SVG/slack.svg",
+            "category": null,
+            "issuer": [
+                "Slack"
+            ]
+        },
+        {
+            "name": "Sony",
+            "filename": "SVG/sony.svg",
+            "category": null,
+            "issuer": [
+                "Sony"
+            ]
+        },
+        {
+            "name": "Spotify",
+            "filename": "SVG/spotify.svg",
+            "category": null,
+            "issuer": [
+                "Spotify"
+            ]
+        },
+        {
+            "name": "Steam",
+            "filename": "SVG/steam.svg",
+            "category": null,
+            "issuer": [
+                "Steam"
+            ]
+        },
+        {
+            "name": "Tailscale",
+            "filename": "SVG/tailscale.svg",
+            "category": null,
+            "issuer": [
+                "Tailscale"
+            ]
+        },
+        {
+            "name": "TeamViewer",
+            "filename": "SVG/teamviewer.svg",
+            "category": null,
+            "issuer": [
+                "TeamViewer"
+            ]
+        },
+        {
+            "name": "Telegram",
+            "filename": "SVG/telegram.svg",
+            "category": null,
+            "issuer": [
+                "Telegram"
+            ]
+        },
+        {
+            "name": "Twitch",
+            "filename": "SVG/twitch.svg",
+            "category": null,
+            "issuer": [
+                "Twitch"
+            ]
+        },
+        {
+            "name": "V2EX",
+            "filename": "SVG/v2ex.svg",
+            "category": null,
+            "issuer": [
+                "V2EX"
+            ]
+        },
+        {
+            "name": "Vaultwarden",
+            "filename": "SVG/vaultwarden.svg",
+            "category": null,
+            "issuer": [
+                "Vaultwarden"
+            ]
+        },
+        {
+            "name": "Vultr",
+            "filename": "SVG/vultr.svg",
+            "category": null,
+            "issuer": [
+                "Vultr"
+            ]
+        },
+        {
+            "name": "Wikipedia",
+            "filename": "SVG/wikipedia.svg",
+            "category": null,
+            "issuer": [
+                "Wikipedia"
+            ]
+        },
+        {
+            "name": "X",
+            "filename": "SVG/x.svg",
+            "category": null,
+            "issuer": [
+                "X"
+            ]
+        },
+        {
+            "name": "YouTube",
+            "filename": "SVG/youtube.svg",
+            "category": null,
+            "issuer": [
+                "YouTube"
+            ]
+        }
+    ]
+}

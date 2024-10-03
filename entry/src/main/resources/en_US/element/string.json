@@ -1,0 +1,56 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "ItemEditAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "ItemEditAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "SettingPageAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "SettingPageAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "SettingsAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "SettingsAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "form_description"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "form_label"
+    },
+    {
+      "name": "default_widget_desc",
+      "value": "This is a service widget."
+    },
+    {
+      "name": "default_widget_display_name",
+      "value": "Default Widget"
+    }
+  ]
+}
