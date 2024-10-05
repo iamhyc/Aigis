@@ -1,25 +1,26 @@
 import { buffer } from '@kit.ArkTS';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
+import { shallowCopy } from '../common/utils';
 
 type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
 
-interface OTPSchema {
+export interface OTPSchema {
     type: string,
     name: string,
     issuer: string,
-    secret: string,
+    secret?: string,
     algorithm: AlgorithmSupport,
     digits: number,
     counter: number,
 }
 
-interface HOTPSchema extends OTPSchema {
+export interface HOTPSchema extends OTPSchema {
     type: 'hotp',
     algorithm: AlgorithmModern,
 }
 
-interface TOTPSchema extends OTPSchema {
+export interface TOTPSchema extends OTPSchema {
     type: 'totp',
     algorithm: AlgorithmModern,
     period: number,
@@ -41,6 +42,7 @@ interface YAOTPSchema extends OTPSchema {
     pin: string,
 }
 
+// http://tools.ietf.org/html/rfc4226#section-5.4
 function rfc4226Sec5_4Impl(hash: Uint8Array): number {
     const offset = hash[hash.length - 1] & 0xf;
     const otp = ((hash[offset] & 0x7f) << 24)
@@ -59,34 +61,40 @@ function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
     return byteArray;
 }
 
-abstract class OTP {
-    protected readonly schema: OTPSchema;
+export function parseURI(uri: string): Map<string, string> {
+    const re = /otpauth:\/\/(\w+)\/([^\?]+)\?(.+)/;
+    const results = re.exec(uri)!;
+    const type = results[1], issuer_name = decodeURIComponent(results[2]), args = results[3];
+    //
+    const name = issuer_name.split(':', 1)[1];
+    const args_array = args.split('&')
+        .map(x => x.split('='))
+        .map(x => [decodeURIComponent(x[0]), decodeURIComponent(x[1])])
+        .concat([['type', type], ['name', name]]) as [string, string][];
+    return new Map(args_array);
+}
+
+export abstract class OTP {
+    protected readonly _schema: OTPSchema;
 
     constructor(schema: OTPSchema) {
-        this.schema = schema;
+        this._schema = schema;
     }
 
     abstract get uri(): string;
     abstract generateOTP(): Promise<string>;
 
-    static parseURI(uri: string): Map<string, string> {
-        const re = /otpauth:\/\/(\w+)\/([^\?]+)\?(.+)/;
-        const results = re.exec(uri)!;
-        const type = results[0], issuer_name = decodeURIComponent(results[1]), args = results[2];
-        //
-        const name = issuer_name.split(':', 1)[1];
-        const args_array = args.split('&')
-            .map(x => x.split('='))
-            .map(x => [decodeURIComponent(x[0]), decodeURIComponent(x[1])])
-            .concat([['type', type], ['name', name]]) as [string, string][];
-        return new Map(args_array);
+    get schema() {
+        const _leak_schema = shallowCopy(this._schema) as OTPSchema;
+        _leak_schema.secret = undefined;
+        return _leak_schema;
     }
 
     async generateHash(realCounter?: number): Promise<Uint8Array> {
         realCounter = realCounter ?? this.schema.counter;
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
 
-        const keyData = new Uint8Array(buffer.from(this.schema.secret, 'utf-8').buffer);
+        const keyData = new Uint8Array(buffer.from(this._schema.secret, 'utf-8').buffer);
         const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
 
         const mac = cryptoFramework.createMac(this.schema.algorithm);
@@ -104,6 +112,10 @@ abstract class OTP {
         while (code_str.length < _digits) code_str = "0" + code_str;
         return code_str;
     }
+
+    keyEquals(schema: OTPSchema): boolean {
+        return (schema.name===this.schema.name && schema.issuer===this.schema.issuer);
+    }
 }
 
 export class HOTP extends OTP {
@@ -112,7 +124,11 @@ export class HOTP extends OTP {
     }
 
     static fromURI(uri: string): HOTP {
-        const args = OTP.parseURI(uri);
+        const args = parseURI(uri);
+        return HOTP.fromArguments(args)
+    }
+
+    static fromArguments(args: Map<string,string>): HOTP {
         if (args.get('algorithm') !== undefined) {
             const hotpSchema: HOTPSchema = {
                 type: 'hotp',
@@ -130,7 +146,7 @@ export class HOTP extends OTP {
     }
 
     get uri(): string {
-        const s = this.schema as HOTPSchema;
+        const s = this._schema as HOTPSchema;
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&counter=${s.counter}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
@@ -147,7 +163,11 @@ export class TOTP extends OTP {
     }
 
     static fromURI(uri: string): TOTP {
-        const args = OTP.parseURI(uri);
+        const args = parseURI(uri);
+        return TOTP.fromArguments(args);
+    }
+
+    static fromArguments(args: Map<string,string>) {
         if (args.get('algorithm') !== undefined) {
             const totpSchema: TOTPSchema = {
                 type: 'totp',
@@ -166,7 +186,7 @@ export class TOTP extends OTP {
     }
 
     get uri(): string {
-        const s = this.schema as TOTPSchema;
+        const s = this._schema as TOTPSchema;
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 

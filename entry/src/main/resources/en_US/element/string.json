@@ -2,39 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "module description"
+      "value": "Aigis Main Module"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "description"
+      "value": "Aigis Main Page"
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
-    },
-    {
-      "name": "ItemEditAbility_desc",
-      "value": "description"
-    },
-    {
-      "name": "ItemEditAbility_label",
-      "value": "label"
-    },
-    {
-      "name": "SettingPageAbility_desc",
-      "value": "description"
-    },
-    {
-      "name": "SettingPageAbility_label",
-      "value": "label"
-    },
-    {
-      "name": "SettingsAbility_desc",
-      "value": "description"
-    },
-    {
-      "name": "SettingsAbility_label",
-      "value": "label"
+      "value": "Aigis"
     },
     {
       "name": "EntryFormAbility_desc",
@@ -42,15 +18,11 @@
     },
     {
       "name": "EntryFormAbility_label",
-      "value": "form_label"
+      "value": "Aigis Card"
     },
     {
-      "name": "default_widget_desc",
-      "value": "This is a service widget."
-    },
-    {
-      "name": "default_widget_display_name",
-      "value": "Default Widget"
+      "name": "ItemEditPage_title",
+      "value": "Edit Item"
     }
   ]
 }

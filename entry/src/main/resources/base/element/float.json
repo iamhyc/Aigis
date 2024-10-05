@@ -1,8 +1,28 @@
 {
   "float": [
     {
+      "name": "visual_space",
+      "value": "16vp"
+    },
+    {
+      "name": "add_icon_size",
+      "value": "25vp"
+    },
+    {
+      "name": "add_circle_size",
+      "value": "60vp"
+    },
+    {
       "name": "font_size",
       "value": "14fp"
+    },
+    {
+      "name": "issuer_icon_size",
+      "value": "48vp"
+    },
+    {
+      "name": "issuer_icon_radius",
+      "value": "24vp"
     }
   ]
 }

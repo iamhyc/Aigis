@@ -16,7 +16,7 @@
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
-        "icon": "$media:icon",
+        "icon": "$media:app_icon",
         "label": "$string:EntryAbility_label",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:start_window_background",
@@ -33,19 +33,13 @@
         ]
       }
     ],
-    "extensionAbilities": [
+    "requestPermissions": [
       {
-        "name": "EntryFormAbility",
-        "srcEntry": "./ets/entryformability/EntryFormAbility.ets",
-        "label": "$string:EntryFormAbility_label",
-        "description": "$string:EntryFormAbility_desc",
-        "type": "form",
-        "metadata": [
-          {
-            "name": "ohos.extension.form",
-            "resource": "$profile:form_config"
-          }
-        ]
+        "name": "ohos.permission.PRIVACY_WINDOW",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
       }
     ]
   }

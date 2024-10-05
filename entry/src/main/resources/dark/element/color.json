@@ -2,23 +2,23 @@
   "color": [
     {
       "name": "start_window_background",
-      "value": "#FFFFFF"
+      "value": "#030200"
     },
     {
       "name": "color_background",
-      "value": "#DEBE51"
+      "value": "#3E3D45"
     },
     {
       "name": "color_hair",
-      "value": "#FEFCB2"
+      "value": "#81601B"
     },
     {
       "name": "color_ribbon",
-      "value": "#E93038"
+      "value": "#740C01"
     },
     {
       "name": "color_face",
-      "value": "#FFEDE1"
+      "value": "#030200"
     }
   ]
 }
