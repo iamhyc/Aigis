@@ -1,6 +1,10 @@
-import { CodeRequestSchema } from './schema';
 
-export function name2keyAlias(props: CodeRequestSchema): string {
+interface IssuerName {
+    issuer: string,
+    name: string
+}
+
+export function name2keyAlias(props: IssuerName): string {
     return `${props.issuer}:${props.name}`;
 }
 

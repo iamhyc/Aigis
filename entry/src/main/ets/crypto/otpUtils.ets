@@ -1,6 +1,6 @@
 import { buffer } from '@kit.ArkTS';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { shallowCopy, splitOnce } from '../common/utils';
+import { name2keyAlias, shallowCopy, splitOnce } from '../common/utils';
 
 type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
@@ -90,14 +90,18 @@ export abstract class OTP {
         return _leak_schema;
     }
 
+    get keyAlias() {
+        return name2keyAlias({issuer:this._schema.issuer, name:this._schema.name});
+    }
+
     async generateHash(realCounter?: number): Promise<Uint8Array> {
-        realCounter = realCounter ?? this.schema.counter;
+        realCounter = realCounter ?? this._schema.counter;
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
 
         const keyData = new Uint8Array(buffer.from(this._schema.secret, 'utf-8').buffer);
         const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
 
-        const mac = cryptoFramework.createMac(this.schema.algorithm);
+        const mac = cryptoFramework.createMac(this._schema.algorithm);
         await mac.init(symKey);
 
         await mac.update({data: counterBytes});
@@ -106,15 +110,11 @@ export abstract class OTP {
     }
 
     otpToString(otp: number): string {
-        const _digits = this.schema.digits;
+        const _digits = this._schema.digits;
         const code_num = otp % Math.pow(10, _digits);
         let code_str = code_num.toString();
         while (code_str.length < _digits) code_str = "0" + code_str;
         return code_str;
-    }
-
-    keyEquals(schema: OTPSchema): boolean {
-        return (schema.name===this.schema.name && schema.issuer===this.schema.issuer);
     }
 }
 
@@ -191,7 +191,7 @@ export class TOTP extends OTP {
     }
 
     async generateOTP(): Promise<string> {
-        const period = (this.schema as TOTPSchema).period;
+        const period = (this._schema as TOTPSchema).period;
         const realCounter = Math.floor(Date.now() / 1000 / period);
         //
         const hash = await this.generateHash(realCounter);

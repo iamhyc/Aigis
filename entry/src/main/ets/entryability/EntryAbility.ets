@@ -3,27 +3,133 @@ import { preferences } from '@kit.ArkData';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { HOTP, OTP, parseURI, TOTP } from '../crypto/otpUtils'
+import { HOTP, HOTPSchema, OTP, OTPSchema, parseURI, TOTP, TOTPSchema } from '../crypto/otpUtils'
 import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     EVENT_UPDATE_ITEM,
     UpdateRequestSchema} from '../common/schema'
-import { name2keyAlias } from '../common/utils';
+import { name2keyAlias, shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 
 const AIGIS_PREF_NAME = 'aigis-pref';
 
-type SecretsStore = Map<string,string>;
+interface SecretSchema {
+    keyAlias: string,
+    secret: string
+}
 
-interface PreferencesSchema {
-    secrets: SecretsStore,
-    items: OTPItemInfo[],
+class PreferencesManager {
+    private _instances: Map<string, OTP>;
+    private _secrets: SecretSchema[];
+    private _items: OTPItemInfo[];
+
+    constructor(items: OTPItemInfo[], secrets: SecretSchema[]) {
+        this._items = items;
+        this._secrets = secrets;
+        this._instances = new Map();
+    }
+
+    get items() {
+        return this._items;
+    }
+
+    getOtpInstance(keyAlias: string): OTP {
+        let otp = this._instances.get(keyAlias);
+        if (otp===undefined) {
+            const schema = this._items.find(x => x.keyAlias===keyAlias)?.schema;
+            const secret = this._secrets.find(x => x.keyAlias===keyAlias)?.secret;
+            if (schema===undefined) {
+                throw Error(`"${keyAlias}" not found in local manager.`);
+            }
+
+            let schema_tmp = shallowCopy(schema) as OTPSchema;
+            schema_tmp.secret = secret;
+            switch (schema_tmp.type) {
+                case 'hotp':
+                    otp = new HOTP(schema_tmp as HOTPSchema);
+                    break;
+                case 'totp':
+                    otp = new TOTP(schema_tmp as TOTPSchema);
+                    break;
+                default:
+                    throw Error(`Unsupported ${schema_tmp.type}.`);
+            }
+        }
+        return otp;
+    }
+
+    async requestCodeUpdate(keyAlias: string): Promise<boolean> {
+        const item = this._items.find(x => x.keyAlias===keyAlias);
+        if (item) {
+            const otp = this.getOtpInstance(keyAlias);
+            item.code = {
+                timestamp: Date.now(),
+                code: await otp.generateOTP(),
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    updatePreferenceItem(uri: string) {
+        const args = parseURI(uri);
+        const secret = args.get('secret')!;
+
+        let otp: OTP | void;
+        switch (args.get('type')) {
+            case 'hotp':
+                otp = HOTP.fromArguments(args);
+                break;
+            case 'totp':
+                otp = TOTP.fromArguments(args);
+                break;
+            default:
+                break;
+        }
+
+        if (typeof otp !== undefined) {
+            const oldItem = this._items.find(x => (otp as OTP).keyAlias===x.keyAlias);
+            const oldSecret = this._secrets.find(x => (otp as OTP).keyAlias===x.keyAlias);
+
+            if (oldItem!==undefined && oldSecret!==undefined) {
+                oldItem.schema = (otp as OTP).schema;
+                oldSecret.secret = secret;
+                // update new instances
+                const keyAlias = oldItem.keyAlias;
+                this._instances.delete(keyAlias);
+                this.requestCodeUpdate(keyAlias);
+            } else {
+                this.appendPreferenceItem(otp as OTP, secret);
+            }
+        }
+    }
+
+    private appendPreferenceItem(otp: OTP, secret: string) {
+        const keyAlias = otp.keyAlias;
+        const schema = otp.schema;
+
+        // find issuer icon
+        const issuerKey = otp.schema.issuer.toLowerCase();
+        const icon = `issuer-icons/SVG/${issuerKey}.svg`;
+
+        const code: CodeResponseSchema = {timestamp:0, code:''};
+        this._items.push({keyAlias, icon, code, schema});
+        this._secrets.push({keyAlias, secret});
+        this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
+    }
+
+    persists(dataPreferences: preferences.Preferences) {
+        dataPreferences!.putSync(PREF_KEY_ITEMS, this._items);
+        dataPreferences!.putSync(PREF_KEY_SECRETS, this._secrets);
+        dataPreferences!.flush();
+    }
 }
 
 export default class EntryAbility extends UIAbility {
     private dataPreferences?: preferences.Preferences;
     private localStorage: LocalStorage = new LocalStorage();
-    private InstPreferences?: PreferencesSchema;
+    private instPreferences?: PreferencesManager;
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
@@ -42,30 +148,27 @@ export default class EntryAbility extends UIAbility {
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
             .then((pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
-                this.InstPreferences = {
-                    secrets: this.dataPreferences.getSync(PREF_KEY_SECRETS, new Map<string,string>()) as SecretsStore,
-                    items:   this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
-                }
-                this.localStorage.set(PREF_KEY_ITEMS, this.InstPreferences.items);
+                this.instPreferences = new PreferencesManager(
+                  this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
+                  this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
+                );
+                this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
 
                 // register event handler
                 this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
-                    const key = name2keyAlias(data);
-
+                    if (this.instPreferences) {
+                        const res = await this.instPreferences.requestCodeUpdate(data.keyAlias);
+                        res && this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                    }
                 });
                 this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
-                    const args = parseURI(data.uri);
-                    switch (args.get('type')) {
-                        case 'hotp':
-                            const hotp = HOTP.fromArguments(args);
-                            this.updatePreferenceItem(hotp, args.get('secret')!);
-                            break;
-                        case 'totp':
-                            const totp = TOTP.fromArguments(args);
-                            this.updatePreferenceItem(totp, args.get('secret')!);
-                            break;
-                        default:
-                            break;
+                    if (this.instPreferences) {
+                        // update local preferences
+                        this.instPreferences.updatePreferenceItem(data.uri);
+                        // update persist preferences
+                        this.instPreferences.persists(this.dataPreferences!);
+                        // propagate updated items
+                        this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
                     }
                 });
 
@@ -102,34 +205,4 @@ export default class EntryAbility extends UIAbility {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onBackground');
     }
 
-    private updatePreferenceItem(otp: OTP, secret: string) {
-        const otp_schema = otp.schema;
-        const issuerKey = otp.schema.issuer.toLowerCase();
-        const keyAlias = name2keyAlias({
-            issuer: otp_schema.issuer, name: otp_schema.name
-        });
-
-        if (this.InstPreferences) {
-            // update InstPreferences.items
-            const oldItem = this.InstPreferences.items.find(x => otp.keyEquals(x.schema));
-            if (oldItem) {
-                oldItem.schema = otp.schema;
-            } else {
-                this.InstPreferences.items.push({
-                    icon: `issuer-icons/SVG/${issuerKey}.svg`,
-                    code: {timestamp:0, code:''},
-                    schema: otp_schema,
-                })
-            }
-            // update InstPreferences.secrets
-            this.InstPreferences.secrets.set(keyAlias, secret);
-
-            // update persist preferences
-            this.dataPreferences!.putSync(PREF_KEY_ITEMS, this.InstPreferences.items);
-            this.dataPreferences!.putSync(PREF_KEY_SECRETS, this.InstPreferences.secrets);
-            this.dataPreferences!.flush();
-
-            this.localStorage.set(PREF_KEY_ITEMS, this.InstPreferences.items);
-        }
-    }
 }

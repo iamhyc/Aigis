@@ -16,6 +16,7 @@ const storage = LocalStorage.getShared();
 @Component
 struct Index {
     @LocalStorageLink(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
+    @State selected: string = '';
 
     build() {
         RelativeContainer() {
@@ -29,14 +30,13 @@ struct Index {
                                     OTPItem({
                                         icon: item.icon,
                                         code: item.code,
-                                        schema: item.schema
+                                        schema: item.schema,
+                                        keyAlias: item.keyAlias,
+                                        selected: this.selected,
                                     })
                                 }
                             },
-                            (item: OTPItemInfo) => {
-                                const issuer=item.schema.issuer, name=item.schema.name;
-                                return name2keyAlias({issuer,name});
-                            }
+                            (item: OTPItemInfo) => item.keyAlias,
                         )
                     }
                     .width('100%')
@@ -125,8 +125,9 @@ struct Index {
 export struct OTPItem {
     @Prop icon: string;
     @Prop code: CodeResponseSchema;
+    @Prop keyAlias: string;
     @Watch('onItemUpdated') @Prop schema: OTPSchema;
-    @Prop selected: Boolean = false;
+    @Link selected: string;
     @State remain_time: number = 0;
 
     build() {
@@ -153,7 +154,7 @@ export struct OTPItem {
                             .fontColor($r('sys.color.font_secondary'))
                     }
 
-                    if (!this.selected) {
+                    if (this.selected===this.keyAlias) {
                         Text(this.hiddenDigits())
                             .fontSize($r('sys.float.Subtitle_L'))
                             .letterSpacing(5)
@@ -182,10 +183,17 @@ export struct OTPItem {
         }
         .height('64vp')
         .width('100%')
+        .onClick(ev => {
+            if (this.selected===this.keyAlias) {
+                this.selected = '';
+            } else {
+                this.selected = this.keyAlias;
+            }
+        });
     }
 
     private onItemUpdated() {
-        if (this.selected) {
+        if (this.selected===this.keyAlias) {
             setTimeout(() => {
 
             }, REFRESH_INTERVAL);
@@ -201,8 +209,7 @@ export struct OTPItem {
         }
 
         getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
-            issuer: this.schema.issuer,
-            name: this.schema.name,
+            keyAlias: this.keyAlias,
         } as CodeRequestSchema);
         return this.hiddenDigits();
     }

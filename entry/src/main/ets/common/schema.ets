@@ -2,8 +2,7 @@ import { OTPSchema } from "../crypto/otpUtils";
 
 export const EVENT_CODE_REQUEST: string = 'code-request';
 export interface CodeRequestSchema {
-    issuer: string,
-    name: string,
+    keyAlias: string,
 }
 export interface CodeResponseSchema {
     timestamp: number,
@@ -20,6 +19,7 @@ export interface UpdateResponseSchema {
 }
 
 export interface OTPItemInfo {
+    keyAlias: string,
     icon: string,
     code: CodeResponseSchema,
     schema: OTPSchema,
