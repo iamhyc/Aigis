@@ -60,7 +60,7 @@ struct Index {
                 .height('100%')
                 .width('100%')
             }
-            .title($r('app.string.app_name'), {
+            .title($r('app.string.app_title'), {
                 backgroundColor: $r('app.color.color_background'),
             })
             .titleMode(NavigationTitleMode.Mini)
@@ -86,7 +86,6 @@ struct Index {
 
         try {
             const result = await scanBarcode.startScanForResult(getContext(this), options);
-            console.log(result.originalValue);
             return result.originalValue
         } catch (err) {
             hilog.error(0x0001, '[Scan CPSample]', `Failed to get ScanResult by callback with options. Code: ${err.code}, message: ${err.message}`);

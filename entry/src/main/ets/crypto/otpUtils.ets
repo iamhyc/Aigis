@@ -1,6 +1,6 @@
 import { buffer } from '@kit.ArkTS';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { shallowCopy } from '../common/utils';
+import { shallowCopy, splitOnce } from '../common/utils';
 
 type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
@@ -66,7 +66,7 @@ export function parseURI(uri: string): Map<string, string> {
     const results = re.exec(uri)!;
     const type = results[1], issuer_name = decodeURIComponent(results[2]), args = results[3];
     //
-    const name = issuer_name.split(':', 1)[1];
+    const name = splitOnce(issuer_name, ':')[1];
     const args_array = args.split('&')
         .map(x => x.split('='))
         .map(x => [decodeURIComponent(x[0]), decodeURIComponent(x[1])])

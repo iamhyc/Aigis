@@ -104,6 +104,7 @@ export default class EntryAbility extends UIAbility {
 
     private updatePreferenceItem(otp: OTP, secret: string) {
         const otp_schema = otp.schema;
+        const issuerKey = otp.schema.issuer.toLowerCase();
         const keyAlias = name2keyAlias({
             issuer: otp_schema.issuer, name: otp_schema.name
         });
@@ -115,23 +116,19 @@ export default class EntryAbility extends UIAbility {
                 oldItem.schema = otp.schema;
             } else {
                 this.InstPreferences.items.push({
-                    icon: '',
+                    icon: `issuer-icons/SVG/${issuerKey}.svg`,
                     code: {timestamp:0, code:''},
                     schema: otp_schema,
                 })
             }
             // update InstPreferences.secrets
-            console.log('??? - 3')
             this.InstPreferences.secrets.set(keyAlias, secret);
-            console.log('??? - 4')
 
             // update persist preferences
             this.dataPreferences!.putSync(PREF_KEY_ITEMS, this.InstPreferences.items);
-            console.log('??? - 5-1')
             this.dataPreferences!.putSync(PREF_KEY_SECRETS, this.InstPreferences.secrets);
-            console.log('??? - 5-2')
+            this.dataPreferences!.flush();
 
-            console.log('keyAlias', keyAlias);
             this.localStorage.set(PREF_KEY_ITEMS, this.InstPreferences.items);
         }
     }
