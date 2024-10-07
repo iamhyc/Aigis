@@ -1,13 +1,10 @@
-import { authentication } from '@kit.AccountKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { OTPItemInfo, EVENT_CODE_REQUEST, CodeRequestSchema, EVENT_UPDATE_ITEM,
     UpdateRequestSchema,
     CodeResponseSchema} from '../common/schema';
-import { name2keyAlias } from '../common/utils';
-import { OTPSchema, TOTPSchema } from '../crypto/otpUtils';
+import { OTPSchema, TimedOTPSchema } from '../crypto/otpUtils';
 
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();
@@ -15,7 +12,7 @@ const storage = LocalStorage.getShared();
 @Entry(storage)
 @Component
 struct Index {
-    @LocalStorageLink(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
+    @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @State selected: string = '';
 
     build() {
@@ -36,7 +33,9 @@ struct Index {
                                     })
                                 }
                             },
-                            (item: OTPItemInfo) => item.keyAlias,
+                            (item: OTPItemInfo) => {
+                                return item.keyAlias+'_'+item.code.code+'_'+item.icon;
+                            }
                         )
                     }
                     .width('100%')
@@ -74,7 +73,6 @@ struct Index {
 
     aboutToAppear() {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
-        // this.loginWithHuaweiID();
     }
 
     private async scanQrCode(): Promise<string> {
@@ -92,43 +90,16 @@ struct Index {
             return '';
         }
     }
-
-    /**
-     * Sample code for using HUAWEI ID to log in to atomic service.
-     * According to the Atomic Service Review Guide, when a atomic service has an account system,
-     * the option to log in with a HUAWEI ID must be provided.
-     * The following presets the atomic service to use the HUAWEI ID silent login function.
-     * To enable the atomic service to log in successfully using the HUAWEI ID, please refer
-     * to the HarmonyOS HUAWEI ID Access Guide to configure the client ID and fingerprint certificate.
-     */
-    private loginWithHuaweiID() {
-        // Create a login request and set parameters
-        let loginRequest = new authentication.HuaweiIDProvider().createLoginWithHuaweiIDRequest();
-        // Whether to forcibly launch the HUAWEI ID login page when the user is not logged in with the HUAWEI ID
-        loginRequest.forceLogin = false;
-        // Execute login request
-        let controller = new authentication.AuthenticationController();
-        controller.executeRequest(loginRequest).then((data) => {
-            let loginWithHuaweiIDResponse = data as authentication.LoginWithHuaweiIDResponse;
-            let authCode = loginWithHuaweiIDResponse.data?.authorizationCode;
-            // Send authCode to the backend in exchange for unionID, session
-        }).catch((error: BusinessError) => {
-            hilog.error(0x0000, 'testTag', 'error: %{public}s', JSON.stringify(error));
-            if (error.code == authentication.AuthenticationErrorCode.ACCOUNT_NOT_LOGGED_IN) {
-                // HUAWEI ID is not logged in, it is recommended to jump to the login guide page
-            }
-        })
-    }
 }
 
 @Component
 export struct OTPItem {
-    @Prop icon: string;
-    @Prop code: CodeResponseSchema;
-    @Prop keyAlias: string;
-    @Watch('onItemUpdated') @Prop schema: OTPSchema;
     @Link selected: string;
-    @State remain_time: number = 0;
+    @Prop icon: string;
+    @Prop @Watch('onCodeUpdated') code: CodeResponseSchema;
+    @Prop keyAlias: string;
+    @Prop schema: OTPSchema;
+    @State passed_time: number = 0;
 
     build() {
         Stack({ alignContent: Alignment.Bottom }) {
@@ -154,11 +125,12 @@ export struct OTPItem {
                             .fontColor($r('sys.color.font_secondary'))
                     }
 
-                    if (this.selected===this.keyAlias) {
+                    if (this.selected!==this.keyAlias) {
                         Text(this.hiddenDigits())
+                            .fontWeight(FontWeight.Medium)
                             .fontSize($r('sys.float.Subtitle_L'))
                             .letterSpacing(5)
-                    } else if (this.remain_time <= 0) {
+                    } else {
                         Text(this.splitDigits())
                             .fontWeight(FontWeight.Medium)
                             .fontSize($r('sys.float.Subtitle_L'))
@@ -171,8 +143,9 @@ export struct OTPItem {
             .width('100%')
             .zIndex(1)
             // show progress bar for time-based OTP
-            if (this.selected && (this.schema as TOTPSchema).period) {
-                Progress({value: this.remain_time, total:(this.schema as TOTPSchema).period*1000})
+            if (this.selected===this.keyAlias && (this.schema as TimedOTPSchema).period) {
+                Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
+                    .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
                     .height('2vp')
                     .width('100%')
                     .zIndex((2))
@@ -187,31 +160,45 @@ export struct OTPItem {
             if (this.selected===this.keyAlias) {
                 this.selected = '';
             } else {
+                this.requestCodeUpdate();
                 this.selected = this.keyAlias;
             }
         });
     }
 
-    private onItemUpdated() {
+    private onCodeUpdated() {
         if (this.selected===this.keyAlias) {
+            this.requestCodeUpdate();
             setTimeout(() => {
-
+                this.onCodeUpdated();
             }, REFRESH_INTERVAL);
         }
     }
 
-    private splitDigits(): string {
-        if (this.code?.timestamp) {
-            this.remain_time = Date.now() - this.code.timestamp;
-            if (this.remain_time > REFRESH_INTERVAL) {
-                return this.code.code.match(/.{1,3}/g)!.join(' ');
+    private requestCodeUpdate(): boolean {
+        const _period = (this.schema as TimedOTPSchema).period * 1000;
+
+        // test time-based OTP if refresh needed
+        if (_period) {
+            const passed_time = Date.now() - this.code.timestamp;
+            const remain_time = Date.now() % _period;
+            this.passed_time = remain_time;
+            if (remain_time > REFRESH_INTERVAL && passed_time < _period) {
+                return false;
             }
         }
 
+        // apply code update request
         getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
             keyAlias: this.keyAlias,
         } as CodeRequestSchema);
-        return this.hiddenDigits();
+
+        return true;
+    }
+
+    private splitDigits(): string {
+        this.onCodeUpdated();
+        return this.code.code.match(/.{1,3}/g)!.join(' ');
     }
 
     private hiddenDigits(): string {

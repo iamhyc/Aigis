@@ -7,7 +7,7 @@ import { HOTP, HOTPSchema, OTP, OTPSchema, parseURI, TOTP, TOTPSchema } from '..
 import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     EVENT_UPDATE_ITEM,
     UpdateRequestSchema} from '../common/schema'
-import { name2keyAlias, shallowCopy } from '../common/utils';
+import { shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 
@@ -113,7 +113,7 @@ class PreferencesManager {
         const issuerKey = otp.schema.issuer.toLowerCase();
         const icon = `issuer-icons/SVG/${issuerKey}.svg`;
 
-        const code: CodeResponseSchema = {timestamp:0, code:''};
+        const code: CodeResponseSchema = {timestamp:0, code:'000000'};
         this._items.push({keyAlias, icon, code, schema});
         this._secrets.push({keyAlias, secret});
         this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
@@ -158,7 +158,9 @@ export default class EntryAbility extends UIAbility {
                 this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
                     if (this.instPreferences) {
                         const res = await this.instPreferences.requestCodeUpdate(data.keyAlias);
-                        res && this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                        if (res) {
+                            this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                        }
                     }
                 });
                 this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
@@ -168,7 +170,7 @@ export default class EntryAbility extends UIAbility {
                         // update persist preferences
                         this.instPreferences.persists(this.dataPreferences!);
                         // propagate updated items
-                        this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                        this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                     }
                 });
 

@@ -1,7 +1,6 @@
 # Aigis
 
 A lite alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
-- [x] Integration Test
 - [x] Entry Card Design
 ### TODO
 
@@ -18,6 +17,8 @@ A lite alternative to [Aegis Authenticator](https://github.com/beemdevelopment/A
 ### References
 
 - [Aegis Authenticator - ctypto/otp](https://github.com/beemdevelopment/Aegis/tree/master/app/src/main/java/com/beemdevelopment/aegis/crypto/otp)
+
+- [Github - pyotp](https://github.com/pyauth/pyotp.git)
 
 - HarmonyOS NEXT 官方文档
   

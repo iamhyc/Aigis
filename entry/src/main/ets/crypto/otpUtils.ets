@@ -1,4 +1,3 @@
-import { buffer } from '@kit.ArkTS';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { name2keyAlias, shallowCopy, splitOnce } from '../common/utils';
 
@@ -15,31 +14,36 @@ export interface OTPSchema {
     counter: number,
 }
 
+export interface TimedOTPSchema extends OTPSchema {
+    period: number,
+}
+
+export interface PinedOTPSchema extends OTPSchema {
+    pid: string,
+}
+
 export interface HOTPSchema extends OTPSchema {
     type: 'hotp',
     algorithm: AlgorithmModern,
 }
 
-export interface TOTPSchema extends OTPSchema {
+export interface TOTPSchema extends OTPSchema,TimedOTPSchema {
     type: 'totp',
     algorithm: AlgorithmModern,
-    period: number,
 }
 
-interface MOTPSchema extends OTPSchema {
+interface MOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
     type: 'motp',
     algorithm: 'MD5',
     period: 10,
     digits: 6,
-    pin: string,
 }
 
-interface YAOTPSchema extends OTPSchema {
+interface YAOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
     type: 'yandex',
     algorithm: 'SHA256',
     period: 30,
     digits: 8,
-    pin: string,
 }
 
 // http://tools.ietf.org/html/rfc4226#section-5.4
@@ -59,6 +63,30 @@ function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
         num = num >> 8;
     }
     return byteArray;
+}
+
+function b32decode(input: string): Uint8Array {
+    input = input.toUpperCase().replace(/\s|=/g, '');
+
+    const dic = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const length = input.length;
+    const output = new Uint8Array(length * 5 / 8);
+
+    let value = 0;
+    let index = 0;
+    let offset = 0;
+
+    for (let i = 0; i < length; i++) {
+        value = (value << 5) | dic.indexOf(input[i]);
+        offset += 5;
+
+        if (offset >= 8) {
+            output[index++] = (value >>> (offset - 8)) & 255;
+            offset -= 8;
+        }
+    }
+
+    return output;
 }
 
 export function parseURI(uri: string): Map<string, string> {
@@ -98,7 +126,9 @@ export abstract class OTP {
         realCounter = realCounter ?? this._schema.counter;
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
 
-        const keyData = new Uint8Array(buffer.from(this._schema.secret, 'utf-8').buffer);
+        const keyData = b32decode(this._schema.secret!);
+        console.log(`${keyData}`)
+        // const keyData = new Uint8Array(buffer.from(this._schema.secret, 'utf-8').buffer);
         const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
 
         const mac = cryptoFramework.createMac(this._schema.algorithm);
@@ -196,6 +226,7 @@ export class TOTP extends OTP {
         //
         const hash = await this.generateHash(realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
+        console.log( `${Date.now()}, ${hash.toString()}, ${otp} (${this.otpToString(otp)})` );
         return this.otpToString(otp);
     }
 }
