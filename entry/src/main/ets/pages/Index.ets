@@ -132,8 +132,7 @@ export struct OTPItem {
                             .letterSpacing(5)
                     } else {
                         Text(this.splitDigits())
-                            .fontWeight(FontWeight.Medium)
-                            .fontSize($r('sys.float.Subtitle_L'))
+                            .fontSize(26)
                     }
                 }
                 .alignItems(HorizontalAlign.Start)
@@ -146,6 +145,7 @@ export struct OTPItem {
             if (this.selected===this.keyAlias && (this.schema as TimedOTPSchema).period) {
                 Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
                     .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
+                    .color($r('app.color.color_ribbon'))
                     .height('2vp')
                     .width('100%')
                     .zIndex((2))

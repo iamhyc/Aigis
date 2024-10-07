@@ -9,16 +9,28 @@
       "value": "Aigis Main Page"
     },
     {
+      "name": "ItemEditPage_title",
+      "value": "Edit Item"
+    },
+    {
       "name": "EntryFormAbility_desc",
-      "value": "form_description"
+      "value": "Aigis Entry Form"
     },
     {
       "name": "EntryFormAbility_label",
       "value": "Aigis Card"
     },
     {
-      "name": "ItemEditPage_title",
-      "value": "Edit Item"
+      "name": "AigisWidget_desc",
+      "value": "Aigis Entry Card"
+    },
+    {
+      "name": "AigisWidget_display_name",
+      "value": "Aigis Card"
+    },
+    {
+      "name": "entry_card_title",
+      "value": "Show Tokens"
     }
   ]
 }

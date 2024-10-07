@@ -19,6 +19,10 @@
     {
       "name": "color_face",
       "value": "#FFEDE1"
+    },
+    {
+      "name": "color_face_back",
+      "value": "#030200"
     }
   ]
 }
