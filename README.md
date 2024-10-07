@@ -1,8 +1,12 @@
 # Aigis
 
 A lite alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
-- [x] Entry Card Design
+
+<img height="500px" src="./docs/images/demo.png" />
+
 ### TODO
+
+- [x] Entry Card Design
 
 **Release v0.2.0**:
 - [ ] Access Control with Authentication
