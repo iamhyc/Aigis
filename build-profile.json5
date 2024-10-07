@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.cer",
-          "storePassword": "0000001AEDAC622276B54116D118E139CC084DBE8046B2A2E80C98FAA2A394A082D7138A7F175199FE46",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001A9A95BE2E2EE21DCD5ED8E1A15C98DFDA9C34B3A2BA6FDE5308F0CB6F2204105C43282487C5ED",
-          "profile": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p7b",
+          "storePassword": "00000020FA9BC27D1F3898C6275BE098273DFA5B8F436CB3B9E53D800944F53D4006C1B54F507637B6C366B1413031AD",
+          "certpath": "C:/Users/xyzsu/.harmony/keystore/aigis_release.cer",
+          "keyAlias": "release",
+          "keyPassword": "00000020EB5111A31031A1348DF18BF19A8AF67D08CC123A553F94D85A779C2516DEA270F01B45D6FC7CF0D92CFB1769",
+          "profile": "C:/Users/xyzsu/.harmony/keystore/Aigis Pre-Release TestRelease.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p12"
+          "storeFile": "C:/Users/xyzsu/.harmony/keystore/release.p12"
         }
       }
     ],

@@ -1,20 +1,17 @@
 # Aigis
 
-A lite alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
-
-<img height="500px" src="./docs/images/demo.png" />
+A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 
 ### TODO
 
-- [x] Entry Card Design
-
 **Release v0.2.0**:
-- [ ] Access Control with Authentication
-- [ ] HUKS for MAC Key storage (cannot export)
+- [ ] Item Sort / Filter / Removal
+- [ ] Item Edit Page
+- [ ] Custom Icon
 
 **Release v0.3.0**:
-- [ ] Item Sort / Filter / Removal
-- [ ] Custom Icon
+- [ ] Access Control with Authentication
+- [ ] HUKS for MAC Key storage (cannot export)
 - [ ] Settings Page Design
 - [ ] Bulky Export & Import
 
