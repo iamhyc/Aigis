@@ -31,6 +31,10 @@
     {
       "name": "entry_card_title",
       "value": "查看令牌"
+    },
+    {
+      "name": "entry_card_title_split",
+      "value": "查看\n令牌"
     }
   ]
 }

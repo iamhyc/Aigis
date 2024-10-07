@@ -31,6 +31,10 @@
     {
       "name": "entry_card_title",
       "value": "Show Tokens"
+    },
+    {
+      "name": "entry_card_title_split",
+      "value": "Show\nTokens"
     }
   ]
 }
