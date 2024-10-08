@@ -5,15 +5,33 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 ### TODO
 
 **Release v0.2.0**:
-- [ ] Item Sort / Filter / Removal
+- [ ] Item List Search by filter
+- [ ] Item Drag to Sort
+- [ ] Item Swipe Action: Edit / Removal
 - [ ] Item Edit Page
-- [ ] Custom Icon
+  - (Scan) --> [Item Edit Page] --> Persist
+- [ ] Better Icon Match
+- [ ] Access Control with Authentication
+  - Auto-lock when in background
 
 **Release v0.3.0**:
-- [ ] Access Control with Authentication
-- [ ] HUKS for MAC Key storage (cannot export)
 - [ ] Settings Page Design
-- [ ] Bulky Export & Import
+  - Disable Account Name Display / Only Show with duplicate issuers
+  - Code Split Digits Option (2/3/4/'Even'/'None')
+  - Set Password
+  - Password Challenge Notification Period
+- [ ] Password to master key via PBKDF2
+  - master key stored in HUKS for AES *encrypt & examine* purpose only
+  - so, cannot change password, or the secrets cannot export any more
+- [ ] HUKS for MAC Key storage (cannot export)
+  - `SecretStore` only used for export, cause no *decrypt* purpose function provided
+- [ ] Bulky Export Support (in Aegis format)
+- [ ] Bulky Import Support (Aegis only, Encrypted only)
+  - support import password (master key) at the same time
+
+**Release v0.5.0**:
+- [ ] Allow to change password
+- [ ] Password Challenge Design
 
 ### References
 
