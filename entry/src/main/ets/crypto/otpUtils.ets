@@ -127,8 +127,6 @@ export abstract class OTP {
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
 
         const keyData = b32decode(this._schema.secret!);
-        console.log(`${keyData}`)
-        // const keyData = new Uint8Array(buffer.from(this._schema.secret, 'utf-8').buffer);
         const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
 
         const mac = cryptoFramework.createMac(this._schema.algorithm);
@@ -226,7 +224,6 @@ export class TOTP extends OTP {
         //
         const hash = await this.generateHash(realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
-        console.log( `${Date.now()}, ${hash.toString()}, ${otp} (${this.otpToString(otp)})` );
         return this.otpToString(otp);
     }
 }
