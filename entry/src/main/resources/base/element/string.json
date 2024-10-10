@@ -17,6 +17,10 @@
       "value": "$string:app_name"
     },
     {
+      "name": "search_hint",
+      "value": "Search"
+    },
+    {
       "name": "ItemEditPage_title",
       "value": "Edit Item"
     },

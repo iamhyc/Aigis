@@ -4,7 +4,7 @@ import { mediaquery } from '@kit.ArkUI';
 @Component
 struct AigisWidgetCard {
     @State isSmall: boolean = true;
-    listener: mediaquery.MediaQueryListener = mediaquery.matchMediaSync('screen and (height <= 300vp)');
+    listener: mediaquery.MediaQueryListener = mediaquery.matchMediaSync('screen and (height <= 100vp)');
 
     aboutToAppear(): void {
         this.listener.on('change', (mediaQueryResult: mediaquery.MediaQueryResult) => {

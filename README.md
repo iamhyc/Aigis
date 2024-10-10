@@ -5,8 +5,8 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 ### TODO
 
 **Release v0.2.0**:
-- [ ] Item List Search by filter
-- [ ] Item Drag to Sort
+- [x] Item List Item Filter
+- [ ] Item Drag to Sort / Sort by Alphabet
 - [ ] Item Swipe Action: Edit / Removal
 - [ ] Item Edit Page
   - (Scan) --> [Item Edit Page] --> Persist

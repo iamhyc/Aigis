@@ -28,8 +28,13 @@
             ],
             "actions": [
               "action.system.home"
+            ],
+            "uris": [
+              {
+                "scheme": "otpauth",
+              },
             ]
-          }
+          },
         ]
       }
     ],

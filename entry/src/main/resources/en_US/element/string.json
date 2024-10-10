@@ -9,6 +9,10 @@
       "value": "Aigis Main Page"
     },
     {
+      "name": "search_hint",
+      "value": "Search"
+    },
+    {
       "name": "ItemEditPage_title",
       "value": "Edit Item"
     },

@@ -9,6 +9,10 @@
       "value": "Aigis 主界面"
     },
     {
+      "name": "search_hint",
+      "value": "搜索"
+    },
+    {
       "name": "ItemEditPage_title",
       "value": "编辑条目"
     },

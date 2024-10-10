@@ -1,11 +1,14 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { name2keyAlias, shallowCopy, splitOnce } from '../common/utils';
+import { shallowCopy, splitOnce } from '../common/utils';
+import { name2keyAlias } from '../common/schema';
+
+type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
 
 type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
 
 export interface OTPSchema {
-    type: string,
+    type: OtpSchemaSupport,
     name: string,
     issuer: string,
     secret?: string,
@@ -32,19 +35,26 @@ export interface TOTPSchema extends OTPSchema,TimedOTPSchema {
     algorithm: AlgorithmModern,
 }
 
-interface MOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
-    type: 'motp',
-    algorithm: 'MD5',
-    period: 10,
-    digits: 6,
+export interface SteamSchema extends OTPSchema,TimedOTPSchema {
+    type: 'steam',
+    algorithm: 'SHA1',
+    period: 30,
+    digits: 5,
 }
 
-interface YAOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
-    type: 'yandex',
-    algorithm: 'SHA256',
-    period: 30,
-    digits: 8,
-}
+// interface MOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
+//     type: 'motp',
+//     algorithm: 'MD5',
+//     period: 10,
+//     digits: 6,
+// }
+//
+// interface YAOTPSchema extends OTPSchema,TimedOTPSchema,PinedOTPSchema {
+//     type: 'yandex',
+//     algorithm: 'SHA256',
+//     period: 30,
+//     digits: 8,
+// }
 
 // http://tools.ietf.org/html/rfc4226#section-5.4
 function rfc4226Sec5_4Impl(hash: Uint8Array): number {
@@ -107,6 +117,33 @@ export abstract class OTP {
 
     constructor(schema: OTPSchema) {
         this._schema = schema;
+    }
+
+    static fromArguments(args: Map<string,string>): OTP {
+        const _type = args.get('type') as OtpSchemaSupport;
+        switch (_type) {
+            case 'hotp':
+                return HOTP.fromArguments(args);
+            case 'totp':
+                return TOTP.fromArguments(args);
+            case 'steam':
+                return SteamOTP.fromArguments(args);
+            default:
+                throw Error(`Unsupported OTP Type "${_type}".`);;
+        }
+    }
+
+    static fromSchema(schema: OTPSchema): OTP {
+        switch (schema.type) {
+            case 'hotp':
+                return new HOTP(schema as HOTPSchema);
+            case 'totp':
+                return new TOTP(schema as TOTPSchema);
+            case 'steam':
+                return new SteamOTP(schema as SteamSchema);
+            default:
+                throw Error(`Unsupported OTP Type ${schema.type}.`);
+        }
     }
 
     abstract get uri(): string;
@@ -225,5 +262,53 @@ export class TOTP extends OTP {
         const hash = await this.generateHash(realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToString(otp);
+    }
+}
+
+export class SteamOTP extends OTP {
+    private STEAM_ALPHABET: string = "23456789BCDFGHJKMNPQRTVWXY";
+
+    constructor(steamSchema: SteamSchema) {
+        super(steamSchema);
+    }
+
+    static fromURI(uri: string): SteamOTP {
+        const args = parseURI(uri);
+        return SteamOTP.fromArguments(args);
+    }
+
+    static fromArguments(args: Map<string,string>) {
+        const steamSchema: SteamSchema = {
+            type: 'steam', algorithm: 'SHA1', period: 30, digits: 5,
+            issuer: args.get('issuer') || 'Steam',
+            name: args.get('name') || '',
+            secret: args.get('secret') || '',
+            counter: 0,
+        };
+        return new SteamOTP(steamSchema);
+    }
+
+    get uri(): string {
+        const s = this._schema as SteamSchema;
+        return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
+    }
+
+    async generateOTP(): Promise<string> {
+        const period = (this._schema as TOTPSchema).period;
+        const realCounter = Math.floor(Date.now() / 1000 / period);
+        //
+        const hash = await this.generateHash(realCounter);
+        const otp = rfc4226Sec5_4Impl(hash);
+        return this.otpToSteamString(otp);
+    }
+
+    private otpToSteamString(otp: number): string {
+        let res: string = '';
+        for (let i=0; i < this._schema.digits; i++) {
+            const _index = otp & this.STEAM_ALPHABET.length;
+            res += this.STEAM_ALPHABET[_index];
+            otp /= this.STEAM_ALPHABET.length;
+        }
+        return res;
     }
 }

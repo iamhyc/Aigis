@@ -5,11 +5,24 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storePassword": "00000020FA9BC27D1F3898C6275BE098273DFA5B8F436CB3B9E53D800944F53D4006C1B54F507637B6C366B1413031AD",
-          "certpath": "C:/Users/xyzsu/.harmony/keystore/aigis_release.cer",
+          "certpath": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.cer",
+          "storePassword": "0000001B553AE8B56F1E0756978D6453D0A0F25D160187D2F5F0F768B813CB669C056F091FB06A967FB4E5",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B278B91784478536382C954EE9E6B2935DA5B805605FBEC04FC309300BFE9DCF423F74C0621D00E",
+          "profile": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\xyzsu\\.ohos\\config\\default_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p12"
+        }
+      },
+      {
+        "name": "release",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:/Users/xyzsu/.harmony/keystore/aigis/aigis_release.cer",
+          "storePassword": "000000203B68FBC1AA3E7787B54F3B21DF105EFB229ADCB3B42CBFBB377ACCCB52FFAECA56C00D0EB3321E2522C90E69",
           "keyAlias": "release",
-          "keyPassword": "00000020EB5111A31031A1348DF18BF19A8AF67D08CC123A553F94D85A779C2516DEA270F01B45D6FC7CF0D92CFB1769",
-          "profile": "C:/Users/xyzsu/.harmony/keystore/Aigis Pre-Release TestRelease.p7b",
+          "keyPassword": "0000002084D9AAE474CD4FBE1A8A3039E5D1FE31880FF4156C9327775653893FE0AC146C9F348EEE430E99484236C26F",
+          "profile": "C:/Users/xyzsu/.harmony/keystore/aigis/Aigis Pre-Release TestRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:/Users/xyzsu/.harmony/keystore/release.p12"
         }
@@ -20,6 +33,18 @@
         "name": "default",
         "signingConfig": "default",
         "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "release",
+        "signingConfig": "release",
+        "compatibleSdkVersion": "5.0.0(12",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {

@@ -3,7 +3,7 @@ import { preferences } from '@kit.ArkData';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { HOTP, HOTPSchema, OTP, OTPSchema, parseURI, TOTP, TOTPSchema } from '../crypto/otpUtils'
+import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     EVENT_UPDATE_ITEM,
     UpdateRequestSchema} from '../common/schema'
@@ -44,16 +44,7 @@ class PreferencesManager {
 
             let schema_tmp = shallowCopy(schema) as OTPSchema;
             schema_tmp.secret = secret;
-            switch (schema_tmp.type) {
-                case 'hotp':
-                    otp = new HOTP(schema_tmp as HOTPSchema);
-                    break;
-                case 'totp':
-                    otp = new TOTP(schema_tmp as TOTPSchema);
-                    break;
-                default:
-                    throw Error(`Unsupported ${schema_tmp.type}.`);
-            }
+            otp = OTP.fromSchema(schema_tmp);
         }
         return otp;
     }
@@ -74,34 +65,21 @@ class PreferencesManager {
 
     updatePreferenceItem(uri: string) {
         const args = parseURI(uri);
+        const otp = OTP.fromArguments(args);
         const secret = args.get('secret')!;
 
-        let otp: OTP | void;
-        switch (args.get('type')) {
-            case 'hotp':
-                otp = HOTP.fromArguments(args);
-                break;
-            case 'totp':
-                otp = TOTP.fromArguments(args);
-                break;
-            default:
-                break;
-        }
+        const oldItem = this._items.find(x => (otp as OTP).keyAlias===x.keyAlias);
+        const oldSecret = this._secrets.find(x => (otp as OTP).keyAlias===x.keyAlias);
 
-        if (typeof otp !== undefined) {
-            const oldItem = this._items.find(x => (otp as OTP).keyAlias===x.keyAlias);
-            const oldSecret = this._secrets.find(x => (otp as OTP).keyAlias===x.keyAlias);
-
-            if (oldItem!==undefined && oldSecret!==undefined) {
-                oldItem.schema = (otp as OTP).schema;
-                oldSecret.secret = secret;
-                // update new instances
-                const keyAlias = oldItem.keyAlias;
-                this._instances.delete(keyAlias);
-                this.requestCodeUpdate(keyAlias);
-            } else {
-                this.appendPreferenceItem(otp as OTP, secret);
-            }
+        if (oldItem!==undefined && oldSecret!==undefined) {
+            oldItem.schema = (otp as OTP).schema;
+            oldSecret.secret = secret;
+            // update new instances
+            const keyAlias = oldItem.keyAlias;
+            this._instances.delete(keyAlias);
+            this.requestCodeUpdate(keyAlias);
+        } else {
+            this.appendPreferenceItem(otp as OTP, secret);
         }
     }
 
