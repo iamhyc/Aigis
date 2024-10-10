@@ -6,7 +6,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     EVENT_UPDATE_ITEM,
-    UpdateRequestSchema} from '../common/schema'
+    UpdateRequestSchema,
+    EVENT_PERSIST_REQUEST} from '../common/schema'
 import { shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
@@ -130,7 +131,7 @@ export default class EntryAbility extends UIAbility {
                   this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
                   this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
                 );
-                this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                this.localStorage.setAndLink(PREF_KEY_ITEMS, this.instPreferences.items);
 
                 // register event handler
                 this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
@@ -149,6 +150,11 @@ export default class EntryAbility extends UIAbility {
                         this.instPreferences.persists(this.dataPreferences!);
                         // propagate updated items
                         this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                    }
+                });
+                this.context.eventHub.on(EVENT_PERSIST_REQUEST, () => {
+                    if (this.instPreferences) {
+                        this.instPreferences.persists(this.dataPreferences!);
                     }
                 });
 

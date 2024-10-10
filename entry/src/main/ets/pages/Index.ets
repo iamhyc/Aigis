@@ -16,7 +16,7 @@ const storage = LocalStorage.getShared();
 @Entry(storage)
 @Component
 struct Index {
-    @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
+    @LocalStorageLink(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
 
     build() {
         RelativeContainer() {
@@ -45,7 +45,7 @@ struct Index {
 
 @Component
 struct OTPList {
-    @Require @Prop items: OTPItemInfo[];
+    @Link items: OTPItemInfo[];
     @State selected: string = '';
     @State filterText: string = '';
     @State filterItemVisibility: Visibility = Visibility.None;
@@ -61,13 +61,14 @@ struct OTPList {
 
     private onTopBound(offset: Offset) {
         const _height = this.searchInputHeight + this.searchInputTopMargin;
-        if (px2vp(offset.y)>=_height/2 && this.hasHiddenItems) {
+        if (px2vp(offset.y)>_height/2 && this.hasHiddenItems) {
             this.filterItemVisibility = Visibility.Visible;
         }
     }
 
     private onTopBoundRelease(offset: Offset) {
-        if (this.filterItemVisibility===Visibility.Visible) {
+        const _height = this.searchInputHeight + this.searchInputTopMargin;
+        if (px2vp(offset.y)>_height/2 && this.filterItemVisibility===Visibility.Visible) {
             this.getUIContext().getFocusController().requestFocus('search_input');
         }
     }
@@ -88,16 +89,14 @@ struct OTPList {
             //
             ForEach(this.items,
                 (item: OTPItemInfo) => {
-                    ListItem() {
-                        OTPItem({
-                            icon: item.icon,
-                            code: item.code,
-                            schema: item.schema,
-                            keyAlias: item.keyAlias,
-                            selected: this.selected,
-                            filterText: this.filterText,
-                        })
-                    }
+                    OTPItem({
+                        icon: item.icon,
+                        code: item.code,
+                        schema: item.schema,
+                        keyAlias: item.keyAlias,
+                        selected: this.selected,
+                        filterText: this.filterText,
+                    })
                 },
                 (item: OTPItemInfo) => {
                     return item.keyAlias+'_'+item.code.code+'_'+item.icon;
@@ -108,6 +107,7 @@ struct OTPList {
         .height('100%')
         .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
         .alignListItem(ListItemAlign.Center)
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         .onTouch(ev => { this.scrollExtension.onTouch(ev); })
         .onScrollVisibleContentChange(() => { this.hasHiddenItems=true; })
         .onScrollIndex((start, end) => {
@@ -122,6 +122,9 @@ struct OTPList {
                 }
             }
         })
+        .onItemDragStart((info, index) => {
+            console.log(`${info}, ${index}`);
+        });
     }
 }
 
@@ -137,69 +140,91 @@ struct OTPItem {
     @State isVisible: Visibility = Visibility.Visible;
 
     build() {
-        Stack({ alignContent: Alignment.Bottom }) {
-            // Main Content
-            Row({ space: '16vp' }) {
-                // display issuer icon
-                Image($rawfile(this.icon))
-                    .margin({left: $r('app.float.visual_space')})
-                    .borderRadius($r('app.float.issuer_icon_radius'))
-                    .height($r('app.float.issuer_icon_size'))
-                    .width($r('app.float.issuer_icon_size'))
-                    .alt(this.schema.issuer)
-                // display information area
-                Column({ space: '4vp' }) {
-                    Text() {
-                        Span(this.schema.issuer)
-                            .fontSize($r('sys.float.Subtitle_S'))
-                            .fontWeight(FontWeight.Bold)
-                            .fontColor($r('sys.color.font_primary'))
-                        Span(` (${this.schema.name})`)
-                            .fontSize($r('sys.float.Subtitle_S'))
-                            .fontWeight(FontWeight.Normal)
-                            .fontColor($r('sys.color.font_secondary'))
-                    }
+        ListItem() {
+            Stack({ alignContent: Alignment.Bottom }) {
+                // Main Content
+                Row({ space: '16vp' }) {
+                    // display issuer icon
+                    Image($rawfile(this.icon))
+                        .margin({left: $r('app.float.visual_space')})
+                        .borderRadius($r('app.float.issuer_icon_radius'))
+                        .height($r('app.float.issuer_icon_size'))
+                        .width($r('app.float.issuer_icon_size'))
+                        .alt(this.schema.issuer)
+                    // display information area
+                    Column({ space: '4vp' }) {
+                        Text() {
+                            Span(this.schema.issuer)
+                                .fontSize($r('sys.float.Subtitle_S'))
+                                .fontWeight(FontWeight.Bold)
+                                .fontColor($r('sys.color.font_primary'))
+                            Span(` (${this.schema.name})`)
+                                .fontSize($r('sys.float.Subtitle_S'))
+                                .fontWeight(FontWeight.Normal)
+                                .fontColor($r('sys.color.font_secondary'))
+                        }
 
-                    if (this.selected!==this.keyAlias) {
-                        Text(this.hiddenDigits())
-                            .fontWeight(FontWeight.Medium)
-                            .fontSize($r('sys.float.Subtitle_L'))
-                            .letterSpacing(5)
-                    } else {
-                        Text(this.splitDigits())
-                            .fontSize(26)
+                        if (this.selected!==this.keyAlias) {
+                            Text(this.hiddenDigits())
+                                .fontWeight(FontWeight.Medium)
+                                .fontSize($r('sys.float.Subtitle_L'))
+                                .letterSpacing(5)
+                        } else {
+                            Text(this.splitDigits())
+                                .fontSize(26)
+                        }
                     }
+                    .alignItems(HorizontalAlign.Start)
                 }
-                .alignItems(HorizontalAlign.Start)
+                .align(Alignment.Top)
+                .height('100%')
+                .width('100%')
+                .zIndex(1)
+                // show progress bar for time-based OTP
+                if (this.selected===this.keyAlias && (this.schema as TimedOTPSchema).period) {
+                    Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
+                        .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
+                        .color($r('app.color.color_ribbon'))
+                        .height('2vp')
+                        .width('100%')
+                        .zIndex((2))
+                        .style({enableSmoothEffect:true})
+                }
+                // divider bar at the end
+                Divider().strokeWidth('1px').zIndex(2)
             }
-            .align(Alignment.Top)
-            .height('100%')
+            .height('64vp')
             .width('100%')
-            .zIndex(1)
-            // show progress bar for time-based OTP
-            if (this.selected===this.keyAlias && (this.schema as TimedOTPSchema).period) {
-                Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
-                    .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
-                    .color($r('app.color.color_ribbon'))
-                    .height('2vp')
-                    .width('100%')
-                    .zIndex((2))
-                    .style({enableSmoothEffect:true})
-            }
-            // divider bar at the end
-            Divider().strokeWidth('1px').zIndex(2)
+            .visibility(this.isVisible)
+            .onClick(ev => {
+                if (this.selected===this.keyAlias) {
+                    this.selected = '';
+                } else {
+                    this.requestCodeUpdate();
+                    this.selected = this.keyAlias;
+                }
+            })
         }
-        .height('64vp')
-        .width('100%')
-        .visibility(this.isVisible)
-        .onClick(ev => {
-            if (this.selected===this.keyAlias) {
-                this.selected = '';
-            } else {
-                this.requestCodeUpdate();
-                this.selected = this.keyAlias;
+        .swipeAction({
+            end: {
+                builder: () => { this.itemEnd() },
             }
-        });
+        })
+    }
+
+    @Builder itemEnd() {
+        Row() {
+            Button({ type: ButtonType.Circle }) {
+                Image($r('sys.media.ohos_ic_public_remove_filled'))
+                    .height(20)
+                    .width(20)
+            }
+            .onClick(() => {
+                console.log('clicked.')
+            })
+        }
+        .height('100%')
+        .backgroundColor($r('app.color.color_face_back'))
     }
 
     private onFilterTextChanged() {

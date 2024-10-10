@@ -27,6 +27,15 @@ export interface UpdateResponseSchema {
     message?: string,
 }
 
+export const EVENT_PERSIST_REQUEST: string = 'persist-request';
+export interface PersistRequestSchema {
+
+}
+export interface PersistResponseSchema {
+    success: boolean,
+    message?: string,
+}
+
 export interface OTPItemInfo {
     keyAlias: string,
     icon: string,
