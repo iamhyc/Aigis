@@ -1,12 +1,21 @@
 # Aigis
 
+> [!NOTE]
+> 应用备案中，即将上架
+
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
+
+<p float="left">
+  <img height="500px" alt="screenshot_light" src="./docs/images/screenshot_light.jpg" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img height="500px" alt="screenshot_dark" src="./docs/images/screenshot_dark.jpg" />
+</p>
 
 ### TODO
 
 **Release v0.2.0**:
-- [x] Item List Item Filter
-- [ ] Item Drag to Sort / Sort by Alphabet
+- ~~Item Drag to Sort / Sort by Alphabet~~
+- [x] List Item Filter
 - [ ] Item Swipe Action: Edit / Removal
 - [ ] Item Edit Page
   - (Scan) --> [Item Edit Page] --> Persist
