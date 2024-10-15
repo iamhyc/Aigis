@@ -1,4 +1,5 @@
 import { OTPSchema } from "../crypto/otpUtils";
+import { fuzzysearch } from "./utils";
 
 interface IssuerName {
     issuer: string,
@@ -10,7 +11,7 @@ export function name2keyAlias(props: IssuerName): string {
 }
 
 export function iconMatcher(issuer: string): string {
-    return `issuer-icons/SVG/${issuer.toLowerCase()}.svg`;
+    return `icons/issuers/${issuer.toLowerCase()}.svg`;
 }
 
 export const EVENT_CODE_REQUEST: string = 'code-request';
