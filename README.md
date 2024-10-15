@@ -13,13 +13,6 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 
 ### TODO
 
-**Release v0.2.0**:
-- [x] List Item Filter
-- [x] Item Swipe Action: Move-to-Top / Edit
-- [x] Item Edit Page
-  - (Scan) --> [Item Edit Page] --> Persist
-- [ ] Better Icon Match
-
 **Release v0.3.0**:
 - [ ] Settings Page Design
   - Disable Account Name Display / Only Show with duplicate issuers
@@ -40,6 +33,7 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 **Release v0.5.0**:
 - [ ] Allow to change password
 - [ ] Password Challenge Design
+- [ ] Better Icon Match
 
 **Release v1.0.0**
 - [ ] All test pass
