@@ -17,13 +17,100 @@
       "value": "$string:app_name"
     },
     {
+      "name": "empty_prompt_title",
+      "value": "No entries found"
+    },
+    {
+      "name": "empty_prompt_desc",
+      "value": "There are no code to be shown. Start adding entries by tapping the icon in the bottom right corner."
+    },
+    {
       "name": "search_hint",
       "value": "Search"
     },
+
+    {
+      "name": "delete_title",
+      "value": "⚠ Delete Entry"
+    },
+    {
+      "name": "delete_hint",
+      "value": "Are you sure to delete this entry?\nThis action does not disable 2FA for\n\n%s\n\nTo prevent losing access, make sure that you have disabled 2FA or that you have an alternative way to generate codes for this service."
+    },
+    {
+      "name": "button_text_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "button_text_ok",
+      "value": "OK"
+    },
+    {
+      "name": "button_text_save",
+      "value": "Save"
+    },
+    {
+      "name": "button_text_delete",
+      "value": "Delete"
+    },
+
     {
       "name": "ItemEditPage_title",
       "value": "Edit Item"
     },
+    {
+      "name": "edit_label_issuer",
+      "value": "Issuer"
+    },
+    {
+      "name": "edit_label_name",
+      "value": "Name"
+    },
+    {
+      "name": "edit_label_group",
+      "value": "Group"
+    },
+    {
+      "name": "edit_label_note",
+      "value": "Note"
+    },
+    {
+      "name": "edit_label_secret",
+      "value": "Secret"
+    },
+    {
+      "name": "edit_label_type",
+      "value": "Type"
+    },
+    {
+      "name": "edit_label_hash_function",
+      "value": "Hash Function"
+    },
+    {
+      "name": "edit_label_period",
+      "value": "Period (seconds)"
+    },
+    {
+      "name": "edit_label_counter",
+      "value": "Counter"
+    },
+    {
+      "name": "edit_label_digits",
+      "value": "Digits"
+    },
+    {
+      "name": "edit_label_usage_count",
+      "value": "Usage Count"
+    },
+    {
+      "name": "error_required_missing",
+      "value": "Required field is missing"
+    },
+    {
+      "name": "error_required_missing_check",
+      "value": "Please check the required fields"
+    },
+
     {
       "name": "EntryFormAbility_desc",
       "value": "Aigis Entry Form"

@@ -14,14 +14,11 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 ### TODO
 
 **Release v0.2.0**:
-- ~~Item Drag to Sort / Sort by Alphabet~~
 - [x] List Item Filter
-- [ ] Item Swipe Action: Edit / Removal
-- [ ] Item Edit Page
+- [x] Item Swipe Action: Move-to-Top / Edit
+- [x] Item Edit Page
   - (Scan) --> [Item Edit Page] --> Persist
 - [ ] Better Icon Match
-- [ ] Access Control with Authentication
-  - Auto-lock when in background
 
 **Release v0.3.0**:
 - [ ] Settings Page Design
@@ -29,6 +26,8 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   - Code Split Digits Option (2/3/4/'Even'/'None')
   - Set Password
   - Password Challenge Notification Period
+- [ ] Access Control with Authentication
+  - Auto-lock when in background
 - [ ] Password to master key via PBKDF2
   - master key stored in HUKS for AES *encrypt & examine* purpose only
   - so, cannot change password, or the secrets cannot export any more
@@ -41,6 +40,9 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 **Release v0.5.0**:
 - [ ] Allow to change password
 - [ ] Password Challenge Design
+
+**Release v1.0.0**
+- [ ] All test pass
 
 ### References
 

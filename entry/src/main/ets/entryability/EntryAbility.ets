@@ -6,8 +6,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     EVENT_UPDATE_ITEM,
-    UpdateRequestSchema} from '../common/schema'
-import { shallowCopy } from '../common/utils';
+    UpdateRequestSchema,
+    EVENT_REMOVE_ITEM,
+    RemovalRequestSchema,
+    EVENT_MOVE_TO_TOP,
+    MoveToTopRequestSchema,
+    iconMatcher} from '../common/schema'
+import { arrayRearrange, shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 
@@ -41,7 +46,7 @@ class PreferencesManager {
             if (schema===undefined) {
                 throw Error(`"${keyAlias}" not found in local manager.`);
             }
-
+            //
             let schema_tmp = shallowCopy(schema) as OTPSchema;
             schema_tmp.secret = secret;
             otp = OTP.fromSchema(schema_tmp);
@@ -63,23 +68,27 @@ class PreferencesManager {
         }
     }
 
-    updatePreferenceItem(uri: string) {
+    updatePreferenceItem(uri: string, oldKeyAlias?: string) {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
-        const secret = args.get('secret')!;
+        const secret = args.get('secret');
 
-        const oldItem = this._items.find(x => (otp as OTP).keyAlias===x.keyAlias);
-        const oldSecret = this._secrets.find(x => (otp as OTP).keyAlias===x.keyAlias);
+        const keyAlias = oldKeyAlias ?? (otp as OTP).keyAlias;
+        const oldItem = this._items.find(x => keyAlias===x.keyAlias);
+        const oldSecret = this._secrets.find(x => keyAlias===x.keyAlias);
 
-        if (oldItem!==undefined && oldSecret!==undefined) {
-            oldItem.schema = (otp as OTP).schema;
-            oldSecret.secret = secret;
+        if (oldItem!==undefined) {
+            oldItem.keyAlias = keyAlias;
+            oldItem.icon = iconMatcher(otp.schema.issuer);
+            //
+            oldItem.schema = otp.schema;
+            if (secret && oldSecret) { oldSecret.secret = secret; }
             // update new instances
-            const keyAlias = oldItem.keyAlias;
-            this._instances.delete(keyAlias);
+            const oldKeyAlias = oldItem.keyAlias;
+            this._instances.delete(oldKeyAlias);
             this.requestCodeUpdate(keyAlias);
         } else {
-            this.appendPreferenceItem(otp as OTP, secret);
+            this.appendPreferenceItem(otp, secret!);
         }
     }
 
@@ -88,13 +97,33 @@ class PreferencesManager {
         const schema = otp.schema;
 
         // find issuer icon
-        const issuerKey = otp.schema.issuer.toLowerCase();
-        const icon = `issuer-icons/SVG/${issuerKey}.svg`;
-
+        const icon = iconMatcher(otp.schema.issuer);
         const code: CodeResponseSchema = {timestamp:0, code:'000000'};
         this._items.push({keyAlias, icon, code, schema});
         this._secrets.push({keyAlias, secret});
         this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
+    }
+
+    removePreferenceItem(keyAlias: string) {
+        //
+        const itemIndex = this._items.findIndex(x => x.keyAlias===keyAlias);
+        this._items.splice(itemIndex, 1);
+        //
+        const secretIndex = this._secrets.findIndex(x => x.keyAlias===keyAlias);
+        this._secrets.splice(secretIndex, 1);
+        //
+        this._instances.delete(keyAlias);
+    }
+
+    insertPreferenceItem(keyAlias1: string, keyAlias2?: string) {
+        //
+        const keyItem1 = this._items.findIndex(x => x.keyAlias===keyAlias1);
+        const keyItem2 = keyAlias2 ? this._items.findIndex(x => x.keyAlias===keyAlias2) : 0;
+        arrayRearrange(this._items, keyItem1, keyItem2);
+        //
+        const keySecret1 = this._items.findIndex(x => x.keyAlias===keyAlias1);
+        const keySecret2 = keyAlias2 ? this._items.findIndex(x => x.keyAlias===keyAlias2) : 0;
+        arrayRearrange(this._secrets, keySecret1, keySecret2);
     }
 
     persists(dataPreferences: preferences.Preferences) {
@@ -144,7 +173,27 @@ export default class EntryAbility extends UIAbility {
                 this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
                     if (this.instPreferences) {
                         // update local preferences
-                        this.instPreferences.updatePreferenceItem(data.uri);
+                        this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
+                        // update persist preferences
+                        this.instPreferences.persists(this.dataPreferences!);
+                        // propagate updated items
+                        this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                    }
+                });
+                this.context.eventHub.on(EVENT_MOVE_TO_TOP, (data: MoveToTopRequestSchema) => {
+                   if (this.instPreferences) {
+                       // swap in local preferences
+                       this.instPreferences.insertPreferenceItem(data.keyAlias);
+                       // update persist preferences
+                       this.instPreferences.persists(this.dataPreferences!);
+                       // propagate updated items
+                       this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                   }
+                });
+                this.context.eventHub.on(EVENT_REMOVE_ITEM, (data: RemovalRequestSchema) => {
+                    if (this.instPreferences) {
+                        // removal in local preferences
+                        this.instPreferences.removePreferenceItem(data.keyAlias);
                         // update persist preferences
                         this.instPreferences.persists(this.dataPreferences!);
                         // propagate updated items

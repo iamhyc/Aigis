@@ -9,13 +9,100 @@
       "value": "Aigis 主界面"
     },
     {
+      "name": "empty_prompt_title",
+      "value": "未找到条目"
+    },
+    {
+      "name": "empty_prompt_desc",
+      "value": "没有可显示的令牌。点击右下角的图标，开始添加条目。"
+    },
+    {
       "name": "search_hint",
       "value": "搜索"
     },
+
+    {
+      "name": "delete_title",
+      "value": "⚠ 删除条目"
+    },
+    {
+      "name": "delete_hint",
+      "value": "您确定要删除此条目吗？\n此操作不会为下列服务禁用 2FA ：\n\n%s\n\n为防止失去访问权限，请确保您已禁用 2FA 或者您有其他方式为此服务生成令牌"
+    },
+    {
+      "name": "button_text_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "button_text_ok",
+      "value": "确定"
+    },
+    {
+      "name": "button_text_save",
+      "value": "保存"
+    },
+    {
+      "name": "button_text_delete",
+      "value": "删除"
+    },
+
     {
       "name": "ItemEditPage_title",
       "value": "编辑条目"
     },
+    {
+      "name": "edit_label_issuer",
+      "value": "服务商"
+    },
+    {
+      "name": "edit_label_name",
+      "value": "名称"
+    },
+    {
+      "name": "edit_label_group",
+      "value": "分组"
+    },
+    {
+      "name": "edit_label_note",
+      "value": "备注"
+    },
+    {
+      "name": "edit_label_secret",
+      "value": "密钥"
+    },
+    {
+      "name": "edit_label_type",
+      "value": "类型"
+    },
+    {
+      "name": "edit_label_hash_function",
+      "value": "哈希函数"
+    },
+    {
+      "name": "edit_label_period",
+      "value": "时间间隔（秒）"
+    },
+    {
+      "name": "edit_label_counter",
+      "value": "计数器"
+    },
+    {
+      "name": "edit_label_digits",
+      "value": "位数"
+    },
+    {
+      "name": "edit_label_usage_count",
+      "value": "使用计数"
+    },
+    {
+      "name": "error_required_missing",
+      "value": "必填字段"
+    },
+    {
+      "name": "error_required_missing_check",
+      "value": "请检查必填字段"
+    },
+
     {
       "name": "EntryFormAbility_desc",
       "value": "Aigis Entry Form"

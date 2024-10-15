@@ -49,3 +49,14 @@ export function fuzzysearch (needle: string, haystack: string) {
 	}
 	return true;
 }
+
+export function arrayRearrange<T>(array: T[], prevIndex: number, newIndex: number) {
+    const stepper = prevIndex<newIndex? +1 : -1;
+    while (prevIndex!=newIndex) {
+        let tmp = array[ prevIndex+stepper ]
+        array[ prevIndex+stepper ] = array[ prevIndex ]
+        array[ prevIndex ] = tmp;
+        //
+        prevIndex += stepper;
+    }
+}

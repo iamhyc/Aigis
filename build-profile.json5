@@ -44,7 +44,7 @@
       {
         "name": "release",
         "signingConfig": "release",
-        "compatibleSdkVersion": "5.0.0(12",
+        "compatibleSdkVersion": "5.0.0(12)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {

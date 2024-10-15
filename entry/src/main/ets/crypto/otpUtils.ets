@@ -2,10 +2,9 @@ import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { shallowCopy, splitOnce } from '../common/utils';
 import { name2keyAlias } from '../common/schema';
 
-type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
-
-type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
-type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
+export type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
+export type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
+export type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
 
 export interface OTPSchema {
     type: OtpSchemaSupport,
@@ -15,6 +14,8 @@ export interface OTPSchema {
     algorithm: AlgorithmSupport,
     digits: number,
     counter: number,
+    group?: string,
+    note?: string,
 }
 
 export interface TimedOTPSchema extends OTPSchema {
@@ -22,7 +23,7 @@ export interface TimedOTPSchema extends OTPSchema {
 }
 
 export interface PinedOTPSchema extends OTPSchema {
-    pid: string,
+    pin: string,
 }
 
 export interface HOTPSchema extends OTPSchema {
@@ -152,6 +153,11 @@ export abstract class OTP {
     get schema() {
         const _leak_schema = shallowCopy(this._schema) as OTPSchema;
         _leak_schema.secret = undefined;
+        return _leak_schema;
+    }
+
+    get secret_leaked_schema() {
+        const _leak_schema = shallowCopy(this._schema) as OTPSchema;
         return _leak_schema;
     }
 
