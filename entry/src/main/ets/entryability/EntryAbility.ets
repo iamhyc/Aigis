@@ -78,13 +78,13 @@ class PreferencesManager {
         const oldSecret = this._secrets.find(x => keyAlias===x.keyAlias);
 
         if (oldItem!==undefined) {
+            const oldKeyAlias = oldItem.keyAlias;
             oldItem.keyAlias = keyAlias;
             oldItem.icon = iconMatcher(otp.schema.issuer);
             //
             oldItem.schema = otp.schema;
             if (secret && oldSecret) { oldSecret.secret = secret; }
             // update new instances
-            const oldKeyAlias = oldItem.keyAlias;
             this._instances.delete(oldKeyAlias);
             this.requestCodeUpdate(keyAlias);
         } else {
