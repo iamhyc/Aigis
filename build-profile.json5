@@ -6,9 +6,9 @@
         "type": "HarmonyOS",
         "material": {
           "certpath": "C:/Users/xyzsu/.harmony/aigis/aigis_release.cer",
-          "storePassword": "000000203028AA97E1100E4E14CB8116AEEAE3C2F56B45CF77E59B73AC79BC782D902D0E5131BA82A2B39B535782BED4",
+          "storePassword": "000000202D4F201DD4D0C67C22044B5E9E1291F17369A5C5C95122355D8C76DDD94C536D6EFE8668E802A69BBD86271C",
           "keyAlias": "release",
-          "keyPassword": "000000200E294A27047A613B3B8AB589E80A08E3B3C6E221B3DDFC52F07B32C707FBA5A26260EFF59825D7950D5BE686",
+          "keyPassword": "00000020F121C3CD6854563459E9B769BA3667D79F9D5670F818D5A5E56E27A333ECB259D77ABD144EA4D721C7433B4A",
           "profile": "C:/Users/xyzsu/.harmony/aigis/aigis_releaseRelease.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:/Users/xyzsu/.harmony/aigis/aigis_release.p12"
@@ -19,9 +19,9 @@
         "type": "HarmonyOS",
         "material": {
           "certpath": "C:\\Users\\xyzsu\\.ohos\\config\\debug_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.cer",
-          "storePassword": "0000001A39F45A9FD259CA6A8A10D8767DDAFDCDD8492C6F2461BE2167F0B3FC7A0BCEDDB545EA163B9F",
+          "storePassword": "0000001A75C9BE4C4B81E3CD65BF043DFCFFE82A61E6EE5689CC31520D5314C2504B9379DC15E4883A23",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001A7E875696368803CC09E26F3D90D7330D4E34CC8F38DC9C47D1460FB292071A682FBF5379652A",
+          "keyPassword": "0000001AC5045B07065EF79E75DAF46F66A3FDD571A3B27E9D8F8410BFFFD3CA96797B3F283E0AE43D7F",
           "profile": "C:\\Users\\xyzsu\\.ohos\\config\\debug_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "C:\\Users\\xyzsu\\.ohos\\config\\debug_Aigis_RkjyYmGZQM-GcQkZzqEpeE4goBh7fgpZQozvi6r4MWA=.p12"
@@ -71,7 +71,8 @@
         {
           "name": "default",
           "applyToProducts": [
-            "default", "debug"
+            "default",
+            "debug"
           ]
         }
       ]

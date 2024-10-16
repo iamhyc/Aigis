@@ -6,9 +6,7 @@ import { PREF_KEY_ITEMS } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
 import { OTPItemInfo, EVENT_CODE_REQUEST, CodeRequestSchema,
     CodeResponseSchema,
-    EVENT_MOVE_TO_TOP,
-    EVENT_UPDATE_ITEM,
-    UpdateRequestSchema} from '../common/schema';
+    EVENT_MOVE_TO_TOP} from '../common/schema';
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
@@ -19,8 +17,11 @@ const storage = LocalStorage.getShared();
 @Entry(storage)
 @Component
 struct Index {
-    @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
+    @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @State selected: string = '';
+    @Provide editPageShow: boolean = false;
+    @Provide editKeyAlias: string = ''
+    @Provide editSchema: OTPSchema | undefined = undefined;
 
     build() {
         RelativeContainer() {
@@ -45,9 +46,25 @@ struct Index {
             .hideBackButton(true)
             .mode(NavigationMode.Auto)
             .backgroundColor($r('app.color.color_face'))
+            .bindSheet($$this.editPageShow,
+                ItemEditBuilder(
+                    getContext(this), this.editKeyAlias, this.editSchema!,
+                ),
+                {
+                    title: { title: $r('app.string.ItemEditPage_title') },
+                    backgroundColor: $r('app.color.color_face'),
+                    showClose: false,
+                    detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
+                    // onWillDismiss: (action) => {},
+                }
+            )
         }
         .height('100%')
         .width('100%')
+    }
+
+    private onItemListChanged() {
+        this.editPageShow = false;
     }
 }
 
@@ -142,6 +159,9 @@ struct OTPList {
 
 @Component
 struct OTPItem {
+    @Consume editPageShow: boolean;
+    @Consume editKeyAlias: string;
+    @Consume editSchema: OTPSchema | undefined;
     @Link selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
     @Prop icon: string;
@@ -151,7 +171,6 @@ struct OTPItem {
     @State passed_time: number = 0;
     @State isVisible: Visibility = Visibility.Visible;
     @State editItemOnly: boolean = false;
-    @State editPageShow: boolean = false;
     @State swipeBackgroundColor: Resource = $r('sys.color.comp_background_secondary');
 
     listScroller?: ListScroller;
@@ -240,23 +259,13 @@ struct OTPItem {
                 },
                 onAction: () => {
                     this.selected = '';
+                    this.editKeyAlias = this.keyAlias;
+                    this.editSchema = this.schema;
                     this.editPageShow = true;
                     this.listScroller!.closeAllSwipeActions();
                 },
             },
         })
-        .bindSheet($$this.editPageShow,
-            ItemEditBuilder(
-              getContext(this), this.keyAlias, this.schema,
-            ),
-            {
-                title: { title: $r('app.string.ItemEditPage_title') },
-                backgroundColor: $r('app.color.color_face'),
-                showClose: false,
-                detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
-                // onWillDismiss: (action) => {},
-            }
-        )
     }
 
     @Builder itemEnd() {
@@ -364,9 +373,9 @@ struct OTPItem {
 
 @Component
 struct QrScanButton {
-    @State editPageShow: boolean = false;
-    @State keyAlias: string = ''
-    @State schema: OTPSchema | undefined = undefined;
+    @Consume editPageShow: boolean;
+    @Consume editKeyAlias: string;
+    @Consume editSchema: OTPSchema | undefined;
 
     build() {
         Button() {
@@ -381,27 +390,14 @@ struct QrScanButton {
         .shadow({radius: 10})
         .onClick(async () => {
             const uri:string = await this.scanQrCode();
-            // const args = parseURI(uri);
-            // const otp = OTP.fromArguments(args);
-            // //
-            // this.keyAlias = otp.keyAlias;
-            // this.schema = otp.secret_leaked_schema;
-            // //
-            // this.editPageShow = true;
-            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri} as UpdateRequestSchema);
+            const args = parseURI(uri);
+            const otp = OTP.fromArguments(args);
+            //
+            this.editKeyAlias = otp.keyAlias;
+            this.editSchema = otp.secret_leaked_schema;
+            //
+            this.editPageShow = true;
         })
-        .bindSheet($$this.editPageShow,
-            ItemEditBuilder(
-                getContext(this), this.keyAlias, this.schema!,
-            ),
-            {
-                title: { title: $r('app.string.ItemEditPage_title') },
-                backgroundColor: $r('app.color.color_face'),
-                showClose: false,
-                detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
-                // onWillDismiss: (action) => {},
-            }
-        )
     }
 
     private async scanQrCode(): Promise<string> {
