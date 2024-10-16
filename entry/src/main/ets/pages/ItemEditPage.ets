@@ -85,12 +85,14 @@ struct ItemEditComponent {
                 message: $r('app.string.error_required_missing_check'),
                 duration: 1500
             });
+            return;
         }
         if (this.secretInputEnabled && this.secret.length===0) {
             promptAction.showToast({
                 message: $r('app.string.error_required_missing_check'),
                 duration: 1500
             });
+            return;
         }
         //
         const keyAlias = this.keyAlias;

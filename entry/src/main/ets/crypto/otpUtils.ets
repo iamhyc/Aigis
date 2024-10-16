@@ -239,21 +239,18 @@ export class TOTP extends OTP {
     }
 
     static fromArguments(args: Map<string,string>) {
-        if (args.get('algorithm') !== undefined) {
-            const totpSchema: TOTPSchema = {
-                type: 'totp',
-                name: args.get('name') || '',
-                issuer: args.get('issuer') || '',
-                secret: args.get('secret') || '',
-                algorithm: args.get('algorithm') as AlgorithmModern,
-                period: Number(args.get('period') || 0),
-                digits: Number(args.get('digits') || 0),
-                counter: 0,
-            };
-            return new TOTP(totpSchema);
-        } else {
-            throw Error('Fail to parse TOTP schema from URI.');
-        }
+        const totpSchema: TOTPSchema = {
+            type: 'totp',
+            name: args.get('name') ?? '',
+            issuer: args.get('issuer') ?? '',
+            secret: args.get('secret') ?? '',
+            algorithm: (args.get('algorithm') ?? 'SHA1') as AlgorithmModern,
+            period: Number(args.get('period') ?? 30),
+            digits: Number(args.get('digits') ?? 6),
+            counter: 0,
+        };
+        return new TOTP(totpSchema);
+        // throw Error('Fail to parse TOTP schema from URI.');
     }
 
     get uri(): string {

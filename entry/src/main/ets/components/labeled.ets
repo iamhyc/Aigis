@@ -39,6 +39,12 @@ export struct LabeledTextInput {
         }
         .width('100%')
     }
+
+    aboutToAppear(): void {
+        if (this.text.length===0 && this.required) {
+            this.errorMessage = $r('app.string.error_required_missing')
+        }
+    }
 }
 
 @Component
