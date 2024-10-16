@@ -169,7 +169,7 @@ struct ItemEditComponent {
             }
         }
         .width('90%')
-        .padding({ bottom: 28 }) //28vp for safe area
+        .padding({ bottom: 30 }) //28vp for safe area
     }
 }
 

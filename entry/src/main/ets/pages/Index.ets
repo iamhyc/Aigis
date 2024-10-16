@@ -19,6 +19,7 @@ const storage = LocalStorage.getShared();
 struct Index {
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @State selected: string = '';
+    @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editPageShow: boolean = false;
     @Provide editKeyAlias: string = ''
     @Provide editSchema: OTPSchema | undefined = undefined;
@@ -70,6 +71,7 @@ struct Index {
 
 @Component
 struct OTPList {
+    @Consume btnVisibility: Visibility;
     @Link selected: string;
     @Prop items: OTPItemInfo[];
     @State filterText: string = '';
@@ -152,6 +154,17 @@ struct OTPList {
                 if (start >= 1) {
                     this.filterItemVisibility = Visibility.None;
                 }
+            }
+        })
+        .onDidScroll((offset, state) => {
+            if (state===ScrollState.Scroll) {
+                animateTo({duration: 500, curve: Curve.ExtremeDeceleration}, () => {
+                    if (offset > 0) {
+                        this.btnVisibility = Visibility.None;
+                    } else {
+                        this.btnVisibility = Visibility.Visible;
+                    }
+                });
             }
         })
     }
@@ -376,6 +389,7 @@ struct QrScanButton {
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
     @Consume editSchema: OTPSchema | undefined;
+    @Consume btnVisibility: Visibility;
 
     build() {
         Button() {
@@ -388,6 +402,7 @@ struct QrScanButton {
         .height($r('app.float.add_circle_size'))
         .position({bottom: '2vp', right: '30vp'}) // bottom safe area
         .shadow({radius: 10})
+        .visibility(this.btnVisibility)
         .onClick(async () => {
             const uri:string = await this.scanQrCode();
             const args = parseURI(uri);
