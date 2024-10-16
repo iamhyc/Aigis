@@ -1,7 +1,7 @@
 # Aigis
 
 > [!NOTE]
-> 应用备案中，即将上架
+> 已上架测试专区，请在 “应用商店 > 我的 > 应用尝鲜” 中安装使用。
 
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 
