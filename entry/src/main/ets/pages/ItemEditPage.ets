@@ -12,12 +12,13 @@ const hashEntries: string[] = ['SHA1', 'SHA256', 'SHA512'];
 @Builder
 export function ItemEditBuilder(
     context: Context,
+    exKeys: string[],
     keyAlias: string,
     schema: OTPSchema,
 ) {
     Column() {
         ItemEditComponent({
-            context, keyAlias, schema,
+            context, exKeys, keyAlias, schema,
             issuer: schema.issuer,
             name: schema.name,
             typeIndex: typeEntries.indexOf(schema.type.toUpperCase()),
@@ -34,6 +35,7 @@ export function ItemEditBuilder(
 @Component
 struct ItemEditComponent {
     @Require @Prop context: Context;
+    @Require @Prop exKeys: string[];
     @Require @Prop keyAlias: string;
     @Require @Prop schema: OTPSchema;
     @Watch('onValueChanged') @Require @Prop issuer: string;
@@ -79,6 +81,29 @@ struct ItemEditComponent {
         })
     }
 
+    private requestOverwriteConfirm(issuer_name: string, allow_overwrite: boolean, callback: () => void) {
+        // popup for overwrite confirmation
+        AlertDialog.show({
+            title: $r('app.string.overwrite_title'),
+            message: allow_overwrite ? $r('app.string.overwrite_hint', issuer_name) : $r('app.string.overwrite_fail_hint', issuer_name),
+            autoCancel: true,
+            primaryButton: {
+                value: $r('app.string.button_text_cancel'),
+                defaultFocus: true,
+                style: DialogButtonStyle.DEFAULT,
+                action: () => {},
+            },
+            secondaryButton: (!allow_overwrite)? undefined : {
+                value: $r('app.string.button_text_ok'),
+                fontColor: $r('sys.color.warning'),
+                style: DialogButtonStyle.DEFAULT,
+                action: () => {
+                    callback();
+                },
+            }
+        })
+    }
+
     private requestUpdateItem() {
         if (this.issuer.length===0 || this.name.length===0 || this.digits.length===0 || this.period.length===0 || this.counter.length===0) {
             promptAction.showToast({
@@ -105,8 +130,15 @@ struct ItemEditComponent {
         const period = Number.parseInt(this.period).toString();
         const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}`;
         //
-        getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
-        this.saveBtnEnabled = false;
+        const allow_overwrite = this.secretInputEnabled; //overwrite when adding new ones
+        if (this.exKeys.includes(issuer_name)) {
+            this.requestOverwriteConfirm(issuer_name, allow_overwrite, () => {
+                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+            });
+        } else {
+            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+        }
+        // this.saveBtnEnabled = false;
     }
 
     build() {

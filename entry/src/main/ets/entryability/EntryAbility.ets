@@ -73,20 +73,20 @@ class PreferencesManager {
         const otp = OTP.fromArguments(args);
         const secret = args.get('secret');
 
-        const keyAlias = oldKeyAlias ?? (otp as OTP).keyAlias;
-        const oldItem = this._items.find(x => keyAlias===x.keyAlias);
-        const oldSecret = this._secrets.find(x => keyAlias===x.keyAlias);
+        const newKeyAlias = oldKeyAlias===undefined ? (otp as OTP).keyAlias : oldKeyAlias;
+        const oldItem = this._items.find(x => oldKeyAlias===x.keyAlias);
+        const oldSecret = this._secrets.find(x => oldKeyAlias===x.keyAlias);
 
         if (oldItem!==undefined) {
             const oldKeyAlias = oldItem.keyAlias;
-            oldItem.keyAlias = keyAlias;
+            oldItem.keyAlias = newKeyAlias;
             oldItem.icon = iconMatcher(otp.schema.issuer);
             //
             oldItem.schema = otp.schema;
             if (secret && oldSecret) { oldSecret.secret = secret; }
             // update new instances
             this._instances.delete(oldKeyAlias);
-            this.requestCodeUpdate(keyAlias);
+            this.requestCodeUpdate(newKeyAlias);
         } else {
             this.appendPreferenceItem(otp, secret!);
         }

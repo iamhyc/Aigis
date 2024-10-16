@@ -47,6 +47,19 @@
     },
 
     {
+      "name": "overwrite_title",
+      "value": "⚠ 覆盖条目"
+    },
+    {
+      "name": "overwrite_hint",
+      "value": "已存在同名条目 \"%s\"。您要覆盖它吗？"
+    },
+    {
+      "name": "overwrite_fail_hint",
+      "value": "已存在同名条目 \"%s\"。请使用其他名称。"
+    },
+
+    {
       "name": "ItemEditPage_title",
       "value": "编辑条目"
     },

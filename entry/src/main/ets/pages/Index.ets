@@ -18,7 +18,7 @@ const storage = LocalStorage.getShared();
 @Component
 struct Index {
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
-    @State selected: string = '';
+    @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editPageShow: boolean = false;
     @Provide editKeyAlias: string = ''
@@ -30,7 +30,7 @@ struct Index {
                 Stack() {
                     // main content
                     if (this.items.length > 0) {
-                        OTPList({items: this.items, selected: this.selected})
+                        OTPList({items: this.items})
                     } else {
                         EmptyPage()
                     }
@@ -49,7 +49,9 @@ struct Index {
             .backgroundColor($r('app.color.color_face'))
             .bindSheet($$this.editPageShow,
                 ItemEditBuilder(
-                    getContext(this), this.editKeyAlias, this.editSchema!,
+                    getContext(this),
+                    this.getExKeys(),
+                    this.editKeyAlias, this.editSchema!,
                 ),
                 {
                     title: { title: $r('app.string.ItemEditPage_title') },
@@ -67,12 +69,20 @@ struct Index {
     private onItemListChanged() {
         this.editPageShow = false;
     }
+
+    private getExKeys(): string[] {
+        if (this.editSchema?.secret) { // add new one
+            return this.items.map(x => x.keyAlias);
+        } else { // update existing one
+            return this.items.flatMap(x => x.keyAlias===this.editKeyAlias ? [] : [x.keyAlias]);
+        }
+    }
 }
 
 @Component
 struct OTPList {
     @Consume btnVisibility: Visibility;
-    @Link selected: string;
+    @Consume selected: string;
     @Prop items: OTPItemInfo[];
     @State filterText: string = '';
     @State filterItemVisibility: Visibility = Visibility.None;
@@ -124,7 +134,6 @@ struct OTPList {
                         code: item.code,
                         schema: item.schema,
                         keyAlias: item.keyAlias,
-                        selected: this.selected,
                         filterText: this.filterText,
                         listScroller: this.listScroller,
                     })
@@ -175,7 +184,7 @@ struct OTPItem {
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
     @Consume editSchema: OTPSchema | undefined;
-    @Link selected: string;
+    @Consume selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
     @Prop icon: string;
     @Prop @Watch('onCodeUpdated') code: CodeResponseSchema;
@@ -353,10 +362,11 @@ struct OTPItem {
 
         // test time-based OTP if refresh needed
         if (_period) {
-            const passed_time = Date.now() - this.code.timestamp;
-            const remain_time = Date.now() % _period;
+            const _now = Date.now()
+            const passed_time = _now - this.code.timestamp;
+            const remain_time = _now % _period;
             this.passed_time = remain_time;
-            if (remain_time > REFRESH_INTERVAL && passed_time < _period) {
+            if (remain_time > REFRESH_INTERVAL && passed_time < 1) {
                 return false;
             }
         }
@@ -365,7 +375,6 @@ struct OTPItem {
         getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
             keyAlias: this.keyAlias,
         } as CodeRequestSchema);
-
         return true;
     }
 
@@ -386,6 +395,7 @@ struct OTPItem {
 
 @Component
 struct QrScanButton {
+    @Consume selected: string;
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
     @Consume editSchema: OTPSchema | undefined;
@@ -411,6 +421,7 @@ struct QrScanButton {
             this.editKeyAlias = otp.keyAlias;
             this.editSchema = otp.secret_leaked_schema;
             //
+            this.selected = '';
             this.editPageShow = true;
         })
     }

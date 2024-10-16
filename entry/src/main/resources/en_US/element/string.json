@@ -47,6 +47,19 @@
     },
 
     {
+      "name": "overwrite_title",
+      "value": "⚠ Overwrite Entry"
+    },
+    {
+      "name": "overwrite_hint",
+      "value": "The entry \"%s\" already exists. Do you want to overwrite it?"
+    },
+    {
+      "name": "overwrite_fail_hint",
+      "value": "The entry \"%s\" already exists. Please choose a different name."
+    },
+
+    {
       "name": "ItemEditPage_title",
       "value": "Edit Item"
     },

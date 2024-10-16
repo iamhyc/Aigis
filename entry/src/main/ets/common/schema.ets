@@ -1,5 +1,4 @@
 import { OTPSchema } from "../crypto/otpUtils";
-import { fuzzysearch } from "./utils";
 
 interface IssuerName {
     issuer: string,
