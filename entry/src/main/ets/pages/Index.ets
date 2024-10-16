@@ -128,7 +128,7 @@ struct OTPList {
                     })
                 },
                 (item: OTPItemInfo) => {
-                    return item.keyAlias+'_'+item.code.code+'_'+item.icon;
+                    return [item.keyAlias, item.code.code, item.icon, JSON.stringify(item.schema)].join('_');
                 }
             )
         }
