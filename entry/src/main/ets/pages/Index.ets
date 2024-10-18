@@ -1,4 +1,4 @@
-import { LengthUnit, Offset } from '@kit.ArkUI';
+import { LengthUnit, Offset, SymbolGlyphModifier } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
@@ -44,7 +44,7 @@ struct Index {
                 backgroundColor: $r('app.color.color_background'),
             })
             .titleMode(NavigationTitleMode.Mini)
-            .hideBackButton(true)
+            .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.close_sidebar')) )
             .mode(NavigationMode.Stack)
             .backgroundColor($r('app.color.color_face'))
             .bindSheet($$this.editPageShow,
@@ -395,11 +395,14 @@ struct OTPItem {
 
 @Component
 struct QrScanButton {
+    @StorageProp('bottomRectHeight')
+    @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
     @Consume selected: string;
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
     @Consume editSchema: OTPSchema | undefined;
     @Consume btnVisibility: Visibility;
+    @State _position: Edges = {bottom: 0, right: 0};
 
     build() {
         Button() {
@@ -410,7 +413,7 @@ struct QrScanButton {
         .backgroundColor($r('app.color.color_ribbon'))
         .width($r('app.float.add_circle_size'))
         .height($r('app.float.add_circle_size'))
-        .position({bottom: '2vp', right: '30vp'}) // bottom safe area
+        .position(this._position)
         .shadow({radius: 10})
         .visibility(this.btnVisibility)
         .onClick(async () => {
@@ -424,6 +427,19 @@ struct QrScanButton {
             this.selected = '';
             this.editPageShow = true;
         })
+    }
+
+    aboutToAppear(): void {
+        this.onBottomRectHeightChanged();
+    }
+
+    private onBottomRectHeightChanged() {
+        const bottomHeight = px2vp(this.bottomRectHeight)
+        if (bottomHeight===0) {
+            this._position = {bottom: 12, right: 12};
+        } else {
+            this._position = {bottom: 2, right: 2+bottomHeight};
+        }
     }
 
     private async scanQrCode(): Promise<string> {

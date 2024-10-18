@@ -34,6 +34,7 @@ export function ItemEditBuilder(
 
 @Component
 struct ItemEditComponent {
+    @StorageProp('bottomRectHeight') bottomRectHeight: number = 0;
     @Require @Prop context: Context;
     @Require @Prop exKeys: string[];
     @Require @Prop keyAlias: string;
@@ -201,7 +202,7 @@ struct ItemEditComponent {
             }
         }
         .width('90%')
-        .padding({ bottom: 30 }) //28vp for safe area
+        .padding({ bottom: COLUMN_ITEM_GAP+px2vp(this.bottomRectHeight) })
     }
 }
 
