@@ -45,7 +45,7 @@ struct Index {
             })
             .titleMode(NavigationTitleMode.Mini)
             .hideBackButton(true)
-            .mode(NavigationMode.Auto)
+            .mode(NavigationMode.Stack)
             .backgroundColor($r('app.color.color_face'))
             .bindSheet($$this.editPageShow,
                 ItemEditBuilder(
