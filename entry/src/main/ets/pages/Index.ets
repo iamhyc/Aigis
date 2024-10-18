@@ -44,7 +44,7 @@ struct Index {
                 backgroundColor: $r('app.color.color_background'),
             })
             .titleMode(NavigationTitleMode.Mini)
-            .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.close_sidebar')) )
+            .hideBackButton(true)
             .mode(NavigationMode.Stack)
             .backgroundColor($r('app.color.color_face'))
             .bindSheet($$this.editPageShow,
@@ -403,6 +403,7 @@ struct QrScanButton {
     @Consume editSchema: OTPSchema | undefined;
     @Consume btnVisibility: Visibility;
     @State _position: Edges = {bottom: 0, right: 0};
+    @State addSheetShow: boolean = false;
 
     build() {
         Button() {
@@ -417,16 +418,67 @@ struct QrScanButton {
         .shadow({radius: 10})
         .visibility(this.btnVisibility)
         .onClick(async () => {
-            const uri:string = await this.scanQrCode();
-            const args = parseURI(uri);
-            const otp = OTP.fromArguments(args);
-            //
-            this.editKeyAlias = otp.keyAlias;
-            this.editSchema = otp.secret_leaked_schema;
-            //
-            this.selected = '';
-            this.editPageShow = true;
+            this.uriToEditPage( await this.scanQrCode() );
+            // this.addSheetShow = true;
         })
+        .bindSheet($$this.addSheetShow, this.addSheet(), {
+            title: {
+                title: $r('app.string.add_sheet_title'),
+            },
+            backgroundColor: $r('app.color.color_face'),
+            showClose: false,
+            dragBar: true,
+            detents: [SheetSize.FIT_CONTENT],
+        })
+    }
+
+    @Builder addSheet() {
+        Column() {
+            List() {
+                //
+                ListItem() {
+                    Text() {
+                        SymbolSpan($r('sys.symbol.qrcode'))
+                            .renderingStrategy(SymbolRenderingStrategy.SINGLE)
+                            .fontSize(28)
+                            .align(Alignment.Center)
+                            .backgroundColor(0xFFFFFF)
+                        Span(' '.repeat(6))
+                            .align(Alignment.Center)
+                        Span($r('app.string.add_sheet_item_qr_scan'))
+                            .fontSize(18)
+                            .align(Alignment.Center)
+                            .backgroundColor(0xFFFFFF)
+                    }
+                    .align(Alignment.Center)
+                }
+                .height(48)
+                .onClick(async () => {
+                    this.uriToEditPage( await this.scanQrCode() )
+                })
+                //
+                ListItem() {
+                    Text() {
+                        SymbolSpan($r('sys.symbol.staroflife_rectangle'))
+                            .renderingStrategy(SymbolRenderingStrategy.SINGLE)
+                            .fontSize(28)
+                            .align(Alignment.Center)
+                        Span(' '.repeat(6))
+                            .align(Alignment.Center)
+                        Span($r('app.string.add_sheet_item_uri_parse'))
+                            .fontSize(18)
+                            .align(Alignment.Center)
+                    }
+                    .align(Alignment.Center)
+                }
+                .height(48)
+                .onClick(async () => {
+                    this.uriToEditPage( await this.getUserUriInput() )
+                })
+            }
+        }
+        .width('90%')
+        .padding({bottom: 2+px2vp(this.bottomRectHeight)})
     }
 
     aboutToAppear(): void {
@@ -440,6 +492,22 @@ struct QrScanButton {
         } else {
             this._position = {bottom: 2, right: 2+bottomHeight};
         }
+    }
+
+    private uriToEditPage(uri: string) {
+        const args = parseURI(uri);
+        const otp = OTP.fromArguments(args);
+        //
+        this.editKeyAlias = otp.keyAlias;
+        this.editSchema = otp.secret_leaked_schema;
+        //
+        this.selected = '';
+        this.addSheetShow = false;
+        this.editPageShow = true;
+    }
+
+    private async getUserUriInput(): Promise<string> {
+        return '';
     }
 
     private async scanQrCode(): Promise<string> {
