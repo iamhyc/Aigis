@@ -44,7 +44,7 @@ export interface RemovalRequestSchema {
 }
 
 export const EVENT_UPDATE_SETTING: string = 'update-setting';
-export interface UpdateSettingRequestSchema {
+export interface SettingUpdateRequestSchema {
     key: string,
     value: ValueType;
 }

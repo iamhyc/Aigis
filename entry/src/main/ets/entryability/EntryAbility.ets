@@ -13,7 +13,8 @@ import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     MoveToTopRequestSchema,
     iconMatcher,
     EVENT_UPDATE_SETTING,
-    UpdateSettingRequestSchema} from '../common/schema'
+    SettingUpdateRequestSchema,
+    } from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
@@ -179,12 +180,13 @@ export default class EntryAbility extends UIAbility {
                 const settingString = this.dataPreferences.getSync(PREF_KEY_SETTINGS, '[]') as string;
                 const settingItems  = JSON.parse(settingString) as [string, ValueType][];
                 this.localSettings = new Map(settingItems);
-                for (const obj of settingItems) {
-                    const key = obj[0], value = obj[1];
-                    if (value===undefined) {
-                        AppStorage.setAndProp(`settings${key}}`, DefaultUserPreferences.get(key));
+                for (const obj of DefaultUserPreferences.entries()) {
+                    const key = obj[0], defaultValue = obj[1];
+                    const localValue = this.localSettings.get(key);
+                    if (localValue===undefined) {
+                        AppStorage.setAndProp(`settings${key}`, defaultValue);
                     } else {
-                        AppStorage.setAndProp(`settings${key}}`, value);
+                        AppStorage.setAndProp(`settings${key}`, localValue);
                     }
                 }
 
@@ -227,14 +229,15 @@ export default class EntryAbility extends UIAbility {
                         this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                     }
                 });
-                this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: UpdateSettingRequestSchema) => {
+                this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: SettingUpdateRequestSchema) => {
                     if (this.localSettings) {
-                        this.localSettings[data.key] = data.value;
-                        AppStorage.setAndProp(`settings${data.key}}`, data.value);
+                        this.localSettings.set(data.key, data.value);
+                        AppStorage.set(`settings${data.key}`, data.value);
                         //
                         const settingItems = Array.from( this.localSettings.entries() );
                         const settingString = JSON.stringify(settingItems);
-                        this.dataPreferences?.put(PREF_KEY_SETTINGS, settingString);
+                        this.dataPreferences?.putSync(PREF_KEY_SETTINGS, settingString);
+                        this.dataPreferences?.flush();
                     }
                 });
 

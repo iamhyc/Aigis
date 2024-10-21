@@ -1,0 +1,37 @@
+{
+  "string": [
+    {
+      "name": "settings_page_title",
+      "value": "SETTINGS"
+    },
+
+    {
+      "name": "section_title_general",
+      "value": "General"
+    },
+    {
+      "name": "setting_enable_manual_input_title",
+      "value": "Enable Manual Input"
+    },
+
+    {
+      "name": "section_title_outlook",
+      "value": "Outlook"
+    },
+
+    {
+      "name": "section_title_security",
+      "value": "Security"
+    },
+
+    {
+      "name": "section_title_import_export",
+      "value": "Import & Export"
+    },
+
+    {
+      "name": "string_text_repo",
+      "value": "%s Repo"
+    }
+  ]
+}

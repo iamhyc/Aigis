@@ -11,6 +11,7 @@ import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
+import { SettingsPage } from './SettingsPage';
 
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();
@@ -19,6 +20,7 @@ const storage = LocalStorage.getShared();
 @Component
 struct Index {
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
+    @Provide navStack: NavPathStack = new NavPathStack()
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editPageShow: boolean = false;
@@ -27,7 +29,7 @@ struct Index {
 
     build() {
         RelativeContainer() {
-            Navigation() {
+            Navigation(this.navStack) {
                 Stack() {
                     // main content
                     if (this.items.length > 0) {
@@ -41,13 +43,12 @@ struct Index {
                 .height('100%')
                 .width('100%')
             }
-            .title($r('app.string.app_title'), {
-                backgroundColor: $r('app.color.color_background'),
-            })
+            .title({builder: this.titleBar(), height: $r('sys.float.titlebar_default_height')})
             .titleMode(NavigationTitleMode.Mini)
+            .backgroundColor($r('app.color.color_face'))
             .hideBackButton(true)
             .mode(NavigationMode.Stack)
-            .backgroundColor($r('app.color.color_face'))
+            .navDestination(this.pageJump)
             .bindSheet($$this.editPageShow,
                 ItemEditBuilder(
                     getContext(this),
@@ -65,6 +66,37 @@ struct Index {
         }
         .height('100%')
         .width('100%')
+    }
+
+    @Builder titleBar() {
+        Row({space:10}) {
+            Button({type: ButtonType.Circle}) {
+                SymbolGlyph($r('sys.symbol.open_sidebar'))
+                    .fontWeight(FontWeight.Normal)
+                    .fontColor([$r('sys.color.font_primary')])
+                    .fontSize(24)
+            }
+            .height(40).width(40)
+            .backgroundColor($r('sys.color.comp_background_tertiary'))
+            .onClick(() => {
+                this.navStack.pushPath({ name: 'settings' })
+            })
+            //
+            Text($r('app.string.app_title'))
+                .fontSize($r('sys.float.Title_L'))
+                .fontWeight(FontWeight.Bold)
+        }
+        .height('100%')
+        .width('100%')
+        .backgroundColor($r('app.color.color_background'))
+        .padding({left: 16})
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+    }
+
+    @Builder pageJump(name: string) {
+        if (name==='settings') {
+            SettingsPage()
+        }
     }
 
     private onItemListChanged() {
@@ -264,6 +296,7 @@ struct OTPItem {
                 }
             })
         }
+        .clickEffect({level: ClickEffectLevel.MIDDLE})
         .swipeAction({
             end: {
                 builder: () => { this.itemEnd() },
@@ -398,7 +431,7 @@ struct OTPItem {
 struct QrScanButton {
     @StorageProp('bottomRectHeight')
     @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
-    @StorageProp('settingsEnableManualInput') enableManualInput: boolean = true;
+    @StorageProp('settingsEnableManualInput') enableManualInput: boolean = false;
     @Consume selected: string;
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
@@ -467,6 +500,9 @@ struct QrScanButton {
             .onClick(async () => {
                 this.uriToEditPage( async () => { return await this.scanQrCode(); } )
             })
+            .clickEffect({level: ClickEffectLevel.HEAVY})
+            //
+            Divider().strokeWidth('1px')
             //
             Row({space:16}) {
                 Row() {
@@ -487,6 +523,7 @@ struct QrScanButton {
             .onClick(async () => {
                 this.uriToEditPage( async () => { return await this.getUserUriInput() } )
             })
+            .clickEffect({level: ClickEffectLevel.HEAVY})
         }
         .width('90%')
         .padding({bottom: 2+px2vp(this.bottomRectHeight)})

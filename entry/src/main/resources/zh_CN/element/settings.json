@@ -1,0 +1,37 @@
+{
+  "string": [
+    {
+      "name": "settings_page_title",
+      "value": "设置"
+    },
+
+    {
+      "name": "section_title_general",
+      "value": "常规"
+    },
+    {
+      "name": "setting_enable_manual_input_title",
+      "value": "启用手动输入"
+    },
+
+    {
+      "name": "section_title_outlook",
+      "value": "外观"
+    },
+
+    {
+      "name": "section_title_security",
+      "value": "安全"
+    },
+
+    {
+      "name": "section_title_import_export",
+      "value": "导入 & 导出"
+    },
+
+    {
+      "name": "string_text_repo",
+      "value": "%s 仓库"
+    }
+  ]
+}
