@@ -358,6 +358,8 @@ struct OTPItem {
                 .backgroundColor($r('sys.color.brand'))
                 .onClick(() => {
                     this.selected = '';
+                    this.editKeyAlias = this.keyAlias;
+                    this.editSchema = this.schema;
                     this.editPageShow = true;
                     this.listScroller?.closeAllSwipeActions();
                 })
@@ -551,7 +553,6 @@ struct QrScanButton {
         //
         this.editKeyAlias = otp.keyAlias;
         this.editSchema = otp.secret_leaked_schema;
-        //
         this.selected = '';
         this.editPageShow = true;
     }
