@@ -1,4 +1,5 @@
 import { OTPSchema } from "../crypto/otpUtils";
+import { ValueType } from "./settings";
 
 interface IssuerName {
     issuer: string,
@@ -40,6 +41,12 @@ export interface MoveToTopRequestSchema {
 export const EVENT_REMOVE_ITEM: string = 'remove-item';
 export interface RemovalRequestSchema {
     keyAlias: string,
+}
+
+export const EVENT_UPDATE_SETTING: string = 'update-setting';
+export interface UpdateSettingRequestSchema {
+    key: string,
+    value: ValueType;
 }
 
 export interface OTPItemInfo {

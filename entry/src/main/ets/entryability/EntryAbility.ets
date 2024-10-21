@@ -11,10 +11,13 @@ import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     RemovalRequestSchema,
     EVENT_MOVE_TO_TOP,
     MoveToTopRequestSchema,
-    iconMatcher} from '../common/schema'
+    iconMatcher,
+    EVENT_UPDATE_SETTING,
+    UpdateSettingRequestSchema} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
-import { PREF_KEY_SECRETS } from '../common/conts';
+import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
+import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 
 const AIGIS_PREF_NAME = 'aigis-pref';
 
@@ -137,6 +140,7 @@ export default class EntryAbility extends UIAbility {
     private dataPreferences?: preferences.Preferences;
     private localStorage: LocalStorage = new LocalStorage();
     private instPreferences?: PreferencesManager;
+    private localSettings?: UserPreferences;
 
     onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
@@ -164,11 +168,25 @@ export default class EntryAbility extends UIAbility {
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
             .then((pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
+                //
                 this.instPreferences = new PreferencesManager(
                   this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
                   this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
                 );
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+
+                // setup global user settings
+                const settingString = this.dataPreferences.getSync(PREF_KEY_SETTINGS, '[]') as string;
+                const settingItems  = JSON.parse(settingString) as [string, ValueType][];
+                this.localSettings = new Map(settingItems);
+                for (const obj of settingItems) {
+                    const key = obj[0], value = obj[1];
+                    if (value===undefined) {
+                        AppStorage.setAndProp(`settings${key}}`, DefaultUserPreferences.get(key));
+                    } else {
+                        AppStorage.setAndProp(`settings${key}}`, value);
+                    }
+                }
 
                 // register event handler
                 this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
@@ -207,6 +225,16 @@ export default class EntryAbility extends UIAbility {
                         this.instPreferences.persists(this.dataPreferences!);
                         // propagate updated items
                         this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                    }
+                });
+                this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: UpdateSettingRequestSchema) => {
+                    if (this.localSettings) {
+                        this.localSettings[data.key] = data.value;
+                        AppStorage.setAndProp(`settings${data.key}}`, data.value);
+                        //
+                        const settingItems = Array.from( this.localSettings.entries() );
+                        const settingString = JSON.stringify(settingItems);
+                        this.dataPreferences?.put(PREF_KEY_SETTINGS, settingString);
                     }
                 });
 

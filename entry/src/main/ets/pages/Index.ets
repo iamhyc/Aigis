@@ -1,4 +1,4 @@
-import { LengthUnit, Offset, SymbolGlyphModifier } from '@kit.ArkUI';
+import { LengthUnit, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
@@ -10,6 +10,7 @@ import { OTPItemInfo, EVENT_CODE_REQUEST, CodeRequestSchema,
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
+import { TextInputDialog } from '../components/dialog';
 
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();
@@ -44,7 +45,7 @@ struct Index {
                 backgroundColor: $r('app.color.color_background'),
             })
             .titleMode(NavigationTitleMode.Mini)
-            .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.close_sidebar')) )
+            .hideBackButton(true)
             .mode(NavigationMode.Stack)
             .backgroundColor($r('app.color.color_face'))
             .bindSheet($$this.editPageShow,
@@ -397,18 +398,28 @@ struct OTPItem {
 struct QrScanButton {
     @StorageProp('bottomRectHeight')
     @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
+    @StorageProp('settingsEnableManualInput') enableManualInput: boolean = true;
     @Consume selected: string;
     @Consume editPageShow: boolean;
     @Consume editKeyAlias: string;
     @Consume editSchema: OTPSchema | undefined;
     @Consume btnVisibility: Visibility;
     @State _position: Edges = {bottom: 0, right: 0};
+    @State addSheetShow: boolean = false;
+
+    private inputDialogId = -1;
 
     build() {
         Button() {
-            Image($r('sys.media.ohos_ic_public_scan'))
-                .width($r('app.float.add_icon_size')).height($r('app.float.add_icon_size'))
-                .fillColor($r('sys.color.comp_background_primary'))
+            if (this.enableManualInput) {
+                Image($r('sys.media.ohos_ic_public_add'))
+                    .width($r('app.float.add_icon_size')).height($r('app.float.add_icon_size'))
+                    .fillColor($r('sys.color.comp_background_primary'))
+            } else {
+                Image($r('sys.media.ohos_ic_public_scan'))
+                    .width($r('app.float.add_icon_size')).height($r('app.float.add_icon_size'))
+                    .fillColor($r('sys.color.comp_background_primary'))
+            }
         }
         .backgroundColor($r('app.color.color_ribbon'))
         .width($r('app.float.add_circle_size'))
@@ -417,16 +428,69 @@ struct QrScanButton {
         .shadow({radius: 10})
         .visibility(this.btnVisibility)
         .onClick(async () => {
-            const uri:string = await this.scanQrCode();
-            const args = parseURI(uri);
-            const otp = OTP.fromArguments(args);
-            //
-            this.editKeyAlias = otp.keyAlias;
-            this.editSchema = otp.secret_leaked_schema;
-            //
-            this.selected = '';
-            this.editPageShow = true;
+            if (this.enableManualInput) {
+                this.addSheetShow = true;
+            } else {
+                this.uriToEditPage( async () => { return await this.scanQrCode() } );
+            }
         })
+        .bindSheet($$this.addSheetShow, this.addSheet(), {
+            title: {
+                title: $r('app.string.add_sheet_title'),
+            },
+            backgroundColor: $r('app.color.color_face'),
+            showClose: false,
+            dragBar: true,
+            detents: [SheetSize.FIT_CONTENT],
+        })
+    }
+
+    @Builder addSheet() {
+        Column() {
+            //
+            Row({space:16}) {
+                Row() {
+                    SymbolGlyph($r('sys.symbol.qrcode'))
+                        .fontColor([$r('sys.color.font_primary')])
+                        .fontSize(28)
+                }
+                .height('100%')
+                Row() {
+                    Text($r('app.string.add_sheet_item_qr_scan'))
+                        .fontSize(18)
+                }
+                .height('100%')
+            }
+            .height(48)
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .onClick(async () => {
+                this.uriToEditPage( async () => { return await this.scanQrCode(); } )
+            })
+            //
+            Row({space:16}) {
+                Row() {
+                    SymbolGlyph($r('sys.symbol.staroflife_rectangle'))
+                        .fontColor([$r('sys.color.font_primary')])
+                        .fontSize(28)
+                }
+                .height('100%')
+                Row() {
+                    Text($r('app.string.add_sheet_item_uri_parse'))
+                        .fontSize(18)
+                }
+                .height('100%')
+            }
+            .height(48)
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .onClick(async () => {
+                this.uriToEditPage( async () => { return await this.getUserUriInput() } )
+            })
+        }
+        .width('90%')
+        .padding({bottom: 2+px2vp(this.bottomRectHeight)})
+        .alignItems(HorizontalAlign.Start)
     }
 
     aboutToAppear(): void {
@@ -440,6 +504,54 @@ struct QrScanButton {
         } else {
             this._position = {bottom: 2, right: 2+bottomHeight};
         }
+    }
+
+    private async uriToEditPage(callback: () => Promise<string>) {
+        this.addSheetShow = false;
+        const uri = await callback();
+        const args = parseURI(uri);
+        const otp = OTP.fromArguments(args);
+        //
+        this.editKeyAlias = otp.keyAlias;
+        this.editSchema = otp.secret_leaked_schema;
+        //
+        this.selected = '';
+        this.editPageShow = true;
+    }
+
+    private getUserUriInput(): Promise<string> {
+        this.inputDialogId = -1;
+        return new Promise((resolve, reject) => {
+            promptAction.openCustomDialog({
+                builder: () => {
+                    this.textInputDialogBuilder($r('app.string.input_parse_uri_title'), $r('app.string.input_parse_uri_placeholder'), (text) => {
+                        text = text.trim();
+                        if (text==='') {
+                            resolve('otpauth://totp/?')
+                        } else {
+                            resolve(text);
+                        }
+                        promptAction.closeCustomDialog(this.inputDialogId);
+                    }, () => {
+                        promptAction.closeCustomDialog(this.inputDialogId);
+                    })
+                },
+                onWillDismiss: (dismissDialogAction: DismissDialogAction) => {
+                    if (dismissDialogAction.reason == DismissReason.PRESS_BACK) {
+                        dismissDialogAction.dismiss()
+                    }
+                    if (dismissDialogAction.reason == DismissReason.TOUCH_OUTSIDE) {
+                        dismissDialogAction.dismiss()
+                    }
+                }
+            }).then((dialogId) => {
+                this.inputDialogId = dialogId
+            })
+        });
+    }
+
+    @Builder textInputDialogBuilder(title: ResourceStr, placeholder: ResourceStr, confirm?: (text: string) => void, cancel?: () => void) {
+        TextInputDialog({ title, placeholder, confirm, cancel })
     }
 
     private async scanQrCode(): Promise<string> {

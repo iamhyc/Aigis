@@ -101,7 +101,7 @@ function b32decode(input: string): Uint8Array {
 }
 
 export function parseURI(uri: string): Map<string, string> {
-    const re = /otpauth:\/\/(\w+)\/([^\?]+)\?(.+)/;
+    const re = /otpauth:\/\/(\w+)\/([^\?]*)\?(.*)/;
     const results = re.exec(uri)!;
     const type = results[1], issuer_name = decodeURIComponent(results[2]), args = results[3];
     //

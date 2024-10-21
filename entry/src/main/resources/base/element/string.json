@@ -30,6 +30,27 @@
     },
 
     {
+      "name": "add_sheet_title",
+      "value": "Add New Entry"
+    },
+    {
+      "name": "add_sheet_item_qr_scan",
+      "value": "Scan QR Code"
+    },
+    {
+      "name": "add_sheet_item_uri_parse",
+      "value": "Parse from URI"
+    },
+    {
+      "name": "input_parse_uri_title",
+      "value": "Parse URI"
+    },
+    {
+      "name": "input_parse_uri_placeholder",
+      "value": "Please input the URI"
+    },
+
+    {
       "name": "delete_title",
       "value": "⚠ Delete Entry"
     },

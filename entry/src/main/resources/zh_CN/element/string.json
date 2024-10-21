@@ -22,6 +22,27 @@
     },
 
     {
+      "name": "add_sheet_title",
+      "value": "添加新条目"
+    },
+    {
+      "name": "add_sheet_item_qr_scan",
+      "value": "扫描二维码"
+    },
+    {
+      "name": "add_sheet_item_uri_parse",
+      "value": "解析 URI"
+    },
+    {
+      "name": "input_parse_uri_title",
+      "value": "解析 URI"
+    },
+    {
+      "name": "input_parse_uri_placeholder",
+      "value": "请输入 URI"
+    },
+
+    {
       "name": "delete_title",
       "value": "⚠ 删除条目"
     },
