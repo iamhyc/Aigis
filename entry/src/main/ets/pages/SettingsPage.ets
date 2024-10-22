@@ -3,7 +3,6 @@ import { unifiedDataChannel } from "@kit.ArkData";
 import { settingToggle } from "../components/settings";
 import { EVENT_UPDATE_SETTING, SettingUpdateRequestSchema } from "../common/schema";
 
-@Preview
 @Component
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
