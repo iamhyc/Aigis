@@ -1,7 +1,10 @@
 # Aigis
 
-> [!NOTE]
-> 已上架测试专区，请在 “应用商店 > 我的 > 应用尝鲜” 中安装使用。
+> [!CAUTION]
+> 使用当前 测试版本（≤v0.2.2） 升级5.0系统，会导致令牌数据全部丢失！！！
+> 请关注[相关讨论](https://github.com/iamhyc/Aigis/issues/12)，对于已经造成的数据丢失，深表歉意！
+> 
+> 为了避免此类事情再次发生，10月25日前预计更新含有 密钥加密导出 特性的版本，其他特性及修正暂时推迟。
 
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 
@@ -12,6 +15,10 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 </p>
 
 ### TODO
+
+**Release v0.2.3**:
+- [ ] Bulky Export Support (in Aegis format)
+
 
 **Release v0.3.0**:
 - [ ] Settings Page Design
@@ -26,7 +33,6 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   - so, cannot change password, or the secrets cannot export any more
 - [ ] HUKS for MAC Key storage (cannot export)
   - `SecretStore` only used for export, cause no *decrypt* purpose function provided
-- [ ] Bulky Export Support (in Aegis format)
 - [ ] Bulky Import Support (Aegis only, Encrypted only)
   - support import password (master key) at the same time
 
@@ -53,6 +59,3 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   - [文档中心 - 开发指南](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/application-dev-guide-V5?catalogVersion=V5)
 
   - [文档中心 - API参考](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/development-intro-api-V5?catalogVersion=V5)
-
-
-- **Page Modal Transition - Bind Sheet** ([link](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/ts-universal-attributes-sheet-transition-V5#bindsheet))
