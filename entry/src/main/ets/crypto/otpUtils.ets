@@ -105,7 +105,8 @@ export function parseURI(uri: string): Map<string, string> {
     const results = re.exec(uri)!;
     const type = results[1], issuer_name = decodeURIComponent(results[2]), args = results[3];
     //
-    const name = splitOnce(issuer_name, ':')[1];
+    const _split = splitOnce(issuer_name, ':');
+    const name = _split[1]===''? _split[0] : _split[1]
     const args_array = args.split('&')
         .map(x => x.split('='))
         .map(x => [decodeURIComponent(x[0]), decodeURIComponent(x[1])])
