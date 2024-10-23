@@ -15,10 +15,11 @@ export function ItemEditBuilder(
     exKeys: string[],
     keyAlias: string,
     schema: OTPSchema,
+    editNewItem: boolean,
 ) {
     Column() {
         ItemEditComponent({
-            context, exKeys, keyAlias, schema,
+            context, exKeys, keyAlias, schema, editNewItem,
             issuer: schema.issuer,
             name: schema.name,
             typeIndex: typeEntries.indexOf(schema.type.toUpperCase()),
@@ -39,6 +40,7 @@ struct ItemEditComponent {
     @Require @Prop exKeys: string[];
     @Require @Prop keyAlias: string;
     @Require @Prop schema: OTPSchema;
+    @Require @Prop editNewItem: boolean;
     @Watch('onValueChanged') @Require @Prop issuer: string;
     @Watch('onValueChanged') @Require @Prop name: string;
     @Watch('onValueChanged') @Require @Prop typeIndex: number;
@@ -48,9 +50,9 @@ struct ItemEditComponent {
     @Watch('onValueChanged') @Prop period: string;
     @Watch('onValueChanged') @Prop counter: string;
     @Prop secret: string;
-    @State secretInputEnabled: boolean = !(this.secret===FAKE_SECRET);
+    @State secretInputEnabled: boolean = this.editNewItem;
     @State icon: Resource = $rawfile(iconMatcher(this.issuer));
-    @State saveBtnEnabled: boolean = this.secretInputEnabled;
+    @State saveBtnEnabled: boolean = this.editNewItem;
 
     private onValueChanged(propName: string) {
         this.saveBtnEnabled = true;
@@ -113,7 +115,7 @@ struct ItemEditComponent {
             });
             return;
         }
-        if (this.secretInputEnabled && this.secret.length===0) {
+        if (this.editNewItem && this.secret.length===0) {
             promptAction.showToast({
                 message: $r('app.string.error_required_missing_check'),
                 duration: 1500
@@ -121,7 +123,6 @@ struct ItemEditComponent {
             return;
         }
         //
-        const keyAlias = this.keyAlias;
         const type = typeEntries[this.typeIndex].toLowerCase();
         const issuer_name = `${this.issuer}:${this.name}`;
         const algorithm = hashEntries[this.hashIndex];
@@ -131,12 +132,14 @@ struct ItemEditComponent {
         const period = Number.parseInt(this.period).toString();
         const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}`;
         //
-        const allow_overwrite = this.secretInputEnabled; //overwrite when adding new ones
+        const allow_overwrite = this.editNewItem; //overwrite when adding new ones
         if (this.exKeys.includes(issuer_name)) {
+            const keyAlias = this.keyAlias;
             this.requestOverwriteConfirm(issuer_name, allow_overwrite, () => {
                 getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
             });
         } else {
+            const keyAlias = this.editNewItem? undefined : this.keyAlias;
             getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
         }
         // this.saveBtnEnabled = false;
@@ -203,25 +206,5 @@ struct ItemEditComponent {
         }
         .width('90%')
         .padding({ bottom: COLUMN_ITEM_GAP+px2vp(this.bottomRectHeight) })
-    }
-}
-
-@Entry
-@Component
-struct ItemEditPage {
-    build() {
-        Column() {
-            Navigation() {
-
-            }
-            .title($r('app.string.ItemEditPage_title'), {
-                // backgroundColor: $r('app.color.color_background'),
-            })
-            .titleMode(NavigationTitleMode.Mini)
-            .mode(NavigationMode.Auto)
-            .backgroundColor($r('app.color.color_face'))
-        }
-        .height('600vp')
-        .width('100%')
     }
 }

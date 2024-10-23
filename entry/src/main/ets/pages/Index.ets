@@ -16,16 +16,37 @@ import { SettingsPage } from './SettingsPage';
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();
 
+class EditState {
+    public editPageShow: boolean = false;
+    public editKeyAlias: string = '';
+    public editSchema: OTPSchema | undefined = undefined;
+    public editNewItem: boolean = false;
+
+    constructor() {}
+
+    show(editKeyAlias: string, editSchema: OTPSchema, editNewItem: boolean = false) {
+        this.editKeyAlias = editKeyAlias;
+        this.editSchema = editSchema;
+        this.editNewItem = editNewItem;
+        this.editPageShow = true;
+    }
+
+    hide() {
+        this.editPageShow = false;
+        this.editKeyAlias = '';
+        this.editSchema = undefined;
+        this.editNewItem = false;
+    }
+}
+
 @Entry(storage)
 @Component
 struct Index {
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
-    @Provide navStack: NavPathStack = new NavPathStack()
+    @Provide navStack: NavPathStack = new NavPathStack();
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
-    @Provide editPageShow: boolean = false;
-    @Provide editKeyAlias: string = ''
-    @Provide editSchema: OTPSchema | undefined = undefined;
+    @Provide editState: EditState = new EditState();
 
     build() {
         RelativeContainer() {
@@ -42,6 +63,22 @@ struct Index {
                 }
                 .height('100%')
                 .width('100%')
+                .bindSheet($$this.editState.editPageShow,
+                    ItemEditBuilder(
+                        getContext(this),
+                        this.getExKeys(),
+                        this.editState.editKeyAlias,
+                        this.editState.editSchema!,
+                        this.editState.editNewItem,
+                    ),
+                    {
+                        title: { title: $r('app.string.ItemEditPage_title') },
+                        backgroundColor: $r('app.color.color_face'),
+                        showClose: false,
+                        detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
+                        // onWillDismiss: (action) => {},
+                    }
+                )
             }
             .title({builder: this.titleBar(), height: $r('sys.float.titlebar_default_height')})
             .titleMode(NavigationTitleMode.Mini)
@@ -49,20 +86,6 @@ struct Index {
             .hideBackButton(true)
             .mode(NavigationMode.Stack)
             .navDestination(this.pageJump)
-            .bindSheet($$this.editPageShow,
-                ItemEditBuilder(
-                    getContext(this),
-                    this.getExKeys(),
-                    this.editKeyAlias, this.editSchema!,
-                ),
-                {
-                    title: { title: $r('app.string.ItemEditPage_title') },
-                    backgroundColor: $r('app.color.color_face'),
-                    showClose: false,
-                    detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
-                    // onWillDismiss: (action) => {},
-                }
-            )
         }
         .height('100%')
         .width('100%')
@@ -100,14 +123,15 @@ struct Index {
     }
 
     private onItemListChanged() {
-        this.editPageShow = false;
+        this.editState.hide();
     }
 
     private getExKeys(): string[] {
-        if (this.editSchema?.secret) { // add new one
+        // this.editSchema?.secret
+        if (this.editState.editNewItem) {
             return this.items.map(x => x.keyAlias);
-        } else { // update existing one
-            return this.items.flatMap(x => x.keyAlias===this.editKeyAlias ? [] : [x.keyAlias]);
+        } else {
+            return this.items.flatMap(x => x.keyAlias===this.editState.editKeyAlias ? [] : [x.keyAlias]);
         }
     }
 }
@@ -214,9 +238,7 @@ struct OTPList {
 
 @Component
 struct OTPItem {
-    @Consume editPageShow: boolean;
-    @Consume editKeyAlias: string;
-    @Consume editSchema: OTPSchema | undefined;
+    @Consume editState: EditState;
     @Consume selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
     @Prop icon: string;
@@ -315,9 +337,7 @@ struct OTPItem {
                 },
                 onAction: () => {
                     this.selected = '';
-                    this.editKeyAlias = this.keyAlias;
-                    this.editSchema = this.schema;
-                    this.editPageShow = true;
+                    this.editState.show(this.keyAlias, this.schema);
                     this.listScroller!.closeAllSwipeActions();
                 },
             },
@@ -358,9 +378,7 @@ struct OTPItem {
                 .backgroundColor($r('sys.color.brand'))
                 .onClick(() => {
                     this.selected = '';
-                    this.editKeyAlias = this.keyAlias;
-                    this.editSchema = this.schema;
-                    this.editPageShow = true;
+                    this.editState.show(this.keyAlias, this.schema);
                     this.listScroller?.closeAllSwipeActions();
                 })
             }
@@ -435,9 +453,7 @@ struct QrScanButton {
     @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
     @StorageProp('settingsEnableManualInput') enableManualInput: boolean = false;
     @Consume selected: string;
-    @Consume editPageShow: boolean;
-    @Consume editKeyAlias: string;
-    @Consume editSchema: OTPSchema | undefined;
+    @Consume editState: EditState;
     @Consume btnVisibility: Visibility;
     @State _position: Edges = {bottom: 0, right: 0};
     @State addSheetShow: boolean = false;
@@ -551,10 +567,8 @@ struct QrScanButton {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         //
-        this.editKeyAlias = otp.keyAlias;
-        this.editSchema = otp.secret_leaked_schema;
         this.selected = '';
-        this.editPageShow = true;
+        this.editState.show(otp.keyAlias, otp.secret_leaked_schema, true);
     }
 
     private getUserUriInput(): Promise<string> {

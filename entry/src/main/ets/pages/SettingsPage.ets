@@ -63,7 +63,7 @@ export struct SettingsPage {
                         .height(14)
                         .onClick(() => {})
                         .onDragStart((ev) => {
-                            this.setDragPlainText(ev, 'https://beian.miit.gov.cn/#/Integrated/recordQuery')
+                            this.setDragPlainText(ev, '粤ICP备2024321498号')
                         })
                 }
                 .width('100%')
