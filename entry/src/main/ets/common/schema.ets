@@ -55,3 +55,9 @@ export interface OTPItemInfo {
     code: CodeResponseSchema,
     schema: OTPSchema,
 }
+
+export interface MasterKey {
+    type: 'PBKDF2',
+    nonce: string,
+    iteration: number,
+}

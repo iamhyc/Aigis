@@ -16,7 +16,7 @@ import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     SettingUpdateRequestSchema,
     } from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
-import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS } from '../common/conts';
+import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 
@@ -177,18 +177,7 @@ export default class EntryAbility extends UIAbility {
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
 
                 // setup global user settings
-                const settingString = this.dataPreferences.getSync(PREF_KEY_SETTINGS, '[]') as string;
-                const settingItems  = JSON.parse(settingString) as [string, ValueType][];
-                this.localSettings = new Map(settingItems);
-                for (const obj of DefaultUserPreferences.entries()) {
-                    const key = obj[0], defaultValue = obj[1];
-                    const localValue = this.localSettings.get(key);
-                    if (localValue===undefined) {
-                        AppStorage.setAndProp(`settings${key}`, defaultValue);
-                    } else {
-                        AppStorage.setAndProp(`settings${key}`, localValue);
-                    }
-                }
+                this.initUserPreferences(pref);
 
                 // register event handler
                 this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
@@ -274,4 +263,23 @@ export default class EntryAbility extends UIAbility {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onBackground');
     }
 
+    private initUserPreferences(pref: preferences.Preferences) {
+        // try to load user settings
+        const settingString = pref.getSync(PREF_KEY_SETTINGS, '[]') as string;
+        const settingItems  = JSON.parse(settingString) as [string, ValueType][];
+        this.localSettings = new Map(settingItems);
+        for (const obj of DefaultUserPreferences.entries()) {
+            const key = obj[0], defaultValue = obj[1];
+            const localValue = this.localSettings.get(key);
+            if (localValue===undefined) {
+                AppStorage.setAndProp(`settings${key}`, defaultValue);
+            } else {
+                AppStorage.setAndProp(`settings${key}`, localValue);
+            }
+        }
+
+        // try to load master key
+        const masterKey = pref.getSync(PREF_MASTER_KEY, {}) as string;
+
+    }
 }

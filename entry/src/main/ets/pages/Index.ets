@@ -12,6 +12,7 @@ import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
+import { biometricAuthAvailable } from '../crypto/authUtils';
 
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();
@@ -44,6 +45,8 @@ class EditState {
 struct Index {
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Provide navStack: NavPathStack = new NavPathStack();
+    @Provide biometricAvailable: boolean = biometricAuthAvailable();
+
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editState: EditState = new EditState();

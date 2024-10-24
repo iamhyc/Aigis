@@ -48,6 +48,15 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.ACCESS_BIOMETRIC",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ],
     "extensionAbilities": [

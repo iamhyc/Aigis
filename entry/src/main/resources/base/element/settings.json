@@ -18,15 +18,80 @@
       "name": "section_title_outlook",
       "value": "Outlook"
     },
+    {
+      "name": "setting_language",
+      "value": "Language"
+    },
+    {
+      "name": "setting_language_system_default",
+      "value": "System Default"
+    },
+    {
+      "name": "setting_show_issuer_icons",
+      "value": "Show Issuer Icons"
+    },
+    {
+      "name": "setting_show_account_name",
+      "value": "Show Account Name"
+    },
 
     {
       "name": "section_title_security",
       "value": "Security"
     },
+    {
+      "name": "setting_enable_biometric_unlock",
+      "value": "Enable Biometric Unlock"
+    },
+    {
+      "name": "setting_biometric_unlock_hint",
+      "value": "Used for authenticate the access to the tokens and master key."
+    },
+    {
+      "name": "setting_setup_password",
+      "value": "Setup Master Password"
+    },
+    {
+      "name": "setting_password_confirmed",
+      "value": "Confirmed"
+    },
+    {
+      "name": "setting_setup_password_hint",
+      "value": "Only used for encrypting the export data."
+    },
 
     {
       "name": "section_title_import_export",
       "value": "Import & Export"
+    },
+    {
+      "name": "setting_import_from_file",
+      "value": "Import from File"
+    },
+    {
+      "name": "setting_export_to_file",
+      "value": "Export to File"
+    },
+    {
+      "name": "setting_setup_master_key_hint",
+      "value": "Please setup the master key first."
+    },
+
+    {
+      "name": "section_title_about",
+      "value": "About"
+    },
+    {
+      "name": "setting_about_version",
+      "value": "Version Information"
+    },
+    {
+      "name": "setting_about_information",
+      "value": "Version: v%s\nLicense: AGPL-3.0\nICP Number: %s"
+    },
+    {
+      "name": "setting_official_website",
+      "value": "Official Website"
     },
 
     {

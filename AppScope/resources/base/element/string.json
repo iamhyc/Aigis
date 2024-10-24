@@ -3,6 +3,14 @@
     {
       "name": "app_name",
       "value": "Aigis"
+    },
+    {
+      "name": "app_version",
+      "value": "0.2.2 (2002)"
+    },
+    {
+      "name": "app_icp_string",
+      "value": "粤ICP备2024321498号"
     }
   ]
 }

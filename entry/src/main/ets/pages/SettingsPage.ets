@@ -1,76 +1,114 @@
-import { SymbolGlyphModifier } from "@kit.ArkUI";
+import { mediaquery, SymbolGlyphModifier } from "@kit.ArkUI";
 import { unifiedDataChannel } from "@kit.ArkData";
-import { settingToggle } from "../components/settings";
+import { SettingListInfo, SettingListItem, SettingListToggle } from "../components/settings";
 import { EVENT_UPDATE_SETTING, SettingUpdateRequestSchema } from "../common/schema";
+import { ValueType } from "../common/settings";
+
+interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
+const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
 
 @Component
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
+    @Consume biometricAvailable: boolean;
+
     @StorageProp('settingsEnableManualInput')
     @Watch('onItChanged') EnableManualInput: boolean = false;
+    @StorageProp('settingsEnableBiometricUnlock')
+    @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
+    @StorageProp('settingsMasterKeyAvailable')
+    @Watch('onItChanged') MasterKeyAvailable: boolean = false;
+
+    @State ShowIssuerIcons: boolean = true;
+    @State ShowAccountName: boolean = true;
+    @State BioMetricEnabled: boolean = this.biometricAvailable && this.EnableBiometricUnlock;
 
     build() {
         NavDestination() {
             RelativeContainer() {
                 List({space:10}) {
                     // General
-                    ListItem() { this.sectionHeader($r('app.string.section_title_general')) }.margin({bottom:-6})
+                    ListItemGroupHeader({name: $r('app.string.section_title_general')}).margin({bottom:-6})
                     ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        ListItem() {
-                            settingToggle({
-                                title: $r('app.string.setting_enable_manual_input_title'),
-                                selected: this.EnableManualInput
+                        SettingListToggle({
+                            title: $r('app.string.setting_enable_manual_input_title'),
+                            selected: this.EnableManualInput
+                        })
+                    }
+                    .divider(divider_style)
+                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                    // Outlook
+                    ListItemGroupHeader({name: $r('app.string.section_title_outlook')}).margin({bottom:-6})
+                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                        SettingListItem({ title: $r('app.string.setting_language'), preview: $r('app.string.setting_language_system_default') })
+                        SettingListToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
+                        SettingListToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
+                    }
+                    .divider(divider_style)
+                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                    // Security
+                    ListItemGroupHeader({name: $r('app.string.section_title_security')}).margin({bottom:-6})
+                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                        SettingListToggle({
+                            title: $r('app.string.setting_enable_biometric_unlock'),
+                            description: $r('app.string.setting_biometric_unlock_hint'),
+                            disabled: !this.biometricAvailable,
+                            selected: this.BioMetricEnabled,
+                        })
+                        // enable master password only when biometric available
+                        if (this.BioMetricEnabled) {
+                            SettingListItem({
+                                title: $r('app.string.setting_setup_password'),
+                                description: $r('app.string.setting_setup_password_hint'),
+                                preview: $r('app.string.setting_password_confirmed'),
                             })
                         }
                     }
+                    .divider(divider_style)
                     .backgroundColor($r('sys.color.comp_background_tertiary'))
-                    // Outlook
-                    ListItem() { this.sectionHeader($r('app.string.section_title_outlook')) }.margin({bottom:-6})
-                    // ListItemGroup({style: ListItemGroupStyle.CARD}) {}
-                    // .backgroundColor($r('sys.color.comp_background_tertiary'))
-                    // Security
-                    ListItem() { this.sectionHeader($r('app.string.section_title_security')) }.margin({bottom:-6})
-                    // ListItemGroup({style: ListItemGroupStyle.CARD}) {}
-                    // .backgroundColor($r('sys.color.comp_background_tertiary'))
+
                     // Import & Export
-                    ListItem() { this.sectionHeader($r('app.string.section_title_import_export')) }
-                    // ListItemGroup({style: ListItemGroupStyle.CARD}) {}
-                    // .backgroundColor($r('sys.color.comp_background_tertiary'))
-                }
-                .padding({top:10, bottom:10})
-                .divider({strokeWidth:'1px'})
-                .alignListItem(ListItemAlign.Center)
-                // license info
-                Column() {
-                    Row() {
-                        Hyperlink('https://github.com/iamhyc/Aigis', $r('app.string.string_text_repo', 'GitHub'))
-                            .height(14)
-                            .onClick(() => {})
-                            .onDragStart((ev) => {
-                                this.setDragPlainText(ev, 'https://github.com/iamhyc/Aigis')
-                            })
-                        Text('  |  ')
-                            .fontSize(14)
-                            .fontColor($r('sys.color.font_tertiary'))
-                        Hyperlink('https://gitcode.com/iamhyc/Aigis', $r('app.string.string_text_repo', 'GitCode'))
-                            .height(14)
-                            .onClick(() => {})
-                            .onDragStart((ev) => {
-                                this.setDragPlainText(ev, 'https://gitcode.com/iamhyc/Aigis')
-                            })
+                    ListItemGroupHeader({name: $r('app.string.section_title_import_export')}).margin({bottom:-6})
+                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                        if (!this.MasterKeyAvailable) {
+                            ListItem() {
+                                Text($r('app.string.setting_setup_master_key_hint'))
+                                    .fontColor($r('sys.color.warning'))
+                                    .fontSize(14)
+                            }
+                            .padding({top:6,bottom:6})
+                        }
+                        SettingListItem({ title: $r('app.string.setting_import_from_file'), disabled: !this.MasterKeyAvailable })
+                        SettingListItem({ title: $r('app.string.setting_export_to_file'), disabled: !this.MasterKeyAvailable })
                     }
-                    Hyperlink('https://beian.miit.gov.cn/#/Integrated/recordQuery', '粤ICP备2024321498号')
-                        .height(14)
-                        .onClick(() => {})
-                        .onDragStart((ev) => {
-                            this.setDragPlainText(ev, '粤ICP备2024321498号')
+                    .divider(divider_style)
+                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                    // About
+                    ListItemGroupHeader({name: $r('app.string.section_title_about')}).margin({bottom:-6})
+                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                        SettingListInfo({
+                            title: $r('app.string.setting_about_version'),
+                            description: $r('app.string.setting_about_information',
+                                $r('app.string.app_version'),
+                                $r('app.string.app_icp_string')
+                            )
                         })
+                        SettingListInfo({
+                            title: $r('app.string.setting_official_website'),
+                            description: 'https://github.com/iamhyc/Aigis'
+                        })
+                    }
+                    .divider(divider_style)
+                    .backgroundColor($r('sys.color.comp_background_tertiary'))
                 }
+                .height('100%')
                 .width('100%')
-                .alignRules({
-                    bottom: {anchor: "__container__", align: VerticalAlign.Bottom},
-                    left: {anchor: "__container__", align: HorizontalAlign.Start},
-                })
+                .padding({top:10, bottom:10})
+                .alignListItem(ListItemAlign.Center)
+                .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
             }
         }
         .title('Settings', {
@@ -82,13 +120,6 @@ export struct SettingsPage {
         .width('100%')
     }
 
-    @Builder sectionHeader(name: ResourceStr) {
-        Text(name)
-            .fontSize(14)
-            .fontColor($r('sys.color.font_secondary'))
-            .width('90%')
-    }
-
     private setDragPlainText(ev: DragEvent, content: string) {
         const textData = new unifiedDataChannel.PlainText
         textData.textContent = content;
@@ -97,13 +128,49 @@ export struct SettingsPage {
     }
 
     private onItChanged(key: string) {
+        let value: ValueType = 0;
         const eventHub = getContext(this).eventHub;
+
         switch(key) {
             case 'EnableManualInput':
-                eventHub.emit(EVENT_UPDATE_SETTING, {key, value: this.EnableManualInput} as SettingUpdateRequestSchema)
+                value = this.EnableManualInput;
+                break;
+            case 'EnableBiometricUnlock':
+                value = this.EnableBiometricUnlock;
                 break;
             default:
-                break;
+                return;
         }
+
+        eventHub.emit(EVENT_UPDATE_SETTING, {key, value} as SettingUpdateRequestSchema);
+    }
+}
+
+@Component
+struct ListItemGroupHeader {
+    @Require @Prop name: ResourceStr
+
+    listener:mediaquery.MediaQueryListener = this.getUIContext().getMediaQuery().matchMediaSync('(orientation: landscape)');
+    @State deviceIsPortrait: boolean = false;
+
+    build() {
+        ListItem() {
+            Text(this.name)
+                .fontSize(14)
+                .fontColor($r('sys.color.font_secondary'))
+                .width('90%')
+                .textAlign(this.deviceIsPortrait? TextAlign.Center : TextAlign.Start)
+        }
+    }
+
+    aboutToAppear() {
+        this.deviceIsPortrait = this.getUIContext().getMediaQuery().matchMediaSync('(orientation: landscape)').matches;
+        this.listener.on('change', (mediaQueryResult: mediaquery.MediaQueryResult) => {
+            this.deviceIsPortrait = mediaQueryResult.matches;
+        });
+    }
+
+    aboutToDisappear() {
+        this.listener.off('change');
     }
 }

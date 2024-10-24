@@ -7,7 +7,7 @@
 
     {
       "name": "section_title_general",
-      "value": "常规"
+      "value": "通用"
     },
     {
       "name": "setting_enable_manual_input_title",
@@ -18,15 +18,80 @@
       "name": "section_title_outlook",
       "value": "外观"
     },
+    {
+      "name": "setting_language",
+      "value": "语言"
+    },
+    {
+      "name": "setting_language_system_default",
+      "value": "系统默认"
+    },
+    {
+      "name": "setting_show_issuer_icons",
+      "value": "显示服务商图标"
+    },
+    {
+      "name": "setting_show_account_name",
+      "value": "显示账户名称"
+    },
 
     {
       "name": "section_title_security",
       "value": "安全"
     },
+    {
+      "name": "setting_enable_biometric_unlock",
+      "value": "启用生物识别解锁"
+    },
+    {
+      "name": "setting_biometric_unlock_hint",
+      "value": "用于验证令牌和主密钥的访问权限。"
+    },
+    {
+      "name": "setting_setup_password",
+      "value": "设置主密钥"
+    },
+    {
+      "name": "setting_password_confirmed",
+      "value": "已确认"
+    },
+    {
+      "name": "setting_setup_password_hint",
+      "value": "仅用于加密导出数据。"
+    },
 
     {
       "name": "section_title_import_export",
       "value": "导入 & 导出"
+    },
+    {
+      "name": "setting_import_from_file",
+      "value": "从文件导入"
+    },
+    {
+      "name": "setting_export_to_file",
+      "value": "导出到文件"
+    },
+    {
+      "name": "setting_setup_master_key_hint",
+      "value": "请先设置主密钥"
+    },
+
+    {
+      "name": "section_title_about",
+      "value": "关于"
+    },
+    {
+      "name": "setting_about_version",
+      "value": "版本信息"
+    },
+    {
+      "name": "setting_about_information",
+      "value": "版本号：v%s\n许可证：AGPL-3.0\n备案号：%s"
+    },
+    {
+      "name": "setting_official_website",
+      "value": "官方网站"
     },
 
     {
