@@ -46,7 +46,12 @@ export interface RemovalRequestSchema {
 export const EVENT_UPDATE_SETTING: string = 'update-setting';
 export interface SettingUpdateRequestSchema {
     key: string,
-    value: ValueType;
+    value: ValueType,
+}
+
+export const EVENT_UPDATE_PASSWORD: string = 'update-password';
+export interface PasswordUpdateRequestSchema {
+    password: string,
 }
 
 export interface OTPItemInfo {

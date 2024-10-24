@@ -14,6 +14,8 @@ import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     iconMatcher,
     EVENT_UPDATE_SETTING,
     SettingUpdateRequestSchema,
+    EVENT_UPDATE_PASSWORD,
+    PasswordUpdateRequestSchema,
     } from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
@@ -180,55 +182,7 @@ export default class EntryAbility extends UIAbility {
                 this.initUserPreferences(pref);
 
                 // register event handler
-                this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
-                    if (this.instPreferences) {
-                        const res = await this.instPreferences.requestCodeUpdate(data.keyAlias);
-                        if (res) {
-                            this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
-                        }
-                    }
-                });
-                this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
-                    if (this.instPreferences) {
-                        // update local preferences
-                        this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
-                        // update persist preferences
-                        this.instPreferences.persists(this.dataPreferences!);
-                        // propagate updated items
-                        this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
-                    }
-                });
-                this.context.eventHub.on(EVENT_MOVE_TO_TOP, (data: MoveToTopRequestSchema) => {
-                   if (this.instPreferences) {
-                       // swap in local preferences
-                       this.instPreferences.insertPreferenceItem(data.keyAlias);
-                       // update persist preferences
-                       this.instPreferences.persists(this.dataPreferences!);
-                       // propagate updated items
-                       this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
-                   }
-                });
-                this.context.eventHub.on(EVENT_REMOVE_ITEM, (data: RemovalRequestSchema) => {
-                    if (this.instPreferences) {
-                        // removal in local preferences
-                        this.instPreferences.removePreferenceItem(data.keyAlias);
-                        // update persist preferences
-                        this.instPreferences.persists(this.dataPreferences!);
-                        // propagate updated items
-                        this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
-                    }
-                });
-                this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: SettingUpdateRequestSchema) => {
-                    if (this.localSettings) {
-                        this.localSettings.set(data.key, data.value);
-                        AppStorage.set(`settings${data.key}`, data.value);
-                        //
-                        const settingItems = Array.from( this.localSettings.entries() );
-                        const settingString = JSON.stringify(settingItems);
-                        this.dataPreferences?.putSync(PREF_KEY_SETTINGS, settingString);
-                        this.dataPreferences?.flush();
-                    }
-                });
+                this.registerEventHubHandlers();
 
                 // init index page
                 windowStage.loadContent('pages/Index', this.localStorage)
@@ -281,5 +235,66 @@ export default class EntryAbility extends UIAbility {
         // try to load master key
         const masterKey = pref.getSync(PREF_MASTER_KEY, {}) as string;
 
+    }
+
+    private registerEventHubHandlers() {
+        this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
+            if (this.instPreferences) {
+                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias);
+                if (res) {
+                    this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                }
+            }
+        });
+        this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
+            if (this.instPreferences) {
+                // update local preferences
+                this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+            }
+        });
+        this.context.eventHub.on(EVENT_MOVE_TO_TOP, (data: MoveToTopRequestSchema) => {
+            if (this.instPreferences) {
+                // swap in local preferences
+                this.instPreferences.insertPreferenceItem(data.keyAlias);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+            }
+        });
+        this.context.eventHub.on(EVENT_REMOVE_ITEM, (data: RemovalRequestSchema) => {
+            if (this.instPreferences) {
+                // removal in local preferences
+                this.instPreferences.removePreferenceItem(data.keyAlias);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+            }
+        });
+        this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: SettingUpdateRequestSchema) => {
+            if (this.localSettings) {
+                this.localSettings.set(data.key, data.value);
+                AppStorage.set(`settings${data.key}`, data.value);
+                //
+                const settingItems = Array.from( this.localSettings.entries() );
+                const settingString = JSON.stringify(settingItems);
+                this.dataPreferences?.putSync(PREF_KEY_SETTINGS, settingString);
+                this.dataPreferences?.flush();
+            }
+        });
+        this.context.eventHub.on(EVENT_UPDATE_PASSWORD, (data: PasswordUpdateRequestSchema) => {
+            if (this.dataPreferences) {
+                //
+                data.password;
+                //
+                this.dataPreferences?.putSync(PREF_MASTER_KEY, {});
+                this.dataPreferences?.flush();
+            }
+        });
     }
 }

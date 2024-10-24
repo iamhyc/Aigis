@@ -57,7 +57,31 @@
     },
     {
       "name": "setting_setup_password_hint",
-      "value": "仅用于加密导出数据。"
+      "value": "仅用于加密用户数据。"
+    },
+    {
+      "name": "setting_setup_password_title",
+      "value": "输入密码"
+    },
+    {
+      "name": "setting_setup_password_warning",
+      "value": "警告：主密码无法恢复。如果您忘记密码，导出的数据将无法解密。"
+    },
+    {
+      "name": "setting_setup_password_placeholder",
+      "value": "输入密码"
+    },
+    {
+      "name": "setting_setup_password_re_placeholder",
+      "value": "确认密码"
+    },
+    {
+      "name": "setting_setup_password_security_hint",
+      "value": "密码至少需要8个字符"
+    },
+    {
+      "name": "setting_setup_password_not_match",
+      "value": "密码不匹配"
     },
 
     {

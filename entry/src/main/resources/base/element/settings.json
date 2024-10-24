@@ -57,7 +57,31 @@
     },
     {
       "name": "setting_setup_password_hint",
-      "value": "Only used for encrypting the export data."
+      "value": "Only used for encrypting the user data."
+    },
+    {
+      "name": "setting_setup_password_title",
+      "value": "Enter Password"
+    },
+    {
+      "name": "setting_setup_password_warning",
+      "value": "WARNING: The master password cannot be recovered. The exported data cannot be decrypted if you forget the password."
+    },
+    {
+      "name": "setting_setup_password_placeholder",
+      "value": "Password"
+    },
+    {
+      "name": "setting_setup_password_re_placeholder",
+      "value": "Confirm password"
+    },
+    {
+      "name": "setting_setup_password_security_hint",
+      "value": "Password must be 8-32 characters long."
+    },
+    {
+      "name": "setting_setup_password_not_match",
+      "value": "Passwords do not match."
     },
 
     {

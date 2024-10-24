@@ -31,7 +31,7 @@ export function checkAuthEnvironment(): AuthTrustLevel {
     } catch (err) {
         return AuthTrustLevel.None;
     }
-    //
+    // ATL1: at least with PIN available
     try {
         userAuth.getAvailableStatus(userAuth.UserAuthType.FINGERPRINT, userAuth.AuthTrustLevel.ATL4);
         return AuthTrustLevel.ATL4;

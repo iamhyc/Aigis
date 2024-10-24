@@ -1,4 +1,4 @@
-import { LengthUnit, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkUI';
+import { LengthUnit, Offset, promptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
@@ -576,7 +576,7 @@ struct QrScanButton {
 
     private getUserUriInput(): Promise<string> {
         this.inputDialogId = -1;
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _reject) => {
             promptAction.openCustomDialog({
                 builder: () => {
                     this.textInputDialogBuilder($r('app.string.input_parse_uri_title'), $r('app.string.input_parse_uri_placeholder'), (text) => {

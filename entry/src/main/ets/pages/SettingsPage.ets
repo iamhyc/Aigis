@@ -1,8 +1,9 @@
-import { mediaquery, SymbolGlyphModifier } from "@kit.ArkUI";
+import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { unifiedDataChannel } from "@kit.ArkData";
 import { SettingListInfo, SettingListItem, SettingListToggle } from "../components/settings";
-import { EVENT_UPDATE_SETTING, SettingUpdateRequestSchema } from "../common/schema";
+import { EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING, SettingUpdateRequestSchema } from "../common/schema";
 import { ValueType } from "../common/settings";
+import { PasswordInputDialog } from "../components/dialog";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -11,17 +12,18 @@ const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
     @Consume biometricAvailable: boolean;
+    @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
 
     @StorageProp('settingsEnableManualInput')
     @Watch('onItChanged') EnableManualInput: boolean = false;
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
-    @StorageProp('settingsMasterKeyAvailable')
-    @Watch('onItChanged') MasterKeyAvailable: boolean = false;
 
     @State ShowIssuerIcons: boolean = true;
     @State ShowAccountName: boolean = true;
     @State BioMetricEnabled: boolean = this.biometricAvailable && this.EnableBiometricUnlock;
+
+    private inputDialogId: number = -1;
 
     build() {
         NavDestination() {
@@ -64,6 +66,7 @@ export struct SettingsPage {
                                 description: $r('app.string.setting_setup_password_hint'),
                                 preview: $r('app.string.setting_password_confirmed'),
                             })
+                                .onClick(() => { this.handleSetupPassword() })
                         }
                     }
                     .divider(divider_style)
@@ -108,6 +111,7 @@ export struct SettingsPage {
                 .width('100%')
                 .padding({top:10, bottom:10})
                 .alignListItem(ListItemAlign.Center)
+                .scrollBar(BarState.Off)
                 .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
             }
         }
@@ -143,6 +147,41 @@ export struct SettingsPage {
         }
 
         eventHub.emit(EVENT_UPDATE_SETTING, {key, value} as SettingUpdateRequestSchema);
+    }
+
+    private showCustomDialog(builder: () => CustomBuilder) {
+        if (this.inputDialogId > 0) {
+            promptAction.closeCustomDialog(this.inputDialogId);
+            this.inputDialogId = -1;
+        }
+        //
+        promptAction.openCustomDialog({
+            builder,
+            onWillDismiss: (dismissDialogAction: DismissDialogAction) => {
+                if (dismissDialogAction.reason == DismissReason.PRESS_BACK) {
+                    dismissDialogAction.dismiss()
+                }
+                if (dismissDialogAction.reason == DismissReason.TOUCH_OUTSIDE) {
+                    dismissDialogAction.dismiss()
+                }
+            }
+        }).then((dialogId) => {
+            this.inputDialogId = dialogId;
+        });
+    }
+
+    @Builder passwordInputDialogBuilder(confirm?: (password: string) => void) {
+        PasswordInputDialog({ confirm });
+    }
+    private handleSetupPassword() {
+        this.showCustomDialog(() => {
+            this.passwordInputDialogBuilder((password) => {
+                getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password});
+                //
+                promptAction.closeCustomDialog(this.inputDialogId);
+                this.inputDialogId = -1;
+            })
+        });
     }
 }
 
