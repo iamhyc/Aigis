@@ -16,33 +16,32 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 
 ### TODO
 
-**Release v0.2.3**:
-- [ ] Bulky Export Support (in Aegis format)
-
-
-**Release v0.3.0**:
-- [ ] Settings Page Design
+**Test v0.2.4**:
+- [ ] More Setting Items
   - Disable Account Name Display / Only Show with duplicate issuers
   - Code Split Digits Option (2/3/4/'Even'/'None')
-  - Set Password
-  - Password Challenge Notification Period
+  - Color Theme: Default / Light / Dark
+- [ ] Import password also when no master key setup
 - [ ] Access Control with Authentication
-  - Auto-lock when in background
-- [ ] Password to master key via PBKDF2
-  - master key stored in HUKS for AES *encrypt & examine* purpose only
-  - so, cannot change password, or the secrets cannot export any more
-- [ ] HUKS for MAC Key storage (cannot export)
-  - `SecretStore` only used for export, cause no *decrypt* purpose function provided
-- [ ] Bulky Import Support (Aegis only, Encrypted only)
-  - support import password (master key) at the same time
+    - Use Master Key to encrypt secrets
+    - Use Biometric to authenticate secrets access
+    - Discard biometric auth when in background
+- [ ] Main Page with ATL1 Authentication
 
-**Release v0.5.0**:
-- [ ] Allow to change password
-- [ ] Password Challenge Design
+**Test v0.2.5**:
+- [ ] Request Password to disable Biometric Auth
+
+**Test v0.2.6**:
+- [ ] Change Password Procedure Design
+
+**Release v1.0.0**:
 - [ ] Better Icon Match
 
-**Release v1.0.0**
-- [ ] All test pass
+
+### TODO
+- [ ] Password Challenge Design
+    - Password Challenge Periodic Notification
+- [ ] More Import / Export Support (e.g., Aegis)
 
 ### References
 
