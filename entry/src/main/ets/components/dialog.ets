@@ -1,3 +1,4 @@
+import { promptAction } from "@kit.ArkUI"
 
 // Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-modal-dialog-V5
 @Component
@@ -52,6 +53,7 @@ export struct PasswordInputDialog {
     @State password: string = ''
     @State password_re: string = ''
 
+    cancel?: () => void
     confirm?: (password: string) => void
 
     build() {
@@ -91,15 +93,31 @@ export struct PasswordInputDialog {
                     }
                 }
                 //
-                Button($r('app.string.button_text_ok'))
-                    .height('36vp')
-                    .width('60%')
-                    .onClick(() => {
-                        if (this.checkPasswordStrength() && this.password===this.password_re) {
-                            this.confirm && this.confirm(this.password);
-                        }
-                    })
-                    .enabled( this.password===this.password_re && this.checkPasswordStrength() )
+                Grid() {
+                    GridItem() {
+                        Button($r('app.string.button_text_cancel'))
+                            .height('36vp')
+                            .width('100%')
+                            .backgroundColor($r('sys.color.comp_background_secondary'))
+                            .onClick(() => { this.cancel && this.cancel(); })
+                    }
+                    GridItem() {
+                        Button($r('app.string.button_text_ok'))
+                            .height('36vp')
+                            .width('100%')
+                            .enabled( this.password===this.password_re && this.checkPasswordStrength() )
+                            .onClick(() => {
+                                if (this.checkPasswordStrength() && this.password===this.password_re) {
+                                    this.confirm && this.confirm(this.password);
+                                }
+                            })
+                    }
+                }
+                .height(36)
+                .width('90%')
+                .layoutDirection(GridDirection.Row)
+                .columnsTemplate('2fr 3fr')
+                .columnsGap(10)
             }
             .padding({top:16, bottom:16})
             .borderRadius(10)

@@ -1,4 +1,8 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
+import { MasterKeyInfo, PBKDF2Material } from '../common/schema';
+import { getRandomInt } from '../common/utils';
+import { AES_KEY_USAGE, generateRandomSalt24, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from './huksUtils';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 // Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/errorcode-useriam-V5
 export enum AUTH_ERROR_CODE {
@@ -54,6 +58,34 @@ export function biometricAuthAvailable(): boolean {
     return checkAuthEnvironment() >= AuthTrustLevel.ATL2;
 }
 
-export class PBKDF2MasterKey {
+export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {
+    const pbkdf2 = cryptoFramework.createKdf('PBKDF2|SHA256');
+    const spec: cryptoFramework.PBKDF2Spec = {
+        algName: 'PBKDF2', password,
+        salt: material.salt,
+        iterations: material.iteration,
+        keySize: Math.floor(keySize/8),
+    };
+    const secret = await pbkdf2.generateSecret(spec);
+    return secret.data;
+}
 
+export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE): Promise<MasterKeyInfo> {
+    const type = 'PBKDF2';
+    const version = 'v1';
+    // derive AES256 key from password and import in HUKS
+    const secret: PBKDF2Material = {
+        salt: await generateRandomSalt24(),
+        iteration: getRandomInt(1000, 10000),
+    };
+    const secretKey = await pbkdf2KeyDerive(password, secret, 256);
+    await HUKSAgent.importKeyItem(keyAlias, PARAMS_DERIVE_SRC_KEY, secretKey);
+    // derive AES256-ECB key (with AES256key) in HUKS
+    const params: PBKDF2Material = {
+        salt: await generateRandomSalt24(),
+        iteration: getRandomInt(1000, 10000),
+    }
+    await HUKSAgent.deriveAesKeyItem(keyAlias, purpose, password, params, keyAlias);
+    //
+    return { type, version, keyAlias, secret, params };
 }

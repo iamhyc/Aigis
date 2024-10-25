@@ -4,7 +4,7 @@
 > 使用当前 测试版本（≤v0.2.2） 升级5.0系统，会导致令牌数据全部丢失！！！
 > 请关注[相关讨论](https://github.com/iamhyc/Aigis/issues/12)，对于已经造成的数据丢失，深表歉意！
 > 
-> 为了避免此类事情再次发生，10月25日前预计更新含有 密钥加密导出 特性的版本，其他特性及修正暂时推迟。
+> 为了避免此类事情再次发生，10月~~25日~~27日前预计更新含有 密钥加密导出 特性的版本，其他特性及修正暂时推迟。
 
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 

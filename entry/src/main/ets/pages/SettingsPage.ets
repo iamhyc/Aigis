@@ -1,7 +1,8 @@
 import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { unifiedDataChannel } from "@kit.ArkData";
 import { SettingListInfo, SettingListItem, SettingListToggle } from "../components/settings";
-import { EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING, SettingUpdateRequestSchema } from "../common/schema";
+import { EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING,
+    SettingUpdateRequestSchema } from "../common/schema";
 import { ValueType } from "../common/settings";
 import { PasswordInputDialog } from "../components/dialog";
 
@@ -53,20 +54,19 @@ export struct SettingsPage {
                     // Security
                     ListItemGroupHeader({name: $r('app.string.section_title_security')}).margin({bottom:-6})
                     ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListToggle({
-                            title: $r('app.string.setting_enable_biometric_unlock'),
-                            description: $r('app.string.setting_biometric_unlock_hint'),
-                            disabled: !this.biometricAvailable,
-                            selected: this.BioMetricEnabled,
-                        })
-                        // enable master password only when biometric available
-                        if (this.BioMetricEnabled) {
-                            SettingListItem({
-                                title: $r('app.string.setting_setup_password'),
-                                description: $r('app.string.setting_setup_password_hint'),
-                                preview: $r('app.string.setting_password_confirmed'),
+                        SettingListItem({
+                            title: $r('app.string.setting_setup_password'),
+                            description: $r('app.string.setting_setup_password_hint'),
+                            preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
+                        }).onClick(() => { this.handleSetupPassword() })
+                        // enable biometric only when master password available
+                        if (this.MasterKeyAvailable) {
+                            SettingListToggle({
+                                title: $r('app.string.setting_enable_biometric_unlock'),
+                                description: $r('app.string.setting_biometric_unlock_hint'),
+                                disabled: !this.biometricAvailable,
+                                selected: this.BioMetricEnabled,
                             })
-                                .onClick(() => { this.handleSetupPassword() })
                         }
                     }
                     .divider(divider_style)
@@ -170,18 +170,22 @@ export struct SettingsPage {
         });
     }
 
-    @Builder passwordInputDialogBuilder(confirm?: (password: string) => void) {
-        PasswordInputDialog({ confirm });
+    @Builder passwordInputDialogBuilder(confirm?: (password: string) => void, cancel?: () => void) {
+        PasswordInputDialog({ confirm, cancel });
     }
     private handleSetupPassword() {
-        this.showCustomDialog(() => {
-            this.passwordInputDialogBuilder((password) => {
-                getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password});
-                //
-                promptAction.closeCustomDialog(this.inputDialogId);
-                this.inputDialogId = -1;
-            })
-        });
+        if (!this.MasterKeyAvailable) {
+            this.showCustomDialog(() => {
+                this.passwordInputDialogBuilder((password) => {
+                    getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password});
+                    //
+                    promptAction.closeCustomDialog(this.inputDialogId);
+                    this.inputDialogId = -1;
+                }, () => {promptAction.closeCustomDialog(this.inputDialogId);})
+            });
+        } else {
+            promptAction.showToast({ message: 'Password cannot changed for now.' });
+        }
     }
 }
 

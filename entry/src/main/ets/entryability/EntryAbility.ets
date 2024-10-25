@@ -16,17 +16,21 @@ import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
     SettingUpdateRequestSchema,
     EVENT_UPDATE_PASSWORD,
     PasswordUpdateRequestSchema,
+    MasterKeyInfo,
     } from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
+import { generateMasterKeyInHUKS } from '../crypto/authUtils';
+import { AES_KEY_USAGE } from '../crypto/huksUtils';
 
 const AIGIS_PREF_NAME = 'aigis-pref';
 
 interface SecretSchema {
     keyAlias: string,
-    secret: string
+    secret: string,
+    encrypted?: boolean,
 }
 
 class PreferencesManager {
@@ -233,8 +237,8 @@ export default class EntryAbility extends UIAbility {
         }
 
         // try to load master key
-        const masterKey = pref.getSync(PREF_MASTER_KEY, {}) as string;
-
+        const masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
+        AppStorage.setAndProp('MasterKeyAvailable', masterKeyInfo.keyAlias!==undefined);
     }
 
     private registerEventHubHandlers() {
@@ -287,13 +291,14 @@ export default class EntryAbility extends UIAbility {
                 this.dataPreferences?.flush();
             }
         });
-        this.context.eventHub.on(EVENT_UPDATE_PASSWORD, (data: PasswordUpdateRequestSchema) => {
+        this.context.eventHub.on(EVENT_UPDATE_PASSWORD, async (data: PasswordUpdateRequestSchema) => {
             if (this.dataPreferences) {
+                const keyAlias = PREF_MASTER_KEY;
+                const masterKeyInfo = await generateMasterKeyInHUKS(keyAlias, data.password, AES_KEY_USAGE.ENCRYPT);
                 //
-                data.password;
-                //
-                this.dataPreferences?.putSync(PREF_MASTER_KEY, {});
+                this.dataPreferences?.putSync(PREF_MASTER_KEY, masterKeyInfo);
                 this.dataPreferences?.flush();
+                AppStorage.set('MasterKeyAvailable', true);
             }
         });
     }

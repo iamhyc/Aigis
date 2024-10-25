@@ -60,3 +60,11 @@ export function arrayRearrange<T>(array: T[], prevIndex: number, newIndex: numbe
         prevIndex += stepper;
     }
 }
+
+export function getRandomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function stringToUint8Array(str: string): Uint8Array {
+    return Uint8Array.from(Array.from(str).map(x => x.charCodeAt(0)));
+}
