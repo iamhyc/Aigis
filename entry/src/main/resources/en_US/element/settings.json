@@ -100,6 +100,18 @@
       "name": "setting_setup_master_key_hint",
       "value": "Please setup the master key first."
     },
+    {
+      "name": "setting_import_file_title",
+      "value": "Import File Format"
+    },
+    {
+      "name": "setting_import_enter_password_title",
+      "value": "Enter Import Password"
+    },
+    {
+      "name": "setting_export_file_title",
+      "value": "Export File Format"
+    },
 
     {
       "name": "section_title_about",

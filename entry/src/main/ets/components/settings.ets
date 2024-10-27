@@ -88,6 +88,7 @@ export struct SettingListItem {
             .height('auto')
             .width('100%')
         }
+        .clickEffect({level: ClickEffectLevel.MIDDLE})
     }
 }
 

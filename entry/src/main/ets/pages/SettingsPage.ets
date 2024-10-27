@@ -1,10 +1,17 @@
 import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { unifiedDataChannel } from "@kit.ArkData";
 import { SettingListInfo, SettingListItem, SettingListToggle } from "../components/settings";
-import { EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING,
-    SettingUpdateRequestSchema } from "../common/schema";
 import { ValueType } from "../common/settings";
-import { PasswordInputDialog } from "../components/dialog";
+import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
+import {
+    EVENT_EXPORT_REQUEST,
+    EVENT_IMPORT_REQUEST,
+    EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING,
+    FileExportRequestSchema,
+    FileImportRequestSchema,
+    SettingUpdateRequestSchema } from "../common/events";
+import { picker } from "@kit.CoreFileKit";
+import { common } from "@kit.AbilityKit";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -64,7 +71,7 @@ export struct SettingsPage {
                             SettingListToggle({
                                 title: $r('app.string.setting_enable_biometric_unlock'),
                                 description: $r('app.string.setting_biometric_unlock_hint'),
-                                disabled: !this.biometricAvailable,
+                                disabled: true,//!this.biometricAvailable,
                                 selected: this.BioMetricEnabled,
                             })
                         }
@@ -84,7 +91,9 @@ export struct SettingsPage {
                             .padding({top:6,bottom:6})
                         }
                         SettingListItem({ title: $r('app.string.setting_import_from_file'), disabled: !this.MasterKeyAvailable })
+                            .onClick(() => { this.handleImportFromFile(); })
                         SettingListItem({ title: $r('app.string.setting_export_to_file'), disabled: !this.MasterKeyAvailable })
+                            .onClick(() => { this.handleExportToFile(); })
                     }
                     .divider(divider_style)
                     .backgroundColor($r('sys.color.comp_background_tertiary'))
@@ -170,22 +179,106 @@ export struct SettingsPage {
         });
     }
 
-    @Builder passwordInputDialogBuilder(confirm?: (password: string) => void, cancel?: () => void) {
-        PasswordInputDialog({ confirm, cancel });
+    @Builder newPasswordInputDialogBuilder(title: ResourceStr, warning: ResourceStr, confirm?: (password: string) => void, cancel?: () => void) {
+        NewPasswordInputDialog({ title, warning, confirm, cancel });
     }
     private handleSetupPassword() {
         if (!this.MasterKeyAvailable) {
             this.showCustomDialog(() => {
-                this.passwordInputDialogBuilder((password) => {
-                    getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password});
-                    //
-                    promptAction.closeCustomDialog(this.inputDialogId);
-                    this.inputDialogId = -1;
-                }, () => {promptAction.closeCustomDialog(this.inputDialogId);})
+                this.newPasswordInputDialogBuilder(
+                    $r('app.string.setting_setup_password_title'),
+                    $r('app.string.setting_setup_password_warning'),
+                    (password) => {
+                        getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password});
+                        //
+                        promptAction.closeCustomDialog(this.inputDialogId);
+                        this.inputDialogId = -1;
+                    },
+                    () => { promptAction.closeCustomDialog(this.inputDialogId); }
+                );
             });
         } else {
-            promptAction.showToast({ message: 'Password cannot changed for now.' });
+            promptAction.showToast({ message: 'Password cannot change for now.' });
         }
+    }
+
+    @Builder passwordInputDialogBuilder(title: ResourceStr, warning?: ResourceStr, confirm?: (password: string) => void, cancel?: () => void) {
+        PasswordInputDialog({ title, warning, confirm, cancel })
+    }
+    @Builder customSelectDialogBuilder(title: ResourceStr, subtitle: ResourceStr | undefined, entries: ResourceStr[], confirm?: (value: ResourceStr) => void, cancel?: () => void) {
+        CustomSelectDialog({ title, subtitle, entries, confirm, cancel })
+    }
+    private handleImportFromFile() {
+        const entries = ['Aigis (.json)'];
+        this.showCustomDialog(() => {
+            this.customSelectDialogBuilder($r('app.string.setting_import_file_title'), undefined, entries, (value) => {
+                let format: string = '';
+                switch(value) {
+                    case 'Aigis (.json)':
+                        format = 'aigis';
+                        break;
+                    default:
+                        return;
+                }
+                //
+                const context = getContext(this) as common.Context;
+                const documentViewPicker = new picker.DocumentViewPicker(context);
+                const documentSelectOptions = new picker.DocumentSelectOptions();
+                documentSelectOptions.maxSelectNumber = 1;
+                documentSelectOptions.fileSuffixFilters = ['.json'];
+                documentViewPicker.select(documentSelectOptions).then((uris) => {
+                    if (uris[0]!==undefined) {
+                        const uri = uris[0];
+                        this.showCustomDialog(() => {
+                            this.passwordInputDialogBuilder(
+                                $r('app.string.setting_import_enter_password_title'), undefined,
+                                (password) => {
+                                    context.eventHub.emit(EVENT_IMPORT_REQUEST, {format, uri, password} as FileImportRequestSchema);
+                                    //
+                                    this.inputDialogId = -1;
+                                    promptAction.closeCustomDialog(this.inputDialogId);
+                                }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                        });
+                    }
+                });
+                //
+                this.inputDialogId = -1;
+                promptAction.closeCustomDialog(this.inputDialogId);
+            }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+        });
+    }
+    private handleExportToFile() {
+        const entries = ['Aigis (.json)'];
+        this.showCustomDialog(() => {
+            this.customSelectDialogBuilder($r('app.string.setting_export_file_title'), undefined, entries, (value) => {
+                let format: string = '';
+                const dateStr = new Date().toLocaleString('zh-CN', {hour12: false})
+                    .replace(/\/|:/g, '')
+                    .split(' ').join('-')
+                const documentSaveOptions = new picker.DocumentSaveOptions();
+                switch(value) {
+                    case 'Aigis (.json)':
+                        format = 'aigis';
+                        documentSaveOptions.newFileNames = [`aigis-${dateStr}.json`];
+                        documentSaveOptions.fileSuffixChoices = ['.json'];
+                        break;
+                    default:
+                        return;
+                }
+                //
+                const context = getContext(this) as common.Context;
+                const documentViewPicker = new picker.DocumentViewPicker(context);
+                documentViewPicker.save(documentSaveOptions).then((uris) => {
+                    if (uris[0]!==undefined) {
+                        const uri = uris[0];
+                        context.eventHub.emit(EVENT_EXPORT_REQUEST, {format, uri} as FileExportRequestSchema);
+                    }
+                });
+                //
+                promptAction.closeCustomDialog(this.inputDialogId);
+                this.inputDialogId = -1;
+            }, () => { promptAction.closeCustomDialog(this.inputDialogId); })
+        });
     }
 }
 

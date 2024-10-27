@@ -93,12 +93,24 @@
       "value": "从文件导入"
     },
     {
+      "name": "setting_import_enter_password_title",
+      "value": "输入导入密码"
+    },
+    {
       "name": "setting_export_to_file",
       "value": "导出到文件"
     },
     {
       "name": "setting_setup_master_key_hint",
       "value": "请先设置主密钥"
+    },
+    {
+      "name": "setting_import_file_title",
+      "value": "导入文件格式"
+    },
+    {
+      "name": "setting_export_file_title",
+      "value": "导出文件格式"
     },
 
     {

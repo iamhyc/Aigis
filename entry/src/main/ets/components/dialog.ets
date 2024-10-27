@@ -1,4 +1,3 @@
-import { promptAction } from "@kit.ArkUI"
 
 // Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/arkts-modal-dialog-V5
 @Component
@@ -20,26 +19,10 @@ export struct TextInputDialog {
                 .height(72)
                 .width('90%')
             //
-            Grid() {
-                GridItem() {
-                    Button($r('app.string.button_text_cancel'))
-                        .height('36vp')
-                        .width('100%')
-                        .backgroundColor($r('sys.color.comp_background_secondary'))
-                        .onClick(() => { this.cancel && this.cancel(); })
-                }
-                GridItem() {
-                    Button($r('app.string.button_text_ok'))
-                        .height('36vp')
-                        .width('100%')
-                        .onClick(() => { this.confirm && this.confirm(this.text); })
-                }
-            }
-            .height(36)
-            .width('90%')
-            .layoutDirection(GridDirection.Row)
-            .columnsTemplate('2fr 3fr')
-            .columnsGap(10)
+            OkCancelButtonGroup({
+                cancel: () => { this.cancel && this.cancel(); },
+                confirm: () => { this.confirm && this.confirm(this.text); }
+            })
         }
         .padding({top: 10, bottom: 10})
         .borderRadius(10)
@@ -47,9 +30,99 @@ export struct TextInputDialog {
 }
 
 @Component
+export struct CustomSelectDialog {
+    @Prop selected: number = 0;
+    @Require @Prop title: ResourceStr
+    @Prop subtitle: ResourceStr
+    @Require @Prop entries: ResourceStr[]
+
+    cancel?: () => void
+    confirm?: (value: ResourceStr) => void
+
+    build() {
+        Scroll() {
+            Column({space:16}) {
+                Column({space:6}) {
+                    Text(this.title)
+                        .textAlign(TextAlign.Center)
+                        .fontWeight(FontWeight.Medium)
+                        .fontSize(20)
+                    if (this.subtitle) {
+                        Text(this.subtitle)
+                            .textAlign(TextAlign.Center)
+                            .fontColor($r('sys.color.font_secondary'))
+                            .fontSize(14)
+                    }
+                }
+                .width('90%')
+                //
+                Select(this.entries.map(x => {return {value:x} as SelectOption}))
+                    .width('90%')
+                    .optionWidth(OptionWidthMode.FIT_TRIGGER)
+                    .selected($$this.selected)
+                    .value(this.entries[this.selected])
+                //
+                OkCancelButtonGroup({
+                    cancel: () => { this.cancel && this.cancel() },
+                    confirm: () => { this.confirm && this.confirm( this.entries[this.selected] ) },
+                })
+            }
+            .padding({top:16, bottom:16})
+            .borderRadius(10)
+        }
+        .scrollBar(BarState.Off)
+    }
+}
+
+@Component
 export struct PasswordInputDialog {
-    @Prop title: ResourceStr =$r('app.string.setting_setup_password_title')
-    @Prop warning: ResourceStr = $r('app.string.setting_setup_password_warning')
+    @Require @Prop title: ResourceStr
+    @Prop warning: ResourceStr | undefined
+    @State password: string = ''
+
+    cancel?: () => void
+    confirm?: (password: string) => void
+
+    build() {
+        Scroll() {
+            Column({space:16}) {
+                Column({space:6}) {
+                    Text(this.title)
+                        .fontWeight(FontWeight.Medium)
+                        .fontSize(20)
+                    if (this.warning) {
+                        Text(this.warning)
+                            .fontColor($r('sys.color.warning'))
+                            .fontSize(14)
+                    }
+                }
+                .width('90%')
+                //
+                TextInput({ placeholder: $r('app.string.setting_setup_password_placeholder'), text: $$this.password })
+                    .type(InputType.Password)
+                    .contentType(ContentType.PASSWORD)
+                    .width('90%')
+                //
+                OkCancelButtonGroup({
+                    okBtnEnabled: this.password.length >= 8,
+                    cancel: () => { this.cancel && this.cancel(); },
+                    confirm: () => {
+                        if (this.password.length >= 8) {
+                            this.confirm && this.confirm(this.password);
+                        }
+                    }
+                })
+            }
+            .padding({top:16, bottom:16})
+            .borderRadius(10)
+        }
+    }
+}
+
+@Component
+export struct NewPasswordInputDialog {
+    @Require @Prop title: ResourceStr
+    @Prop warning: ResourceStr
     @State password: string = ''
     @State password_re: string = ''
 
@@ -93,31 +166,15 @@ export struct PasswordInputDialog {
                     }
                 }
                 //
-                Grid() {
-                    GridItem() {
-                        Button($r('app.string.button_text_cancel'))
-                            .height('36vp')
-                            .width('100%')
-                            .backgroundColor($r('sys.color.comp_background_secondary'))
-                            .onClick(() => { this.cancel && this.cancel(); })
+                OkCancelButtonGroup({
+                    okBtnEnabled: this.password===this.password_re && this.checkPasswordStrength(),
+                    cancel: () => { this.cancel && this.cancel(); },
+                    confirm: () => {
+                        if (this.checkPasswordStrength() && this.password===this.password_re) {
+                            this.confirm && this.confirm(this.password);
+                        }
                     }
-                    GridItem() {
-                        Button($r('app.string.button_text_ok'))
-                            .height('36vp')
-                            .width('100%')
-                            .enabled( this.password===this.password_re && this.checkPasswordStrength() )
-                            .onClick(() => {
-                                if (this.checkPasswordStrength() && this.password===this.password_re) {
-                                    this.confirm && this.confirm(this.password);
-                                }
-                            })
-                    }
-                }
-                .height(36)
-                .width('90%')
-                .layoutDirection(GridDirection.Row)
-                .columnsTemplate('2fr 3fr')
-                .columnsGap(10)
+                })
             }
             .padding({top:16, bottom:16})
             .borderRadius(10)
@@ -131,5 +188,39 @@ export struct PasswordInputDialog {
             return false;
         }
         return true;
+    }
+}
+
+@Component
+struct OkCancelButtonGroup {
+    @Prop okBtnEnabled: boolean = true
+
+    cancel?: () => void
+    confirm?: () => void
+
+    build() {
+        Grid() {
+            GridItem() {
+                Button($r('app.string.button_text_cancel'))
+                    .height('36vp')
+                    .width('100%')
+                    .backgroundColor($r('sys.color.comp_background_secondary'))
+                    .onClick(() => { this.cancel && this.cancel(); })
+            }
+            GridItem() {
+                Button($r('app.string.button_text_ok'))
+                    .height('36vp')
+                    .width('100%')
+                    .enabled( this.okBtnEnabled )
+                    .onClick(() => {
+                        this.confirm && this.confirm();
+                    })
+            }
+        }
+        .height(36)
+        .width('90%')
+        .layoutDirection(GridDirection.Row)
+        .columnsTemplate('2fr 3fr')
+        .columnsGap(10)
     }
 }

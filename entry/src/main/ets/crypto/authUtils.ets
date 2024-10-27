@@ -1,6 +1,6 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
 import { MasterKeyInfo, PBKDF2Material } from '../common/schema';
-import { getRandomInt } from '../common/utils';
+import { getRandomInt, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { AES_KEY_USAGE, generateRandomSalt24, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from './huksUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
@@ -62,7 +62,7 @@ export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material
     const pbkdf2 = cryptoFramework.createKdf('PBKDF2|SHA256');
     const spec: cryptoFramework.PBKDF2Spec = {
         algName: 'PBKDF2', password,
-        salt: material.salt,
+        salt: stringToUint8Array(material.salt),
         iterations: material.iteration,
         keySize: Math.floor(keySize/8),
     };
@@ -70,20 +70,24 @@ export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material
     return secret.data;
 }
 
-export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE): Promise<MasterKeyInfo> {
+export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE, secret?: PBKDF2Material, params?: PBKDF2Material): Promise<MasterKeyInfo> {
     const type = 'PBKDF2';
     const version = 'v1';
     // derive AES256 key from password and import in HUKS
-    const secret: PBKDF2Material = {
-        salt: await generateRandomSalt24(),
-        iteration: getRandomInt(1000, 10000),
-    };
+    if (secret===undefined) {
+        secret = {
+            salt: Uint8ArrayToString(await generateRandomSalt24()),
+            iteration: getRandomInt(1000, 10000),
+        };
+    }
     const secretKey = await pbkdf2KeyDerive(password, secret, 256);
     await HUKSAgent.importKeyItem(keyAlias, PARAMS_DERIVE_SRC_KEY, secretKey);
     // derive AES256-ECB key (with AES256key) in HUKS
-    const params: PBKDF2Material = {
-        salt: await generateRandomSalt24(),
-        iteration: getRandomInt(1000, 10000),
+    if (params===undefined) {
+        params = {
+            salt: Uint8ArrayToString(await generateRandomSalt24()),
+            iteration: getRandomInt(1000, 10000),
+        };
     }
     await HUKSAgent.deriveAesKeyItem(keyAlias, purpose, password, params, keyAlias);
     //

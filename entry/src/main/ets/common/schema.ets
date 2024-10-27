@@ -1,5 +1,5 @@
 import { OTPSchema } from "../crypto/otpUtils";
-import { ValueType } from "./settings";
+import { stringToUint8Array, Uint8ArrayToString } from "./utils";
 
 interface IssuerName {
     issuer: string,
@@ -11,47 +11,13 @@ export function name2keyAlias(props: IssuerName): string {
 }
 
 export function iconMatcher(issuer: string): string {
-    return `icons/issuers/${issuer.toLowerCase()}.svg`;
+    const issuerKey = issuer.toLowerCase().replace(/(\.org|\.com)$/, '')
+    return `icons/issuers/${issuerKey}.svg`;
 }
 
-export const EVENT_CODE_REQUEST: string = 'code-request';
-export interface CodeRequestSchema {
-    keyAlias: string,
-}
 export interface CodeResponseSchema {
     timestamp: number,
     code: string,
-}
-
-export const EVENT_UPDATE_ITEM: string = 'update-item';
-export interface UpdateRequestSchema {
-    uri: string,
-    keyAlias?: string,
-}
-export interface UpdateResponseSchema {
-    success: boolean,
-    message?: string,
-}
-
-export const EVENT_MOVE_TO_TOP: string = 'move-to-top';
-export interface MoveToTopRequestSchema {
-    keyAlias: string,
-}
-
-export const EVENT_REMOVE_ITEM: string = 'remove-item';
-export interface RemovalRequestSchema {
-    keyAlias: string,
-}
-
-export const EVENT_UPDATE_SETTING: string = 'update-setting';
-export interface SettingUpdateRequestSchema {
-    key: string,
-    value: ValueType,
-}
-
-export const EVENT_UPDATE_PASSWORD: string = 'update-password';
-export interface PasswordUpdateRequestSchema {
-    password: string,
 }
 
 export interface OTPItemInfo {
@@ -61,8 +27,21 @@ export interface OTPItemInfo {
     schema: OTPSchema,
 }
 
+export interface SecretSchema {
+    keyAlias: string,
+    secret: string,
+    encrypted?: boolean,
+}
+
+export interface AigisContentSchema {
+    masterKey: MasterKeyInfo,
+    items: OTPItemInfo[],
+    secrets: SecretSchema[],
+    settings?: string,
+}
+
 export interface PBKDF2Material {
-    salt: Uint8Array,
+    salt: string,
     iteration: number,
 }
 export interface MasterKeyInfo {
@@ -71,4 +50,9 @@ export interface MasterKeyInfo {
     keyAlias: string,
     secret: PBKDF2Material,
     params: PBKDF2Material,
+}
+
+export interface AesGcmMaterial {
+    aad: string,
+    nonce: string,
 }

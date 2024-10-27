@@ -4,15 +4,14 @@ import { scanCore, scanBarcode } from '@kit.ScanKit';
 
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
-import { OTPItemInfo, EVENT_CODE_REQUEST, CodeRequestSchema,
-    CodeResponseSchema,
-    EVENT_MOVE_TO_TOP} from '../common/schema';
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { biometricAuthAvailable } from '../crypto/authUtils';
+import { CodeResponseSchema, OTPItemInfo } from '../common/schema';
+import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
 
 const REFRESH_INTERVAL = 250;//ms
 const storage = LocalStorage.getShared();

@@ -1,6 +1,6 @@
 import { promptAction } from "@kit.ArkUI";
-import { EVENT_REMOVE_ITEM, EVENT_UPDATE_ITEM, iconMatcher, RemovalRequestSchema,
-    UpdateRequestSchema } from "../common/schema";
+import { EVENT_REMOVE_ITEM, EVENT_UPDATE_ITEM, RemovalRequestSchema, UpdateRequestSchema } from "../common/events";
+import { iconMatcher } from "../common/schema";
 import { LabeledSelect, LabeledTextInput } from "../components/labeled";
 import { OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
 

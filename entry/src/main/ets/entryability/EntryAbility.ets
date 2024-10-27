@@ -1,37 +1,35 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
-import { window } from '@kit.ArkUI';
+import { promptAction, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
-import { EVENT_CODE_REQUEST, CodeRequestSchema, CodeResponseSchema, OTPItemInfo,
-    EVENT_UPDATE_ITEM,
-    UpdateRequestSchema,
-    EVENT_REMOVE_ITEM,
-    RemovalRequestSchema,
-    EVENT_MOVE_TO_TOP,
-    MoveToTopRequestSchema,
-    iconMatcher,
-    EVENT_UPDATE_SETTING,
-    SettingUpdateRequestSchema,
-    EVENT_UPDATE_PASSWORD,
-    PasswordUpdateRequestSchema,
-    MasterKeyInfo,
-    } from '../common/schema'
+import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
+    AigisContentSchema,
+    MasterKeyInfo} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
-import { PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
+import { AIGIS_PREF_NAME, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
 import { AES_KEY_USAGE } from '../crypto/huksUtils';
-
-const AIGIS_PREF_NAME = 'aigis-pref';
-
-interface SecretSchema {
-    keyAlias: string,
-    secret: string,
-    encrypted?: boolean,
-}
+import { CodeRequestSchema, EVENT_CODE_REQUEST,
+    EVENT_EXPORT_REQUEST,
+    EVENT_IMPORT_REQUEST,
+    EVENT_MOVE_TO_TOP,
+    EVENT_REMOVE_ITEM,
+    EVENT_UPDATE_ITEM,
+    EVENT_UPDATE_PASSWORD,
+    EVENT_UPDATE_SETTING,
+    FileExportRequestSchema,
+    FileImportRequestSchema,
+    MoveToTopRequestSchema,
+    PasswordUpdateRequestSchema,
+    RemovalRequestSchema,
+    SettingUpdateRequestSchema,
+    UpdateRequestSchema } from '../common/events';
+import { AigisImporter } from '../importers/aigis';
 
 class PreferencesManager {
     private _instances: Map<string, OTP>;
@@ -42,6 +40,10 @@ class PreferencesManager {
         this._items = items;
         this._secrets = secrets;
         this._instances = new Map();
+    }
+
+    get leaked_secrets() {
+        return this._secrets;
     }
 
     get items() {
@@ -76,6 +78,24 @@ class PreferencesManager {
         } else {
             return false;
         }
+    }
+
+    importPreferenceItems(dataPreferences: preferences.Preferences, items: OTPItemInfo[], secrets: SecretSchema[]): OTPItemInfo[] {
+        const failed: OTPItemInfo[] = [];
+        //
+        for (let i=0; i<items.length; i++) {
+            const keyAlias = items[i].keyAlias;
+            if (this._items.find(x => x.keyAlias===keyAlias)) {
+                failed.push(items[i]);
+            } else {
+                this._items.push(items[i]);
+                this._secrets.push(secrets[i]);
+                this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
+            }
+        }
+        this.persists(dataPreferences);
+        //
+        return failed;
     }
 
     updatePreferenceItem(uri: string, oldKeyAlias?: string) {
@@ -148,8 +168,9 @@ export default class EntryAbility extends UIAbility {
     private localStorage: LocalStorage = new LocalStorage();
     private instPreferences?: PreferencesManager;
     private localSettings?: UserPreferences;
+    private masterKeyInfo?: MasterKeyInfo;
 
-    onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    onCreate(_want: Want, _launchParam: AbilityConstant.LaunchParam): void {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
     }
 
@@ -158,8 +179,7 @@ export default class EntryAbility extends UIAbility {
     }
 
     onWindowStageCreate(windowStage: window.WindowStage): void {
-        // Main window is created, set main page for this ability
-        hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+        // set main window in privacy mode
         const mainWindow = windowStage.getMainWindowSync();
         mainWindow.setWindowPrivacyMode(true);
         mainWindow.on('avoidAreaChange', (data) => {
@@ -175,30 +195,19 @@ export default class EntryAbility extends UIAbility {
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
             .then((pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
-                //
+                // init
                 this.instPreferences = new PreferencesManager(
                   this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
                   this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
                 );
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
-
                 // setup global user settings
                 this.initUserPreferences(pref);
-
                 // register event handler
                 this.registerEventHubHandlers();
 
                 // init index page
-                windowStage.loadContent('pages/Index', this.localStorage)
-                    .then(() => {
-                        hilog.info(0x0000, 'testTag', 'Succeeded in loading the content.');
-                    })
-                    .catch((err: BusinessError) => {
-                        if (err.code) {
-                            hilog.error(0x0000, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err) ?? '');
-                            return;
-                        }
-                    });
+                windowStage.loadContent('pages/Index', this.localStorage);
             })
             .catch((err: BusinessError) => {
                 console.error("Failed to get preferences. code =" + err.code + ", message =" + err.message);
@@ -237,8 +246,8 @@ export default class EntryAbility extends UIAbility {
         }
 
         // try to load master key
-        const masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
-        AppStorage.setAndProp('MasterKeyAvailable', masterKeyInfo.keyAlias!==undefined);
+        this.masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
+        AppStorage.setAndProp('MasterKeyAvailable', this.masterKeyInfo.keyAlias!==undefined);
     }
 
     private registerEventHubHandlers() {
@@ -295,11 +304,57 @@ export default class EntryAbility extends UIAbility {
             if (this.dataPreferences) {
                 const keyAlias = PREF_MASTER_KEY;
                 const masterKeyInfo = await generateMasterKeyInHUKS(keyAlias, data.password, AES_KEY_USAGE.ENCRYPT);
+                this.masterKeyInfo = masterKeyInfo;
                 //
                 this.dataPreferences?.putSync(PREF_MASTER_KEY, masterKeyInfo);
                 this.dataPreferences?.flush();
                 AppStorage.set('MasterKeyAvailable', true);
             }
         });
+        this.context.eventHub.on(EVENT_EXPORT_REQUEST, async (data: FileExportRequestSchema) => {
+            if (this.masterKeyInfo===undefined || this.instPreferences===undefined) {
+                return;
+            }
+
+            try {
+                const settingString = this.localSettings? JSON.stringify(Array.from( this.localSettings.entries() )) : undefined;
+                //
+                const file = await fs.open(data.uri, fs.OpenMode.CREATE|fs.OpenMode.WRITE_ONLY);
+                const content: AigisContentSchema = {
+                    masterKey: this.masterKeyInfo,
+                    items: this.instPreferences.items,
+                    secrets: this.instPreferences.leaked_secrets,
+                    settings: settingString,
+                };
+                const result = await (new AigisImporter()).save(file.fd, this.masterKeyInfo.keyAlias, content);
+                if (result) {
+                    promptAction.showToast({message: `Export to ${data.uri}`});
+                } else {
+                    promptAction.showToast({message: 'Export failed.'});
+                    throw Error('Export failed.');
+                }
+            } catch (err) {
+                fs.unlink(data.uri);
+            }
+        });
+        this.context.eventHub.on(EVENT_IMPORT_REQUEST, async (data: FileImportRequestSchema) => {
+            const file = await fs.open(data.uri, fs.OpenMode.READ_ONLY);
+            try {
+                const content = await (new AigisImporter()).load(file.fd, data.password!);
+                // import from file;
+                const failed = this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets);
+                if (failed.length > 0) {
+                    const failedItems = failed.map(x => x.keyAlias).join('\n');
+                    promptAction.showToast({message: `Following Items import failed:\n ${failedItems}}`})
+                } else {
+                    promptAction.showToast({message: `Import Success: ${content.items.length} items`});
+                }
+                // refresh local storage
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences!.items);
+                //TODO: restore settings and master key (if not present)
+            } catch (error) {
+                promptAction.showToast({message: 'Failed to decrypt the file.'});
+            }
+        })
     }
 }

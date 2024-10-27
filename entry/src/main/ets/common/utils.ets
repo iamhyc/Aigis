@@ -68,3 +68,7 @@ export function getRandomInt(min: number, max: number): number {
 export function stringToUint8Array(str: string): Uint8Array {
     return Uint8Array.from(Array.from(str).map(x => x.charCodeAt(0)));
 }
+
+export function Uint8ArrayToString(array: Uint8Array): string {
+    return Array.from(array).map(x => String.fromCharCode(x)).join('');
+}
