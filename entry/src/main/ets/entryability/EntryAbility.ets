@@ -328,9 +328,9 @@ export default class EntryAbility extends UIAbility {
                 };
                 const result = await (new AigisImporter()).save(file.fd, this.masterKeyInfo.keyAlias, content);
                 if (result) {
-                    promptAction.showToast({message: `Export to ${data.uri}`});
+                    promptAction.showToast({message: $r('app.string.setting_export_message_success', data.uri)});
                 } else {
-                    promptAction.showToast({message: 'Export failed.'});
+                    promptAction.showToast({message: $r('app.string.setting_export_message_failed')});
                     throw Error('Export failed.');
                 }
             } catch (err) {
@@ -342,18 +342,19 @@ export default class EntryAbility extends UIAbility {
             try {
                 const content = await (new AigisImporter()).load(file.fd, data.password!);
                 // import from file;
-                const failed = this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets);
-                if (failed.length > 0) {
-                    const failedItems = failed.map(x => x.keyAlias).join('\n');
-                    promptAction.showToast({message: `Following Items import failed:\n ${failedItems}}`})
-                } else {
-                    promptAction.showToast({message: `Import Success: ${content.items.length} items`});
+                const failedItems = this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets);
+                const successNums = content.items.length - failedItems.length;
+                promptAction.showToast({message: $r('app.string.setting_import_message_success', successNums)});
+                if (failedItems.length > 0) {
+                    const failedMsg = failedItems.map(x => '• '+x.keyAlias).join('\n');
+                    const showDuration = Math.max(failedItems.length*500, 5000);
+                    promptAction.showToast({message: $r('app.string.setting_import_message_bypass_items', failedMsg), duration: showDuration});
                 }
                 // refresh local storage
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences!.items);
                 //TODO: restore settings and master key (if not present)
             } catch (error) {
-                promptAction.showToast({message: 'Failed to decrypt the file.'});
+                promptAction.showToast({message: $r('app.string.setting_import_message_failed_decryption'), duration: 1000});
             }
         })
     }

@@ -65,7 +65,7 @@
     },
     {
       "name": "setting_setup_password_warning",
-      "value": "WARNING: The master password cannot be recovered. The exported data cannot be decrypted if you forget the password."
+      "value": "WARNING: The master password cannot be recovered in any way. The exported data cannot be decrypted if you forget the password."
     },
     {
       "name": "setting_setup_password_placeholder",
@@ -109,8 +109,28 @@
       "value": "Enter Import Password"
     },
     {
+      "name": "setting_import_message_success",
+      "value": "%d entries successfully imported"
+    },
+    {
+      "name": "setting_import_message_bypass_items",
+      "value": "The following existing entries have been skipped:\n%s"
+    },
+    {
+      "name": "setting_import_message_failed_decryption",
+      "value": "Failed to decrypt the file."
+    },
+    {
       "name": "setting_export_file_title",
       "value": "Export File Format"
+    },
+    {
+      "name": "setting_export_message_success",
+      "value": "Exported to \"%s\""
+    },
+    {
+      "name": "setting_export_message_failed",
+      "value": "Export failed."
     },
 
     {

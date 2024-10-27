@@ -65,7 +65,7 @@
     },
     {
       "name": "setting_setup_password_warning",
-      "value": "警告：主密码无法恢复。如果您忘记密码，导出的数据将无法解密。"
+      "value": "警告：主密码无法以任何方式恢复。如果您忘记密码，则导出的数据将无法解密。"
     },
     {
       "name": "setting_setup_password_placeholder",
@@ -97,6 +97,18 @@
       "value": "输入导入密码"
     },
     {
+      "name": "setting_import_message_success",
+      "value": "%d 个新条目已成功导入。"
+    },
+    {
+      "name": "setting_import_message_bypass_items",
+      "value": "以下现有的条目已被跳过：\n%s"
+    },
+    {
+      "name": "setting_import_message_failed_decryption",
+      "value": "解密文件失败。"
+    },
+    {
       "name": "setting_export_to_file",
       "value": "导出到文件"
     },
@@ -111,6 +123,14 @@
     {
       "name": "setting_export_file_title",
       "value": "导出文件格式"
+    },
+    {
+      "name": "setting_export_message_success",
+      "value": "已导出到 \"%s\""
+    },
+    {
+      "name": "setting_export_message_failed",
+      "value": "导出失败"
     },
 
     {
