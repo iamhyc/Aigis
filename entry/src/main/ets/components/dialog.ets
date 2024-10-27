@@ -78,10 +78,12 @@ export struct CustomSelectDialog {
 export struct PasswordInputDialog {
     @Require @Prop title: ResourceStr
     @Prop warning: ResourceStr | undefined
+    @Prop optionText: ResourceStr
     @State password: string = ''
+    @State checked: boolean = false
 
     cancel?: () => void
-    confirm?: (password: string) => void
+    confirm?: (password: string, checked?: boolean) => void
 
     build() {
         Scroll() {
@@ -98,17 +100,29 @@ export struct PasswordInputDialog {
                 }
                 .width('90%')
                 //
-                TextInput({ placeholder: $r('app.string.setting_setup_password_placeholder'), text: $$this.password })
-                    .type(InputType.Password)
-                    .contentType(ContentType.PASSWORD)
-                    .width('90%')
+                Column({space:6}) {
+                    TextInput({ placeholder: $r('app.string.setting_setup_password_placeholder'), text: $$this.password })
+                        .type(InputType.Password)
+                        .contentType(ContentType.PASSWORD)
+                        .width('100%')
+                    //
+                    if (this.optionText) {
+                        Row({space:6}) {
+                            Checkbox().select($$this.checked)
+                            Text(this.optionText)
+                                .fontSize(16)
+                                .onClick(() => { this.checked = !this.checked; })
+                        }.width('100%')
+                    }
+                }
+                .width('90%')
                 //
                 OkCancelButtonGroup({
                     okBtnEnabled: this.password.length >= 8,
                     cancel: () => { this.cancel && this.cancel(); },
                     confirm: () => {
                         if (this.password.length >= 8) {
-                            this.confirm && this.confirm(this.password);
+                            this.confirm && this.confirm(this.password, this.checked);
                         }
                     }
                 })

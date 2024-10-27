@@ -109,6 +109,10 @@
       "value": "Enter Import Password"
     },
     {
+      "name": "setting_import_enter_password_option_as_master_key",
+      "value": "Also set this as the master password"
+    },
+    {
       "name": "setting_import_message_success",
       "value": "%d entries successfully imported"
     },

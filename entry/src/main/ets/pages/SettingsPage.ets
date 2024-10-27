@@ -82,18 +82,14 @@ export struct SettingsPage {
                     // Import & Export
                     ListItemGroupHeader({name: $r('app.string.section_title_import_export')}).margin({bottom:-6})
                     ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        if (!this.MasterKeyAvailable) {
-                            ListItem() {
-                                Text($r('app.string.setting_setup_master_key_hint'))
-                                    .fontColor($r('sys.color.warning'))
-                                    .fontSize(14)
-                            }
-                            .padding({top:6,bottom:6})
-                        }
-                        SettingListItem({ title: $r('app.string.setting_import_from_file'), disabled: !this.MasterKeyAvailable })
+                        SettingListItem({ title: $r('app.string.setting_import_from_file') })
                             .onClick(() => { this.handleImportFromFile(); })
-                        SettingListItem({ title: $r('app.string.setting_export_to_file'), disabled: !this.MasterKeyAvailable })
-                            .onClick(() => { this.handleExportToFile(); })
+                        SettingListItem({
+                            title: $r('app.string.setting_export_to_file'),
+                            disabled: !this.MasterKeyAvailable,
+                            preview: this.MasterKeyAvailable? undefined : $r('app.string.setting_setup_master_key_hint')
+                        })
+                            .onClick(() => { this.MasterKeyAvailable && this.handleExportToFile(); })
                     }
                     .divider(divider_style)
                     .backgroundColor($r('sys.color.comp_background_tertiary'))
@@ -202,8 +198,8 @@ export struct SettingsPage {
         }
     }
 
-    @Builder passwordInputDialogBuilder(title: ResourceStr, warning?: ResourceStr, confirm?: (password: string) => void, cancel?: () => void) {
-        PasswordInputDialog({ title, warning, confirm, cancel })
+    @Builder passwordInputDialogBuilder(title: ResourceStr, warning?: ResourceStr, optionText?: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
+        PasswordInputDialog({ title, warning, optionText, confirm, cancel })
     }
     @Builder customSelectDialogBuilder(title: ResourceStr, subtitle: ResourceStr | undefined, entries: ResourceStr[], confirm?: (value: ResourceStr) => void, cancel?: () => void) {
         CustomSelectDialog({ title, subtitle, entries, confirm, cancel })
@@ -232,8 +228,9 @@ export struct SettingsPage {
                         this.showCustomDialog(() => {
                             this.passwordInputDialogBuilder(
                                 $r('app.string.setting_import_enter_password_title'), undefined,
-                                (password) => {
-                                    context.eventHub.emit(EVENT_IMPORT_REQUEST, {format, uri, password} as FileImportRequestSchema);
+                                this.MasterKeyAvailable? undefined : $r('app.string.setting_import_enter_password_option_as_master_key'),
+                                (password, importPassword) => {
+                                    context.eventHub.emit(EVENT_IMPORT_REQUEST, {format, uri, password, importPassword} as FileImportRequestSchema);
                                     //
                                     this.inputDialogId = -1;
                                     promptAction.closeCustomDialog(this.inputDialogId);

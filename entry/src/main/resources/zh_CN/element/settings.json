@@ -97,6 +97,10 @@
       "value": "输入导入密码"
     },
     {
+      "name": "setting_import_enter_password_option_as_master_key",
+      "value": "同时设置为主密钥"
+    },
+    {
       "name": "setting_import_message_success",
       "value": "%d 个新条目已成功导入。"
     },

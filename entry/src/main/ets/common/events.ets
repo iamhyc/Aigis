@@ -48,4 +48,5 @@ export interface FileImportRequestSchema {
     format: string,
     uri: string,
     password?: string,
+    importPassword?: boolean,
 }

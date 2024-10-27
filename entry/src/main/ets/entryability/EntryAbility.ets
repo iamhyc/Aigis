@@ -347,12 +347,16 @@ export default class EntryAbility extends UIAbility {
                 promptAction.showToast({message: $r('app.string.setting_import_message_success', successNums)});
                 if (failedItems.length > 0) {
                     const failedMsg = failedItems.map(x => '• '+x.keyAlias).join('\n');
-                    const showDuration = Math.max(failedItems.length*500, 5000);
+                    const showDuration = Math.max(failedItems.length*500, 3000);
                     promptAction.showToast({message: $r('app.string.setting_import_message_bypass_items', failedMsg), duration: showDuration});
                 }
                 // refresh local storage
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences!.items);
-                //TODO: restore settings and master key (if not present)
+                // import password as master key
+                if (this.masterKeyInfo?.keyAlias===undefined && data.password!==undefined && data.importPassword) {
+                    this.context.eventHub.emit(EVENT_UPDATE_PASSWORD, {password: data.password} as PasswordUpdateRequestSchema);
+                }
+                // TODO: restore settings
             } catch (error) {
                 promptAction.showToast({message: $r('app.string.setting_import_message_failed_decryption'), duration: 1000});
             }

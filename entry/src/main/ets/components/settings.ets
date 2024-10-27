@@ -55,6 +55,7 @@ export struct SettingListItem {
     @Prop description: ResourceStr | undefined
     @Prop preview: ResourceStr | undefined
     @Prop disabled: boolean = false
+    @State previewColor: ResourceStr = this.disabled? $r('sys.color.warning') : $r('sys.color.font_secondary')
 
     build() {
         ListItem() {
@@ -65,7 +66,7 @@ export struct SettingListItem {
                     Column() {
                         Text(this.preview)
                             .fontSize(14)
-                            .fontColor($r('sys.color.font_secondary'))
+                            .fontColor(this.previewColor)
                             .maxLines(2)
                             .width('100%')
                             .textAlign(TextAlign.End)
@@ -88,7 +89,7 @@ export struct SettingListItem {
             .height('auto')
             .width('100%')
         }
-        .clickEffect({level: ClickEffectLevel.MIDDLE})
+        .clickEffect(this.disabled? null : { level: ClickEffectLevel.MIDDLE })
     }
 }
 
