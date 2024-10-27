@@ -3,8 +3,8 @@
     "bundleName": "com.atomicservice.5765880207855519999",
     "bundleType": "atomicService",
     "vendor": "xyzsudofree",
-    "versionCode": 2002,
-    "versionName": "0.2.2",
+    "versionCode": 2003,
+    "versionName": "0.2.3",
     "icon": "$media:app_icon",
     "label": "$string:app_name"
   }
