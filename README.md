@@ -1,10 +1,7 @@
 # Aigis
 
-> [!CAUTION]
-> 使用当前 测试版本（≤v0.2.2） 升级5.0系统，会导致令牌数据全部丢失！！！
-> 请关注[相关讨论](https://github.com/iamhyc/Aigis/issues/12)，对于已经造成的数据丢失，深表歉意！
-> 
-> 为了避免此类事情再次发生，10月~~25日~~27日前预计更新含有 密钥加密导出 特性的版本，其他特性及修正暂时推迟。
+> [!NOTE]
+> 本元服务预计于10月底正式上架，敬请期待！
 
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 
@@ -16,25 +13,22 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
 
 ### TODO
 
-**Test v0.2.4**:
+**Test v0.2.5**:
+- [ ] Main Page with ATL1 Authentication
+  - Discard previous biometric auth when in background
+- [ ] Access Control with Biometric Authentication
+    - Encrypt secrets
+    - Import MAC secrets to HUKS with ATL3 auth access
+    - Request Password to disable Biometric Auth
+- [ ] Biometric Failure Fallback
+  - Use password input for temporarily access
+
+**Release v1.0.0**:
+- [ ] Change Password Procedure Design
 - [ ] More Setting Items
   - Disable Account Name Display / Only Show with duplicate issuers
   - Code Split Digits Option (2/3/4/'Even'/'None')
   - Color Theme: Default / Light / Dark
-- [ ] Import password also when no master key setup
-- [ ] Access Control with Authentication
-    - Use Master Key to encrypt secrets
-    - Use Biometric to authenticate secrets access
-    - Discard biometric auth when in background
-- [ ] Main Page with ATL1 Authentication
-
-**Test v0.2.5**:
-- [ ] Request Password to disable Biometric Auth
-
-**Test v0.2.6**:
-- [ ] Change Password Procedure Design
-
-**Release v1.0.0**:
 - [ ] Better Icon Match
 
 
