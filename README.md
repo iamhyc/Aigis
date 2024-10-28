@@ -11,17 +11,71 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   <img height="500px" alt="screenshot_dark" src="./docs/images/screenshot_dark.jpg" />
 </p>
 
+### Security Design
+
+```mermaid
+flowchart LR
+
+Dst1[["OTP Tokens"]]
+Dst2[("Items & Settings")]
+Dst3[("Aigis Exports")]
+
+Src0(["Biometric/PIN (ATL1)"])
+
+Src1(["Biometric (ATL3)"])
+Via1["MAC Secrets"]
+
+Src2(["Password"])
+Src2a["(one-time) dec_master_key"]
+Via2[("Encrypted Secrets<br/>(AES256-GCM)")]
+Src2b["(persisted) enc_master_key"]
+
+subgraph "User Input"
+Src0
+Src1
+Src2
+end
+
+subgraph "HUKS (TEE)"
+Via1
+Src2a
+Src2b
+end
+
+subgraph "APP Sandbox"
+Via2
+Dst2
+end
+
+subgraph "Output"
+Dst1
+Dst3
+end
+
+Src1-->Via1--"secure compute"-->Dst1
+Src2--PBKDF2/AES256-->Src2a--decrypt-->Via2
+Src2--PBKDF2/AES256-->Src2b--encrypt-->Via2
+
+Src0--"Authenticate"-->Dst2
+
+Via2-->Dst3
+Dst2-->Dst3
+```
+
+**Fallback Security Design**: If ATL3 is invalidated for any reason, the password will be prompted to decrypt the "Encrypted Secrets", and then re-imported to overwrite "MAC secrets" in HUKS without auth required. If ATL1 is invalidated for any reason, the APP will be inaccessible until reinstalled.
+
 ### TODO
 
 **Test v0.2.5**:
+
 - [ ] Main Page with ATL1 Authentication
   - Discard previous biometric auth when in background
 - [ ] Access Control with Biometric Authentication
-    - Encrypt secrets
+    - Encrypt secrets with `enc_master_key`
     - Import MAC secrets to HUKS with ATL3 auth access
     - Request Password to disable Biometric Auth
 - [ ] Biometric Failure Fallback
-  - Use password input for temporarily access
+  - Require password to re-import (overwrite) the secrets in HUKS
 
 **Release v1.0.0**:
 - [ ] Change Password Procedure Design
