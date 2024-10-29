@@ -7,7 +7,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
     AigisContentSchema,
-    MasterKeyInfo} from '../common/schema'
+    MasterKeyInfo,
+    FAKE_OTP_CODE} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { AIGIS_PREF_NAME, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
@@ -38,6 +39,8 @@ class PreferencesManager {
 
     constructor(items: OTPItemInfo[], secrets: SecretSchema[]) {
         this._items = items;
+        items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE}); //FIXME: remove this later
+        //
         this._secrets = secrets;
         this._instances = new Map();
     }

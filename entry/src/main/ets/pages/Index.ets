@@ -10,11 +10,12 @@ import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { biometricAuthAvailable } from '../crypto/authUtils';
-import { CodeResponseSchema, OTPItemInfo } from '../common/schema';
+import { CodeResponseSchema, FAKE_OTP_CODE, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
 
-const REFRESH_INTERVAL = 250;//ms
+const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
+
 
 class EditState {
     public editPageShow: boolean = false;
@@ -244,14 +245,15 @@ struct OTPItem {
     @Consume selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
     @Prop icon: string;
-    @Prop @Watch('onCodeUpdated') code: CodeResponseSchema;
+    @Prop code: CodeResponseSchema;
     @Prop keyAlias: string;
     @Prop schema: OTPSchema;
     @State passed_time: number = 0;
     @State isVisible: Visibility = Visibility.Visible;
-    @State editItemOnly: boolean = false;
+    @State showEditItemOnly: boolean = false;
     @State swipeBackgroundColor: Resource = $r('sys.color.comp_background_secondary');
 
+    private codeRequested: boolean = false;
     listScroller?: ListScroller;
 
     build() {
@@ -279,14 +281,14 @@ struct OTPItem {
                                 .fontColor($r('sys.color.font_secondary'))
                         }
 
-                        if (this.selected!==this.keyAlias) {
+                        if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
+                            Text(this.splitDigits())
+                                .fontSize(26)
+                        } else {
                             Text(this.hiddenDigits())
                                 .fontWeight(FontWeight.Medium)
                                 .fontSize($r('sys.float.Subtitle_L'))
                                 .letterSpacing(5)
-                        } else {
-                            Text(this.splitDigits())
-                                .fontSize(26)
                         }
                     }
                     .alignItems(HorizontalAlign.Start)
@@ -327,13 +329,13 @@ struct OTPItem {
                 actionAreaDistance: 60,//vp
                 onEnterActionArea: () => {
                     animateTo({curve: Curve.Smooth, duration: 300}, () => {
-                        this.editItemOnly = true;
+                        this.showEditItemOnly = true;
                         this.swipeBackgroundColor = $r('sys.color.brand');
                     });
                 },
                 onExitActionArea: () => {
                     animateTo({curve: Curve.Smooth, duration: 200}, () => {
-                        this.editItemOnly = false;
+                        this.showEditItemOnly = false;
                         this.swipeBackgroundColor = $r('sys.color.comp_background_secondary');
                     });
                 },
@@ -350,7 +352,7 @@ struct OTPItem {
         Column() {
             Row({space:8}) {
                 //
-                if (!this.editItemOnly) {
+                if (!this.showEditItemOnly) {
                     // removal button
                     // Button({ type: ButtonType.Circle }) {
                     //     SymbolGlyph($r('sys.symbol.trash_fill'))
@@ -404,16 +406,13 @@ struct OTPItem {
         }
     }
 
-    private onCodeUpdated() {
+    private onPeriodicCodeUpdated() {
         if (this.selected===this.keyAlias) {
             this.requestCodeUpdate();
-            setTimeout(() => {
-                this.onCodeUpdated();
-            }, REFRESH_INTERVAL);
         }
     }
 
-    private requestCodeUpdate(): boolean {
+    private requestCodeUpdate() {
         const _period = (this.schema as TimedOTPSchema).period * 1000;
 
         // test time-based OTP if refresh needed
@@ -422,16 +421,21 @@ struct OTPItem {
             const passed_time = _now - this.code.timestamp;
             const remain_time = _now % _period;
             this.passed_time = remain_time;
-            if (remain_time > REFRESH_INTERVAL && passed_time < 1) {
-                return false;
+            if (remain_time > REFRESH_INTERVAL && passed_time < _period) {
+                return;
+            }
+            if (remain_time < REFRESH_INTERVAL) {
+                this.codeRequested = false;
             }
         }
 
         // apply code update request
-        getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
+        if (!this.codeRequested) {
+            getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
             keyAlias: this.keyAlias,
         } as CodeRequestSchema);
-        return true;
+            this.codeRequested = true;
+        }
     }
 
     private requestMoveToTop() {
@@ -440,7 +444,12 @@ struct OTPItem {
     }
 
     private splitDigits(): string {
-        this.onCodeUpdated();
+        this.onPeriodicCodeUpdated();
+        const taskId = setInterval(() => {
+            this.onPeriodicCodeUpdated();
+        }, REFRESH_INTERVAL);
+        if (taskId>0) { clearInterval(taskId-1); }
+        //
         return this.code.code.match(/.{1,3}/g)!.join(' ');
     }
 

@@ -20,8 +20,11 @@ export interface CodeResponseSchema {
     code: string,
 }
 
+export const FAKE_OTP_CODE = '******';
+
 export interface OTPItemInfo {
     keyAlias: string,
+    hashKeyAlias?: string,
     icon: string,
     code: CodeResponseSchema,
     schema: OTPSchema,
