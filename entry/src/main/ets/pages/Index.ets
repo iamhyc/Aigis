@@ -85,6 +85,7 @@ struct Index {
                         backgroundColor: $r('app.color.color_face'),
                         showClose: false,
                         detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
+                        preferType: SheetType.BOTTOM,
                         // onWillDismiss: (action) => {},
                     }
                 )
@@ -530,6 +531,7 @@ struct QrScanButton {
             showClose: false,
             dragBar: true,
             detents: [SheetSize.FIT_CONTENT],
+            preferType: SheetType.BOTTOM,
         })
     }
 
