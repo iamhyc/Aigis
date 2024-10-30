@@ -68,10 +68,10 @@ Dst2-->Dst3
 
 **Test v0.2.5**:
 
-- [ ] Main Page with ATL1 Authentication
+- [x] Main Page with ATL1 Authentication
   - Discard previous biometric auth when in background
 - [ ] Access Control with Biometric Authentication
-    - Encrypt secrets with `enc_master_key`
+    - Encrypt secrets with `enc_master_key` (HUKS with no auth)
     - Import MAC secrets to HUKS with ATL3 auth access
     - Request Password to disable Biometric Auth
 - [ ] Biometric Failure Fallback

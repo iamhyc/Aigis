@@ -149,6 +149,14 @@
       "name": "auth_widget_atl1_title",
       "value": "Please enter the lock screen password"
     },
+    {
+      "name": "lock_page_title",
+      "value": "Authentication Required"
+    },
+    {
+      "name": "lock_page_hint",
+      "value": "Tap on the screen for authentication."
+    },
 
     {
       "name": "EntryFormAbility_desc",

@@ -2,20 +2,21 @@ import { LengthUnit, Offset, promptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
-import { PREF_KEY_ITEMS } from '../common/conts';
+import { FAKE_OTP_CODE, PREF_KEY_ITEMS } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
-import { biometricAuthAvailable } from '../crypto/authUtils';
-import { CodeResponseSchema, FAKE_OTP_CODE, OTPItemInfo } from '../common/schema';
+import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable } from '../crypto/authUtils';
+import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
+import { userAuth } from '@kit.UserAuthenticationKit';
+import { AppLockPage } from '../components/pages';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
-
 
 class EditState {
     public editPageShow: boolean = false;
@@ -43,9 +44,12 @@ class EditState {
 @Entry(storage)
 @Component
 struct Index {
+    @StorageLink('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Provide navStack: NavPathStack = new NavPathStack();
-    @Provide biometricAvailable: boolean = biometricAuthAvailable();
+    @Provide ATL1AuthAvailable: boolean = ATL1AuthAvailable();
+    @Provide ATL3AuthAvailable: boolean = ATL3AuthAvailable();
+    @Provide atl1Auth: Atl1AuthResult = {authToken: new Uint8Array(), timestamp:0};
 
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
@@ -56,10 +60,12 @@ struct Index {
             Navigation(this.navStack) {
                 Stack() {
                     // main content
-                    if (this.items.length > 0) {
-                        OTPList({items: this.items})
-                    } else {
+                    if (this.EnableBiometricUnlock && !this.validateAuth()) {
+                        AppLockPage({atl1Auth: this.atl1Auth})
+                    } else if (this.items.length===0) {
                         EmptyPage()
+                    } else {
+                        OTPList({items: this.items})
                     }
                     // floating add button
                     QrScanButton()
@@ -125,6 +131,17 @@ struct Index {
         }
     }
 
+    onPageShow() {
+        if (this.EnableBiometricUnlock && !this.validateAuth()) {
+            acquireAtl1Auth().then(result => { this.atl1Auth = result; })
+        }
+    }
+
+    onPageHide() {
+        this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
+        this.selected = '';
+    }
+
     private onItemListChanged() {
         this.editState.hide();
     }
@@ -135,6 +152,15 @@ struct Index {
             return this.items.map(x => x.keyAlias);
         } else {
             return this.items.flatMap(x => x.keyAlias===this.editState.editKeyAlias ? [] : [x.keyAlias]);
+        }
+    }
+
+    private validateAuth(): boolean {
+        const _now = Date.now();
+        if (_now - this.atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
+            return true;
+        } else {
+            return false;
         }
     }
 }

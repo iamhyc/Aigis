@@ -45,7 +45,15 @@
     },
     {
       "name": "setting_biometric_unlock_hint",
-      "value": "用于验证令牌和主密钥的访问权限。"
+      "value": "仅用于限制应用程序访问。"
+    },
+    {
+      "name": "setting_enable_biometric_auth",
+      "value": "增强生物识别认证"
+    },
+    {
+      "name": "setting_biometric_auth_hint",
+      "value": "访问令牌需要更高的安全级别（ATL3）认证。"
     },
     {
       "name": "setting_setup_password",
@@ -110,7 +118,7 @@
     },
     {
       "name": "setting_import_message_failed_decryption",
-      "value": "解密文件失败。"
+      "value": "解密文件失败"
     },
     {
       "name": "setting_export_to_file",

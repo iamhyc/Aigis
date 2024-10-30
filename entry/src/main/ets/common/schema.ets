@@ -1,5 +1,4 @@
 import { OTPSchema } from "../crypto/otpUtils";
-import { stringToUint8Array, Uint8ArrayToString } from "./utils";
 
 interface IssuerName {
     issuer: string,
@@ -19,8 +18,6 @@ export interface CodeResponseSchema {
     timestamp: number,
     code: string,
 }
-
-export const FAKE_OTP_CODE = '******';
 
 export interface OTPItemInfo {
     keyAlias: string,
@@ -59,3 +56,8 @@ export interface AesGcmMaterial {
     aad: string,
     nonce: string,
 }
+
+export interface Atl1AuthResult {
+    authToken: Uint8Array,
+    timestamp: number,
+};

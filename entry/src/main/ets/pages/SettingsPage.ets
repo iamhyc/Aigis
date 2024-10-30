@@ -12,6 +12,9 @@ import {
     SettingUpdateRequestSchema } from "../common/events";
 import { picker } from "@kit.CoreFileKit";
 import { common } from "@kit.AbilityKit";
+import { Atl1AuthResult } from "../common/schema";
+import { userAuth } from "@kit.UserAuthenticationKit";
+import { AppLockPage } from "../components/pages";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -19,105 +22,120 @@ const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp
 @Component
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
-    @Consume biometricAvailable: boolean;
+    @Consume atl1Auth: Atl1AuthResult;
+    @Consume ATL1AuthAvailable: boolean;
+    @Consume ATL3AuthAvailable: boolean;
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
 
     @StorageProp('settingsEnableManualInput')
     @Watch('onItChanged') EnableManualInput: boolean = false;
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
+    @StorageProp('settingsEnableBiometricAuth')
+    @Watch('onItChanged') EnableBiometricAuth: boolean = false;
 
     @State ShowIssuerIcons: boolean = true;
     @State ShowAccountName: boolean = true;
-    @State BioMetricEnabled: boolean = this.biometricAvailable && this.EnableBiometricUnlock;
 
     private inputDialogId: number = -1;
 
     build() {
         NavDestination() {
-            RelativeContainer() {
-                List({space:10}) {
-                    // General
-                    ListItemGroupHeader({name: $r('app.string.section_title_general')}).margin({bottom:-6})
-                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListToggle({
-                            title: $r('app.string.setting_enable_manual_input_title'),
-                            selected: this.EnableManualInput
-                        })
-                    }
-                    .divider(divider_style)
-                    .backgroundColor($r('sys.color.comp_background_tertiary'))
-
-                    // Outlook
-                    ListItemGroupHeader({name: $r('app.string.section_title_outlook')}).margin({bottom:-6})
-                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListItem({ title: $r('app.string.setting_language'), preview: $r('app.string.setting_language_system_default') })
-                        SettingListToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
-                        SettingListToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
-                    }
-                    .divider(divider_style)
-                    .backgroundColor($r('sys.color.comp_background_tertiary'))
-
-                    // Security
-                    ListItemGroupHeader({name: $r('app.string.section_title_security')}).margin({bottom:-6})
-                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListItem({
-                            title: $r('app.string.setting_setup_password'),
-                            description: $r('app.string.setting_setup_password_hint'),
-                            preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
-                        }).onClick(() => { this.handleSetupPassword() })
-                        // enable biometric only when master password available
-                        if (this.MasterKeyAvailable) {
+            if (this.EnableBiometricUnlock && !this.validateAuth()) {
+                AppLockPage({atl1Auth: this.atl1Auth})
+            } else {
+                RelativeContainer() {
+                    List({space:10}) {
+                        // General
+                        ListItemGroupHeader({name: $r('app.string.section_title_general')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
                             SettingListToggle({
-                                title: $r('app.string.setting_enable_biometric_unlock'),
-                                description: $r('app.string.setting_biometric_unlock_hint'),
-                                disabled: true,//!this.biometricAvailable,
-                                selected: this.BioMetricEnabled,
+                                title: $r('app.string.setting_enable_manual_input_title'),
+                                selected: this.EnableManualInput
                             })
                         }
-                    }
-                    .divider(divider_style)
-                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+                        .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
 
-                    // Import & Export
-                    ListItemGroupHeader({name: $r('app.string.section_title_import_export')}).margin({bottom:-6})
-                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListItem({ title: $r('app.string.setting_import_from_file') })
-                            .onClick(() => { this.handleImportFromFile(); })
-                        SettingListItem({
-                            title: $r('app.string.setting_export_to_file'),
-                            disabled: !this.MasterKeyAvailable,
-                            preview: this.MasterKeyAvailable? undefined : $r('app.string.setting_setup_master_key_hint')
-                        })
-                            .onClick(() => { this.MasterKeyAvailable && this.handleExportToFile(); })
-                    }
-                    .divider(divider_style)
-                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+                        // Outlook
+                        ListItemGroupHeader({name: $r('app.string.section_title_outlook')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListItem({ title: $r('app.string.setting_language'), preview: $r('app.string.setting_language_system_default') })
+                            SettingListToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
+                            SettingListToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
+                        }
+                        .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
 
-                    // About
-                    ListItemGroupHeader({name: $r('app.string.section_title_about')}).margin({bottom:-6})
-                    ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                        SettingListInfo({
-                            title: $r('app.string.setting_about_version'),
-                            description: $r('app.string.setting_about_information',
-                                $r('app.string.app_version'),
-                                $r('app.string.app_icp_string')
-                            )
-                        })
-                        SettingListInfo({
-                            title: $r('app.string.setting_official_website'),
-                            description: 'https://github.com/iamhyc/Aigis'
-                        })
+                        // Security
+                        ListItemGroupHeader({name: $r('app.string.section_title_security')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListItem({
+                                title: $r('app.string.setting_setup_password'),
+                                description: $r('app.string.setting_setup_password_hint'),
+                                preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
+                            }).onClick(() => { this.handleSetupPassword() })
+                            // enable biometric only when master password available
+                            if (this.MasterKeyAvailable) {
+                                SettingListToggle({
+                                    title: $r('app.string.setting_enable_biometric_unlock'),
+                                    description: $r('app.string.setting_biometric_unlock_hint'),
+                                    disabled: !this.ATL1AuthAvailable,
+                                    selected: this.EnableBiometricUnlock,
+                                })
+                                if (this.EnableBiometricUnlock) {
+                                    SettingListToggle({
+                                        title: $r('app.string.setting_enable_biometric_auth'),
+                                        description: $r('app.string.setting_biometric_auth_hint'),
+                                        disabled: true,//!this.ATL3AuthAvailable,
+                                        selected: this.EnableBiometricAuth,
+                                    })
+                                }
+                            }
+                        }
+                        .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                        // Import & Export
+                        ListItemGroupHeader({name: $r('app.string.section_title_import_export')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListItem({ title: $r('app.string.setting_import_from_file') })
+                                .onClick(() => { this.handleImportFromFile(); })
+                            SettingListItem({
+                                title: $r('app.string.setting_export_to_file'),
+                                disabled: !this.MasterKeyAvailable,
+                                preview: this.MasterKeyAvailable? undefined : $r('app.string.setting_setup_master_key_hint')
+                            })
+                                .onClick(() => { this.MasterKeyAvailable && this.handleExportToFile(); })
+                        }
+                        .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                        // About
+                        ListItemGroupHeader({name: $r('app.string.section_title_about')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListInfo({
+                                title: $r('app.string.setting_about_version'),
+                                description: $r('app.string.setting_about_information',
+                                    $r('app.string.app_version'),
+                                    $r('app.string.app_icp_string')
+                                )
+                            })
+                            SettingListInfo({
+                                title: $r('app.string.setting_official_website'),
+                                description: 'https://github.com/iamhyc/Aigis'
+                            })
+                        }
+                        .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
                     }
-                    .divider(divider_style)
-                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+                    .height('100%')
+                    .width('100%')
+                    .padding({top:10, bottom:10})
+                    .alignListItem(ListItemAlign.Center)
+                    .scrollBar(BarState.Off)
+                    .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
                 }
-                .height('100%')
-                .width('100%')
-                .padding({top:10, bottom:10})
-                .alignListItem(ListItemAlign.Center)
-                .scrollBar(BarState.Off)
-                .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
             }
         }
         .title('Settings', {
@@ -152,6 +170,15 @@ export struct SettingsPage {
         }
 
         eventHub.emit(EVENT_UPDATE_SETTING, {key, value} as SettingUpdateRequestSchema);
+    }
+
+    private validateAuth(): boolean {
+        const _now = Date.now();
+        if (_now - this.atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private showCustomDialog(builder: () => CustomBuilder) {

@@ -1,5 +1,5 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
-import { MasterKeyInfo, PBKDF2Material } from '../common/schema';
+import { Atl1AuthResult, MasterKeyInfo, PBKDF2Material } from '../common/schema';
 import { getRandomInt, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { AES_KEY_USAGE, generateRandomSalt24, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from './huksUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
@@ -57,8 +57,12 @@ export function checkAuthEnvironment(): AuthTrustLevel {
     }
 }
 
-export function biometricAuthAvailable(): boolean {
-    return checkAuthEnvironment() >= AuthTrustLevel.ATL2;
+export function ATL1AuthAvailable(): boolean {
+    return checkAuthEnvironment() >= AuthTrustLevel.ATL1;
+}
+
+export function ATL3AuthAvailable(): boolean {
+    return checkAuthEnvironment() >= AuthTrustLevel.ATL3;
 }
 
 export async function acquireUserAuthToken(level: AuthLevelSupport, challenge?: Uint8Array): Promise<Uint8Array> {
@@ -95,7 +99,7 @@ export async function acquireUserAuthToken(level: AuthLevelSupport, challenge?: 
         }
         //
         const userAuthInstance = userAuth.getUserAuthInstance(authParam, {
-            'title': 'AUTHENTICATION',
+            'title': 'Aigis Authenticator',
         });
         userAuthInstance.on('result', {
             onResult(result) {
@@ -110,6 +114,12 @@ export async function acquireUserAuthToken(level: AuthLevelSupport, challenge?: 
         //
         userAuthInstance.start();
     });
+}
+
+export async function acquireAtl1Auth(): Promise<Atl1AuthResult> {
+    const authToken = await acquireUserAuthToken('ATL1');
+    const timestamp  = Date.now();
+    return { authToken, timestamp };
 }
 
 async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {

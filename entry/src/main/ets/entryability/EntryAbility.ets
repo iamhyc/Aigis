@@ -7,10 +7,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
     AigisContentSchema,
-    MasterKeyInfo,
-    FAKE_OTP_CODE} from '../common/schema'
+    MasterKeyInfo} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
-import { AIGIS_PREF_NAME, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
+import { AIGIS_PREF_NAME, FAKE_OTP_CODE, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
