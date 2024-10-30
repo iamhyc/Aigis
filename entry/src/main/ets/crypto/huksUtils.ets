@@ -1,7 +1,7 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { huks } from '@kit.UniversalKeystoreKit';
 import { AesGcmMaterial, PBKDF2Material } from '../common/schema';
-import { stringToUint8Array } from '../common/utils';
+import { stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { JSON } from '@kit.ArkTS';
 import { acquireUserAuthToken, AuthLevelSupport } from './authUtils';
 
@@ -28,7 +28,7 @@ export enum AES_KEY_USAGE {
 }
 
 // HMAC Definitions
-const PARAMS_HMAC_PARAMS: huks.HuksParam[] = [
+export const PARAMS_HMAC_PARAMS: huks.HuksParam[] = [
     {tag: huks.HuksTag.HUKS_TAG_ALGORITHM, value: huks.HuksKeyAlg.HUKS_ALG_HMAC},
     {tag: huks.HuksTag.HUKS_TAG_PURPOSE,   value: huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_MAC},
 ];
@@ -94,6 +94,12 @@ export async function generateRandomNonce12(): Promise<Uint8Array> {
 }
 export async function generateRandomAad32(): Promise<Uint8Array> {
     return generateRandomNonce(32);
+}
+export async function generateAesGcmMaterial(): Promise<AesGcmMaterial> {
+    return {
+        aad: Uint8ArrayToString(await generateRandomAad32()),
+        nonce: Uint8ArrayToString(await generateRandomNonce12()),
+    };
 }
 
 export class HUKSAgent {
@@ -165,11 +171,15 @@ export class HUKSAgent {
         return this;
     }
 
+    static async hasKeyItem(keyAlias: string): Promise<boolean> {
+        const result = await huks.hasKeyItem(keyAlias, {properties:[]});
+        return result.valueOf();
+    }
+
     static async generateKeyItem(keyAlias: string, params: PurposeParams, _exported: boolean = false): Promise<string|undefined> {
         const agent = new HUKSAgent(params).with(PARAMS_IN_HUKS);
         const huksOptions: huks.HuksOptions = {
             properties: agent.props,
-            inData: new Uint8Array(new Array())
         };
         try {
             await huks.generateKeyItem(keyAlias, huksOptions);
@@ -201,9 +211,9 @@ export class HUKSAgent {
         }
     }
 
-    static async importHmacKeyItem(hashKeyAlias: string, algorithm: HmacDigestSupport, keySize: number, plaintext: Uint8Array, authLevel?: AuthLevelSupport): Promise<string|undefined> {
+    static async importHmacKeyItem(hashKeyAlias: string, algorithm: HmacDigestSupport, plaintext: Uint8Array, authLevel?: AuthLevelSupport): Promise<string|undefined> {
         hashKeyAlias = hashKeyAlias.slice(0, 64);
-        const agent = new HUKSAgent(PARAMS_HMAC_PARAMS).withHmacAlgorithm(algorithm).withHmacKeySize(keySize);
+        const agent = new HUKSAgent(PARAMS_HMAC_PARAMS).withHmacAlgorithm(algorithm).withHmacKeySize(plaintext.length);
         return await HUKSAgent.importKeyItem(hashKeyAlias, agent.props, plaintext, authLevel);
     }
 
@@ -274,18 +284,31 @@ export class HUKSAgent {
         return result.outData;
     }
 
-    static async applyHmacOperation(hashKeyAlias: string, inData: Uint8Array, level?: AuthLevelSupport) {
+    static async applyHmacOperation(hashKeyAlias: string, inData: Uint8Array, level?: AuthLevelSupport): Promise<Uint8Array|undefined> {
         const propResult = await huks.getKeyItemProperties(hashKeyAlias, {properties:[]});
         const properties = propResult.properties!;
-        const huksOptions: huks.HuksOptions = {properties, inData};
-        const session = await huks.initSession(hashKeyAlias, huksOptions);
         //
-        let authToken: Uint8Array | undefined = undefined;
-        if (level && session.challenge) {
-            authToken = await acquireUserAuthToken(level, session.challenge);
+        const algorithmValue: number = properties.find(x => x.tag===huks.HuksTag.HUKS_TAG_DIGEST)!.value as number;
+        const keySizeValue: number = properties.find(x => x.tag===huks.HuksTag.HUKS_TAG_KEY_SIZE)!.value as number;
+        const agent = new HUKSAgent(PARAMS_HMAC_PARAMS)
+            .with([
+                {tag: huks.HuksTag.HUKS_TAG_DIGEST,   value: algorithmValue},
+                {tag: huks.HuksTag.HUKS_TAG_KEY_SIZE, value: keySizeValue},
+            ]);
+        const huksOptions: huks.HuksOptions = {properties: agent.props, inData};
+        try {
+            const session = await huks.initSession(hashKeyAlias, huksOptions);
+            //
+            let authToken: Uint8Array | undefined = undefined;
+            if (level && session.challenge) {
+                authToken = await acquireUserAuthToken(level, session.challenge);
+            }
+            //
+            const hmacResult = await huks.finishSession(session.handle, huksOptions, authToken);
+            return hmacResult.outData;
+        } catch (e) {
+            console.error(`${JSON.stringify(e)}`);
         }
-        //
-        const hmacResult = await huks.finishSession(session.handle, huksOptions, authToken);
-        return hmacResult.outData;
+        return undefined;
     }
 }

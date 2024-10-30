@@ -1,14 +1,5 @@
 import { OTPSchema } from "../crypto/otpUtils";
 
-interface IssuerName {
-    issuer: string,
-    name: string
-}
-
-export function name2keyAlias(props: IssuerName): string {
-    return `${props.issuer}:${props.name}`;
-}
-
 export function iconMatcher(issuer: string): string {
     const issuerKey = issuer.toLowerCase().replace(/(\.org|\.com)$/, '')
     return `icons/issuers/${issuerKey}.svg`;
@@ -21,22 +12,28 @@ export interface CodeResponseSchema {
 
 export interface OTPItemInfo {
     keyAlias: string,
-    hashKeyAlias?: string,
     icon: string,
     code: CodeResponseSchema,
     schema: OTPSchema,
 }
 
+export interface EncryptedSecret {
+    material: AesGcmMaterial,
+    secret: string,
+}
+
 export interface SecretSchema {
     keyAlias: string,
-    secret: string,
-    encrypted?: boolean,
+    secret?: string,
+    hashKeyAlias?: string,
+    encrypted?: EncryptedSecret,
 }
 
 export interface AigisContentSchema {
     masterKey: MasterKeyInfo,
     items: OTPItemInfo[],
     secrets: SecretSchema[],
+    rawSecrets?: Uint8Array[],
     settings?: string,
 }
 

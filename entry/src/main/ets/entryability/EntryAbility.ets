@@ -1,19 +1,21 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
+import { util } from '@kit.ArkTS';
 import { promptAction, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
+import { b32decode, generateHashKeyAlias, OTP, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
     AigisContentSchema,
     MasterKeyInfo} from '../common/schema'
-import { arrayRearrange, shallowCopy } from '../common/utils';
+import { arrayRearrange, Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
-import { AES_KEY_USAGE } from '../crypto/huksUtils';
+import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent,
+    PARAMS_HMAC_PARAMS } from '../crypto/huksUtils';
 import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
     EVENT_IMPORT_REQUEST,
@@ -35,16 +37,19 @@ class PreferencesManager {
     private _instances: Map<string, OTP>;
     private _secrets: SecretSchema[];
     private _items: OTPItemInfo[];
+    private masterKeyAlias?: string;
 
-    constructor(items: OTPItemInfo[], secrets: SecretSchema[]) {
+    constructor(items: OTPItemInfo[], secrets: SecretSchema[], masterKeyAlias?: string) {
         this._items = items;
         items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE}); //FIXME: remove this later
         //
         this._secrets = secrets;
         this._instances = new Map();
+        //
+        this.masterKeyAlias = masterKeyAlias;
     }
 
-    get leaked_secrets() {
+    get leaked_encrypted_secrets() {
         return this._secrets;
     }
 
@@ -56,54 +61,42 @@ class PreferencesManager {
         let otp = this._instances.get(keyAlias);
         if (otp===undefined) {
             const schema = this._items.find(x => x.keyAlias===keyAlias)?.schema;
-            const secret = this._secrets.find(x => x.keyAlias===keyAlias)?.secret;
             if (schema===undefined) {
                 throw Error(`"${keyAlias}" not found in local manager.`);
             }
-            //
-            let schema_tmp = shallowCopy(schema) as OTPSchema;
-            schema_tmp.secret = secret;
-            otp = OTP.fromSchema(schema_tmp);
+            otp = OTP.fromSchema(schema);
         }
         return otp;
     }
 
     async requestCodeUpdate(keyAlias: string): Promise<boolean> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
-        if (item) {
+        const secret = this._secrets.find(x => x.keyAlias===keyAlias);
+        if (item && secret) {
+            const timestamp = Date.now();
             const otp = this.getOtpInstance(keyAlias);
-            item.code = {
-                timestamp: Date.now(),
-                code: await otp.generateOTP(),
+            if (secret.hashKeyAlias===undefined) {
+                if (secret.secret) {
+                    const b64Encoded: boolean = (item.schema.type==='steam');
+                    const rawSecret: Uint8Array = b64Encoded? (new util.Base64Helper()).decodeSync(secret.secret!) : b32decode(secret.secret!);
+                    secret.hashKeyAlias = await this.importSecretInHUKS(item, secret, rawSecret);
+                } else {
+                    //TODO: set password prompt in UI context
+                    throw new Error(`generate OTP failed for ${keyAlias}`);
+                }
             }
+            const code = await otp.generateOTP(secret.hashKeyAlias);
+            item.code = { timestamp, code };
             return true;
         } else {
             return false;
         }
     }
 
-    importPreferenceItems(dataPreferences: preferences.Preferences, items: OTPItemInfo[], secrets: SecretSchema[]): OTPItemInfo[] {
-        const failed: OTPItemInfo[] = [];
-        //
-        for (let i=0; i<items.length; i++) {
-            const keyAlias = items[i].keyAlias;
-            if (this._items.find(x => x.keyAlias===keyAlias)) {
-                failed.push(items[i]);
-            } else {
-                this._items.push(items[i]);
-                this._secrets.push(secrets[i]);
-                this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
-            }
-        }
-        this.persists(dataPreferences);
-        //
-        return failed;
-    }
-
-    updatePreferenceItem(uri: string, oldKeyAlias?: string) {
+    async updatePreferenceItem(uri: string, oldKeyAlias?: string) {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
-        const secret = args.get('secret');
+        const encodedSecret = args.get('secret');
 
         const newKeyAlias = oldKeyAlias===undefined ? (otp as OTP).keyAlias : oldKeyAlias;
         const oldItem = this._items.find(x => oldKeyAlias===x.keyAlias);
@@ -113,27 +106,69 @@ class PreferencesManager {
             const oldKeyAlias = oldItem.keyAlias;
             oldItem.keyAlias = newKeyAlias;
             oldItem.icon = iconMatcher(otp.schema.issuer);
-            //
             oldItem.schema = otp.schema;
-            if (secret && oldSecret) { oldSecret.secret = secret; }
+            // update new secret
+            if (encodedSecret && oldSecret) {
+                if (oldSecret.hashKeyAlias) {
+                    await HUKSAgent.deleteKeyItem(oldSecret.hashKeyAlias, PARAMS_HMAC_PARAMS);
+                }
+                oldSecret.encrypted = undefined;
+                await this.encryptSecret(oldItem, oldSecret, encodedSecret);
+            }
             // update new instances
             this._instances.delete(oldKeyAlias);
             this.requestCodeUpdate(newKeyAlias);
         } else {
-            this.appendPreferenceItem(otp, secret!);
+            await this.appendPreferenceItem(otp, encodedSecret!);
         }
     }
 
-    private appendPreferenceItem(otp: OTP, secret: string) {
+    private async appendPreferenceItem(otp: OTP, encodedSecret: string) {
         const keyAlias = otp.keyAlias;
         const schema = otp.schema;
 
         // find issuer icon
         const icon = iconMatcher(otp.schema.issuer);
         const code: CodeResponseSchema = {timestamp:0, code:'000000'};
-        this._items.push({keyAlias, icon, code, schema});
-        this._secrets.push({keyAlias, secret});
+        const item: OTPItemInfo = {keyAlias, icon, code, schema};
+        const secret = await this.encryptSecret(item, {keyAlias}, encodedSecret)
+        //
+        this._items.push(item);
+        this._secrets.push(secret);
         this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
+    }
+
+    private async encryptSecret(item: OTPItemInfo, secret: SecretSchema, encodedSecret: string): Promise<SecretSchema> {
+        // try to import into HUKS
+        const b64Encoded: boolean = (item.schema.type==='steam');
+        const rawSecret: Uint8Array = b64Encoded? (new util.Base64Helper()).decodeSync(encodedSecret) : b32decode(encodedSecret);
+        secret.hashKeyAlias = await this.importSecretInHUKS(item, secret, rawSecret);
+        //
+        if (this.masterKeyAlias && secret.encrypted===undefined) {
+            // do the encryption
+            const keyAlias = this.masterKeyAlias;
+            const material = await generateAesGcmMaterial();
+            const encrypted = await HUKSAgent.applyAesGcmEncryption(keyAlias, material, rawSecret);
+            secret.encrypted = {
+                secret: Uint8ArrayToString(encrypted!),
+                material
+            };
+            secret.secret = undefined;
+        } else {
+            secret.secret = encodedSecret;
+        }
+        return secret;
+    }
+
+    private async importSecretInHUKS(item: OTPItemInfo, secret: SecretSchema, rawSecret: Uint8Array): Promise<string> {
+        if (secret.hashKeyAlias && (await HUKSAgent.hasKeyItem(secret.keyAlias))) {
+            return secret.hashKeyAlias;
+        }
+
+        const hashKeyAlias = secret.hashKeyAlias ?? await generateHashKeyAlias(item.keyAlias);
+        await HUKSAgent.importHmacKeyItem(hashKeyAlias, item.schema.algorithm, rawSecret);
+        secret.hashKeyAlias = hashKeyAlias;
+        return hashKeyAlias;
     }
 
     removePreferenceItem(keyAlias: string) {
@@ -142,6 +177,10 @@ class PreferencesManager {
         this._items.splice(itemIndex, 1);
         //
         const secretIndex = this._secrets.findIndex(x => x.keyAlias===keyAlias);
+        const hashKeyAlias = this._secrets[secretIndex].hashKeyAlias;
+        if (hashKeyAlias) {
+            HUKSAgent.deleteKeyItem(hashKeyAlias, PARAMS_HMAC_PARAMS);
+        }
         this._secrets.splice(secretIndex, 1);
         //
         this._instances.delete(keyAlias);
@@ -156,6 +195,46 @@ class PreferencesManager {
         const keySecret1 = this._items.findIndex(x => x.keyAlias===keyAlias1);
         const keySecret2 = keyAlias2 ? this._items.findIndex(x => x.keyAlias===keyAlias2) : 0;
         arrayRearrange(this._secrets, keySecret1, keySecret2);
+    }
+
+    async importPreferenceItems(dataPreferences: preferences.Preferences, items: OTPItemInfo[], secrets: SecretSchema[], rawSecrets: Uint8Array[]): Promise<OTPItemInfo[]> {
+        const failed: OTPItemInfo[] = [];
+        //
+        for (let i=0; i<items.length; i++) {
+            const keyAlias = items[i].keyAlias;
+            if (this._items.find(x => x.keyAlias===keyAlias)) {
+                failed.push(items[i]);
+            } else {
+                try {
+                    const hashKeyAlias = await this.importSecretInHUKS(items[i], secrets[i], rawSecrets[i]);
+                    secrets[i].hashKeyAlias = hashKeyAlias;
+                    secrets[i].secret = undefined;
+                    //
+                    this._items.push(items[i]);
+                    this._secrets.push(secrets[i]);
+                    this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
+                } catch (err) {
+                    failed.push(items[i]);
+                }
+            }
+        }
+        this.persists(dataPreferences);
+        //
+        return failed;
+    }
+
+    async checkSecurity(dataPreferences: preferences.Preferences) {
+        if (this.masterKeyAlias) {
+            for (let i=0; i< this._items.length; i++) {
+                const item = this._items[i];
+                const secret = this._secrets.find(x => x.keyAlias===item.keyAlias);
+                if (secret?.secret) {
+                    await this.encryptSecret(item, secret, secret.secret);
+                }
+            }
+            //
+            this.persists(dataPreferences);
+        }
     }
 
     persists(dataPreferences: preferences.Preferences) {
@@ -195,14 +274,19 @@ export default class EntryAbility extends UIAbility {
         });
 
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
-            .then((pref: preferences.Preferences) => {
+            .then(async (pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
+                // try to load master key
+                this.masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
+                AppStorage.setAndProp('MasterKeyAvailable', this.masterKeyInfo.keyAlias!==undefined);
                 // init
                 this.instPreferences = new PreferencesManager(
                   this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
                   this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
                 );
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                // check item security
+                await this.instPreferences.checkSecurity(pref);
                 // setup global user settings
                 this.initUserPreferences(pref);
                 // register event handler
@@ -246,10 +330,6 @@ export default class EntryAbility extends UIAbility {
                 AppStorage.setAndProp(`settings${key}`, localValue);
             }
         }
-
-        // try to load master key
-        this.masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
-        AppStorage.setAndProp('MasterKeyAvailable', this.masterKeyInfo.keyAlias!==undefined);
     }
 
     private registerEventHubHandlers() {
@@ -261,10 +341,10 @@ export default class EntryAbility extends UIAbility {
                 }
             }
         });
-        this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
+        this.context.eventHub.on(EVENT_UPDATE_ITEM, async (data: UpdateRequestSchema) => {
             if (this.instPreferences) {
                 // update local preferences
-                this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
+                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items
@@ -307,9 +387,10 @@ export default class EntryAbility extends UIAbility {
                 const keyAlias = PREF_MASTER_KEY;
                 const masterKeyInfo = await generateMasterKeyInHUKS(keyAlias, data.password, AES_KEY_USAGE.ENCRYPT);
                 this.masterKeyInfo = masterKeyInfo;
+                await this.instPreferences?.checkSecurity(this.dataPreferences);
                 //
-                this.dataPreferences?.putSync(PREF_MASTER_KEY, masterKeyInfo);
-                this.dataPreferences?.flush();
+                this.dataPreferences.putSync(PREF_MASTER_KEY, masterKeyInfo);
+                this.dataPreferences.flush();
                 AppStorage.set('MasterKeyAvailable', true);
             }
         });
@@ -325,7 +406,7 @@ export default class EntryAbility extends UIAbility {
                 const content: AigisContentSchema = {
                     masterKey: this.masterKeyInfo,
                     items: this.instPreferences.items,
-                    secrets: this.instPreferences.leaked_secrets,
+                    secrets: this.instPreferences.leaked_encrypted_secrets,
                     settings: settingString,
                 };
                 const result = await (new AigisImporter()).save(file.fd, this.masterKeyInfo.keyAlias, content);
@@ -344,7 +425,7 @@ export default class EntryAbility extends UIAbility {
             try {
                 const content = await (new AigisImporter()).load(file.fd, data.password!);
                 // import from file;
-                const failedItems = this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets);
+                const failedItems = await this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets, content.rawSecrets!);
                 const successNums = content.items.length - failedItems.length;
                 promptAction.showToast({message: $r('app.string.setting_import_message_success', successNums)});
                 if (failedItems.length > 0) {

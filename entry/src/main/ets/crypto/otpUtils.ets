@@ -1,17 +1,23 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { shallowCopy, splitOnce } from '../common/utils';
-import { name2keyAlias } from '../common/schema';
+import { shallowCopy, splitOnce, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
+import { AuthLevelSupport } from './authUtils';
+import { HmacDigestSupport, HUKSAgent } from './huksUtils';
+import { util } from '@kit.ArkTS';
 
 export type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
-export type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 export type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
+
+export interface IssuerName {
+    issuer: string,
+    name: string
+}
 
 export interface OTPSchema {
     type: OtpSchemaSupport,
     name: string,
     issuer: string,
     secret?: string,
-    algorithm: AlgorithmSupport,
+    algorithm: HmacDigestSupport,
     digits: number,
     counter: number,
     group?: string,
@@ -76,7 +82,21 @@ function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
     return byteArray;
 }
 
-function b32decode(input: string): Uint8Array {
+function name2keyAlias(props: IssuerName): string {
+    return `${props.issuer}:${props.name}`;
+}
+
+export async function generateHashKeyAlias(keyAlias: string): Promise<string> {
+    const md = cryptoFramework.createMd('SHA256');
+    const data = stringToUint8Array(keyAlias);
+    await md.update({data});
+    const mdResult = await md.digest();
+    const b64 = new util.Base64Helper();
+    const b64Hash = Uint8ArrayToString( await b64.encode(mdResult.data) );
+    return b64Hash.slice(0, 64);
+}
+
+export function b32decode(input: string): Uint8Array {
     input = input.toUpperCase().replace(/\s|=/g, '');
 
     const dic = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -149,7 +169,7 @@ export abstract class OTP {
     }
 
     abstract get uri(): string;
-    abstract generateOTP(): Promise<string>;
+    abstract generateOTP(hashKeyAlias?: string, authLevel?: AuthLevelSupport): Promise<string>;
 
     get schema() {
         const _leak_schema = shallowCopy(this._schema) as OTPSchema;
@@ -166,6 +186,11 @@ export abstract class OTP {
         return name2keyAlias({issuer:this._schema.issuer, name:this._schema.name});
     }
 
+    /**
+     * @deprecated This method is obsolete and insecure.
+     * @param realCounter
+     * @returns
+     */
     async generateHash(realCounter?: number): Promise<Uint8Array> {
         realCounter = realCounter ?? this._schema.counter;
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
@@ -179,6 +204,14 @@ export abstract class OTP {
         await mac.update({data: counterBytes});
         const macResult = await mac.doFinal();
         return macResult.data;
+    }
+
+    async generateHashInHUKS(hashKeyAlias: string, realCounter?: number, authLevel?: AuthLevelSupport): Promise<Uint8Array> {
+        realCounter = realCounter ?? this._schema.counter;
+        const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
+        //
+        const macData = await HUKSAgent.applyHmacOperation(hashKeyAlias, counterBytes, authLevel);
+        return macData!;
     }
 
     otpToString(otp: number): string {
@@ -222,8 +255,8 @@ export class HOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&counter=${s.counter}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
-        const hash = await this.generateHash();
+    async generateOTP(hashKeyAlias: string, authLevel?: AuthLevelSupport): Promise<string> {
+        const hash = await this.generateHashInHUKS(hashKeyAlias, undefined, authLevel);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToString(otp);
     }
@@ -259,11 +292,12 @@ export class TOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
+    async generateOTP(hashKeyAlias: string, authLevel?: AuthLevelSupport): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
         const realCounter = Math.floor(Date.now() / 1000 / period);
         //
-        const hash = await this.generateHash(realCounter);
+        const hash = await this.generateHashInHUKS(hashKeyAlias, realCounter, authLevel);
+
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToString(otp);
     }
@@ -297,11 +331,11 @@ export class SteamOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
+    async generateOTP(hashKeyAlias: string, authLevel?: AuthLevelSupport): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
         const realCounter = Math.floor(Date.now() / 1000 / period);
         //
-        const hash = await this.generateHash(realCounter);
+        const hash = await this.generateHashInHUKS(hashKeyAlias, realCounter, authLevel);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToSteamString(otp);
     }

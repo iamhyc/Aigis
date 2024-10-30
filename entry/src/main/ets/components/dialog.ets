@@ -80,7 +80,7 @@ export struct PasswordInputDialog {
     @Prop warning: ResourceStr | undefined
     @Prop optionText: ResourceStr
     @State password: string = ''
-    @State checked: boolean = false
+    @State checked: boolean = true
 
     cancel?: () => void
     confirm?: (password: string, checked?: boolean) => void
