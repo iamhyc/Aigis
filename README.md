@@ -11,7 +11,7 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   <img height="500px" alt="screenshot_dark" src="./docs/images/screenshot_dark.jpg" />
 </p>
 
-### Security Design
+### Security Design (for version `>=1.0.0`)
 
 ```mermaid
 flowchart LR
@@ -66,19 +66,20 @@ Dst2-->Dst3
 
 ### TODO
 
-**Test v0.2.5**:
+**Release v0.2.5**:
 
 - [x] Main Page with ATL1 Authentication
   - Discard previous biometric auth when in background
-- [ ] Access Control with Biometric Authentication
-    - Encrypt secrets with `enc_master_key` (HUKS with no auth)
-    - Import MAC secrets to HUKS with ATL3 auth access
-    - Request Password to disable Biometric Auth
-- [ ] Biometric Failure Fallback
-  - Require password to re-import (overwrite) the secrets in HUKS
+- [x] Access Control with Biometric Authentication
+  - Encrypt secrets with `enc_master_key` (HUKS with no auth)
+
 
 **Release v1.0.0**:
-- [ ] Change Password Procedure Design
+- [ ] ATL3 Authentication
+  - Import MAC secrets to HUKS with ATL3 auth access
+  - Request Password to disable Biometric Auth
+- [ ] Biometric Failure Fallback
+  - Require password to re-import (overwrite) the secrets in HUKS
 - [ ] More Setting Items
   - Disable Account Name Display / Only Show with duplicate issuers
   - Code Split Digits Option (2/3/4/'Even'/'None')
@@ -87,9 +88,10 @@ Dst2-->Dst3
 
 
 ### TODO
+- [ ] Change Password Procedure Design
 - [ ] Password Challenge Design
     - Password Challenge Periodic Notification
-- [ ] More Import / Export Support (e.g., Aegis)
+- [ ] More Import & Export Support (e.g., Aegis)
 
 ### References
 
