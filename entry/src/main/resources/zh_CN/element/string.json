@@ -138,6 +138,11 @@
     },
 
     {
+      "name": "auth_widget_atl1_title",
+      "value": "请输入锁屏密码"
+    },
+
+    {
       "name": "EntryFormAbility_desc",
       "value": "Aigis Entry Form"
     },

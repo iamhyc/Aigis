@@ -6,6 +6,7 @@ import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 // Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/errorcode-useriam-V5
 export enum AUTH_ERROR_CODE {
+    AUTH_SUCCESS = 12500000,
     AUTH_FAILED = 12500001,
     GENERAL_OPERATION_ERROR = 12500002,
     AUTH_CANCELED = 12500003,
@@ -27,6 +28,8 @@ export enum AuthTrustLevel {
     ATL3,
     ATL4,
 }
+
+export type AuthLevelSupport = 'ATL1' | 'ATL3';
 
 export function checkAuthEnvironment(): AuthTrustLevel {
     // NONE: even no pin available
@@ -58,7 +61,58 @@ export function biometricAuthAvailable(): boolean {
     return checkAuthEnvironment() >= AuthTrustLevel.ATL2;
 }
 
-export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {
+export async function acquireUserAuthToken(level: AuthLevelSupport, challenge?: Uint8Array): Promise<Uint8Array> {
+    return new Promise(async (resolve, reject) => {
+        const rand = cryptoFramework.createRandom();
+        if (challenge===undefined) {
+            challenge = (await rand.generateRandom(32)).data;
+        }
+        //
+        let authParam: userAuth.AuthParam;
+        switch (level) {
+            case 'ATL1':
+                authParam = {
+                    challenge, authTrustLevel: userAuth.AuthTrustLevel.ATL1,
+                    authType: [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN],
+                    reuseUnlockResult: {
+                        reuseMode: userAuth.ReuseMode.AUTH_TYPE_RELEVANT,
+                        reuseDuration: 5*1000,//5s
+                    },
+                };
+                break;
+            case 'ATL3':
+                authParam = {
+                    challenge, authTrustLevel: userAuth.AuthTrustLevel.ATL3,
+                    authType: [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT],
+                    reuseUnlockResult: {
+                        reuseMode: userAuth.ReuseMode.AUTH_TYPE_RELEVANT,
+                        reuseDuration: 5*1000,//5s
+                    },
+                };
+                break;
+            default:
+                throw new Error(`Unsupported Auth Level: ${level}`);
+        }
+        //
+        const userAuthInstance = userAuth.getUserAuthInstance(authParam, {
+            'title': 'AUTHENTICATION',
+        });
+        userAuthInstance.on('result', {
+            onResult(result) {
+                userAuthInstance.off('result');
+                if (result.result===AUTH_ERROR_CODE.AUTH_SUCCESS) {
+                    resolve(result.token);
+                } else {
+                    reject(result.result);
+                }
+            }
+        });
+        //
+        userAuthInstance.start();
+    });
+}
+
+async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {
     const pbkdf2 = cryptoFramework.createKdf('PBKDF2|SHA256');
     const spec: cryptoFramework.PBKDF2Spec = {
         algName: 'PBKDF2', password,
