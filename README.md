@@ -1,7 +1,7 @@
 # Aigis
 
 > [!NOTE]
-> 本元服务预计于10月底正式上架，敬请期待！
+> 本元服务已正式上架应用市场，请搜索“Aigis”使用！
 
 A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) for HarmonyOS NEXT, with pure ArkTS implementation and no 3rd party dependencies.
 
@@ -64,34 +64,41 @@ Dst2-->Dst3
 
 **Fallback Security Design**: If ATL3 is invalidated for any reason, the password will be prompted to decrypt the "Encrypted Secrets", and then re-imported to overwrite "MAC secrets" in HUKS without auth required. If ATL1 is invalidated for any reason, the APP will be inaccessible until reinstalled.
 
-### TODO
+### Roadmap
 
-**Release v0.2.5**:
+**Release v0.2.6** (2024/11/08)
 
-- [x] Main Page with ATL1 Authentication
-  - Discard previous biometric auth when in background
-- [x] Access Control with Biometric Authentication
+- [ ] More Setting Items
+  - Default Language selection
+  - Color Theme: System Default / Light / Dark
+  - Disable Account Name Display / Only Show with duplicate issuers
+  - Code Split Digits Option (2/3/4/'Even'/'None')
+- [ ] Better Icon Match
+  - support [Aegis](https://github.com/beemdevelopment/Aegis) icon pack import
+
+**Release v0.3.0** (2024/11/15)
+
+- [ ] Access Control with Biometric Authentication
   - Encrypt secrets with `enc_master_key` (HUKS with no auth)
 
+**Release v0.5.0** (2024/11/22)
 
-**Release v1.0.0**:
 - [ ] ATL3 Authentication
   - Import MAC secrets to HUKS with ATL3 auth access
   - Request Password to disable Biometric Auth
-- [ ] Biometric Failure Fallback
   - Require password to re-import (overwrite) the secrets in HUKS
-- [ ] More Setting Items
-  - Disable Account Name Display / Only Show with duplicate issuers
-  - Code Split Digits Option (2/3/4/'Even'/'None')
-  - Color Theme: Default / Light / Dark
-- [ ] Better Icon Match
 
+**Release v0.6.0** (2024/11/29)
 
-### TODO
 - [ ] Change Password Procedure Design
 - [ ] Password Challenge Design
-    - Password Challenge Periodic Notification
-- [ ] More Import & Export Support (e.g., Aegis)
+  - Password Challenge Periodic Notification
+
+**Release v1.0.0**:
+
+- [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
+
+
 
 ### References
 
