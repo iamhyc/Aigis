@@ -1,6 +1,7 @@
 import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { unifiedDataChannel } from "@kit.ArkData";
-import { SettingListInfo, SettingListItem, SettingListToggle } from "../components/settings";
+import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
+    SettingListItemSelect } from "../components/settings";
 import { ValueType } from "../common/settings";
 import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
 import {
@@ -13,11 +14,23 @@ import {
 import { picker } from "@kit.CoreFileKit";
 import { common } from "@kit.AbilityKit";
 import { Atl1AuthResult } from "../common/schema";
-import { userAuth } from "@kit.UserAuthenticationKit";
 import { AppLockPage } from "../components/pages";
+import { validateAtl1Auth } from "../crypto/authUtils";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
+
+const DarkModeSelections: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+    [$r('app.string.setting_dark_mode_follow_system'), 'default'],
+    [$r('app.string.setting_dark_mode_always_dark'), 'dark'],
+    [$r('app.string.setting_dark_mode_always_light'), 'light'],
+]);
+
+const AppLanguageSelections: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+    [$r('app.string.setting_language_system_default'), 'default'],
+    ['简体中文     ', 'zh-Hans'],
+    ['English    ', 'en-Latn-US'],
+]);
 
 @Component
 export struct SettingsPage {
@@ -27,6 +40,10 @@ export struct SettingsPage {
     @Consume ATL3AuthAvailable: boolean;
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
 
+    @StorageProp('settingsAppLanguage')
+    @Watch('onItChanged') AppLanguage: string = 'default';
+    @StorageProp('settingsDarkMode')
+    @Watch('onItChanged') DarkMode: string = 'default';
     @StorageProp('settingsEnableManualInput')
     @Watch('onItChanged') EnableManualInput: boolean = false;
     @StorageProp('settingsEnableBiometricUnlock')
@@ -41,7 +58,7 @@ export struct SettingsPage {
 
     build() {
         NavDestination() {
-            if (this.EnableBiometricUnlock && !this.validateAuth()) {
+            if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
                 AppLockPage({atl1Auth: this.atl1Auth})
             } else {
                 RelativeContainer() {
@@ -49,7 +66,7 @@ export struct SettingsPage {
                         // General
                         ListItemGroupHeader({name: $r('app.string.section_title_general')}).margin({bottom:-6})
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                            SettingListToggle({
+                            SettingListItemToggle({
                                 title: $r('app.string.setting_enable_manual_input_title'),
                                 selected: this.EnableManualInput
                             })
@@ -60,9 +77,18 @@ export struct SettingsPage {
                         // Outlook
                         ListItemGroupHeader({name: $r('app.string.section_title_outlook')}).margin({bottom:-6})
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                            SettingListItem({ title: $r('app.string.setting_language'), preview: $r('app.string.setting_language_system_default') })
-                            SettingListToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
-                            SettingListToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
+                            SettingListItemSelect({
+                                title: $r('app.string.setting_language'),
+                                selected: this.AppLanguage,
+                                entries: AppLanguageSelections,
+                            })
+                            SettingListItemSelect({
+                                title: $r('app.string.setting_dark_mode_title'),
+                                selected: this.DarkMode,
+                                entries: DarkModeSelections
+                            })
+                            SettingListItemToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
+                            SettingListItemToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
                         }
                         .divider(divider_style)
                         .backgroundColor($r('sys.color.comp_background_tertiary'))
@@ -77,14 +103,16 @@ export struct SettingsPage {
                             }).onClick(() => { this.handleSetupPassword() })
                             // enable biometric only when master password available
                             if (this.MasterKeyAvailable) {
-                                SettingListToggle({
-                                    title: $r('app.string.setting_enable_biometric_unlock'),
-                                    description: $r('app.string.setting_biometric_unlock_hint'),
-                                    disabled: !this.ATL1AuthAvailable,
-                                    selected: this.EnableBiometricUnlock,
-                                })
+                                if (!this.EnableBiometricAuth) {
+                                    SettingListItemToggle({
+                                        title: $r('app.string.setting_enable_biometric_unlock'),
+                                        description: $r('app.string.setting_biometric_unlock_hint'),
+                                        disabled: !this.ATL1AuthAvailable,
+                                        selected: this.EnableBiometricUnlock,
+                                    })
+                                }
                                 if (this.EnableBiometricUnlock) {
-                                    SettingListToggle({
+                                    SettingListItemToggle({
                                         title: $r('app.string.setting_enable_biometric_auth'),
                                         description: $r('app.string.setting_biometric_auth_hint'),
                                         disabled: true,//!this.ATL3AuthAvailable,
@@ -114,14 +142,14 @@ export struct SettingsPage {
                         // About
                         ListItemGroupHeader({name: $r('app.string.section_title_about')}).margin({bottom:-6})
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
-                            SettingListInfo({
+                            SettingListItemInfo({
                                 title: $r('app.string.setting_about_version'),
                                 description: $r('app.string.setting_about_information',
                                     $r('app.string.app_version'),
                                     $r('app.string.app_icp_string')
                                 )
                             })
-                            SettingListInfo({
+                            SettingListItemInfo({
                                 title: $r('app.string.setting_official_website'),
                                 description: 'https://github.com/iamhyc/Aigis'
                             })
@@ -159,9 +187,18 @@ export struct SettingsPage {
         const eventHub = getContext(this).eventHub;
 
         switch(key) {
+            // general
             case 'EnableManualInput':
                 value = this.EnableManualInput;
                 break;
+            // outlook
+            case 'AppLanguage':
+                value = this.AppLanguage;
+                break;
+            case 'DarkMode':
+                value = this.DarkMode;
+                break;
+            // security
             case 'EnableBiometricUnlock':
                 value = this.EnableBiometricUnlock;
                 break;
@@ -170,15 +207,6 @@ export struct SettingsPage {
         }
 
         eventHub.emit(EVENT_UPDATE_SETTING, {key, value} as SettingUpdateRequestSchema);
-    }
-
-    private validateAuth(): boolean {
-        const _now = Date.now();
-        if (_now - this.atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     private showCustomDialog(builder: () => CustomBuilder) {

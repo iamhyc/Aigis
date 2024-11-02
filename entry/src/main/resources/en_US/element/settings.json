@@ -19,6 +19,22 @@
       "value": "Outlook"
     },
     {
+      "name": "setting_dark_mode_title",
+      "value": "Dark Mode"
+    },
+    {
+      "name": "setting_dark_mode_follow_system",
+      "value": "Follow System         "
+    },
+    {
+      "name": "setting_dark_mode_always_dark",
+      "value": "Always Dark         "
+    },
+    {
+      "name": "setting_dark_mode_always_light",
+      "value": "Always Light         "
+    },
+    {
       "name": "setting_language",
       "value": "Language"
     },
@@ -65,7 +81,7 @@
     },
     {
       "name": "setting_setup_password_hint",
-      "value": "Used to encrypt the user data only."
+      "value": "Used to encrypt the data only."
     },
     {
       "name": "setting_setup_password_title",

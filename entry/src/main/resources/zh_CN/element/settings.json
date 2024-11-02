@@ -19,12 +19,28 @@
       "value": "外观"
     },
     {
+      "name": "setting_dark_mode_title",
+      "value": "深色模式"
+    },
+    {
+      "name": "setting_dark_mode_follow_system",
+      "value": "跟随系统     "
+    },
+    {
+      "name": "setting_dark_mode_always_dark",
+      "value": "始终深色模式        "
+    },
+    {
+      "name": "setting_dark_mode_always_light",
+      "value": "始终浅色模式        "
+    },
+    {
       "name": "setting_language",
       "value": "语言"
     },
     {
       "name": "setting_language_system_default",
-      "value": "系统默认"
+      "value": "系统默认     "
     },
     {
       "name": "setting_show_issuer_icons",

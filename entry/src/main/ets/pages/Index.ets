@@ -9,7 +9,7 @@ import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
-import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable } from '../crypto/authUtils';
+import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtl1Auth } from '../crypto/authUtils';
 import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
 import { userAuth } from '@kit.UserAuthenticationKit';
@@ -60,7 +60,7 @@ struct Index {
             Navigation(this.navStack) {
                 Stack() {
                     // main content
-                    if (this.EnableBiometricUnlock && !this.validateAuth()) {
+                    if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
                         AppLockPage({atl1Auth: this.atl1Auth})
                     } else if (this.items.length===0) {
                         EmptyPage()
@@ -133,7 +133,7 @@ struct Index {
     }
 
     onPageShow() {
-        if (this.EnableBiometricUnlock && !this.validateAuth()) {
+        if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
             acquireAtl1Auth().then(result => { this.atl1Auth = result; })
         }
     }
@@ -153,15 +153,6 @@ struct Index {
             return this.items.map(x => x.keyAlias);
         } else {
             return this.items.flatMap(x => x.keyAlias===this.editState.editKeyAlias ? [] : [x.keyAlias]);
-        }
-    }
-
-    private validateAuth(): boolean {
-        const _now = Date.now();
-        if (_now - this.atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
-            return true;
-        } else {
-            return false;
         }
     }
 }

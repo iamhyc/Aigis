@@ -34,7 +34,7 @@ struct InformationArea {
 }
 
 @Component
-export struct SettingListInfo {
+export struct SettingListItemInfo {
     @Require @Prop title: ResourceStr
     @Require @Prop description: ResourceStr | undefined
 
@@ -94,7 +94,45 @@ export struct SettingListItem {
 }
 
 @Component
-export struct SettingListToggle {
+export struct SettingListItemSelect {
+    @Link selected: string
+    @Require @Prop entries: Map<ResourceStr, string>
+    @Require @Prop title: ResourceStr
+    @Prop description: ResourceStr | undefined
+    @Prop disabled: boolean = false
+
+    _entries: ResourceStr[] = Array.from(this.entries.keys());
+    _values: string[] = Array.from(this.entries.values());
+    @State _selected: number = this._values.indexOf(this.selected)
+
+    build() {
+        ListItem() {
+            Flex({ justifyContent: FlexAlign.End, alignItems: ItemAlign.Center }) {
+                InformationArea({ title: this.title, description: this.description, disabled: this.disabled })
+                //
+                Select(this._entries.map(x => {
+                    return {value: x} as SelectOption
+                }))
+                    .onSelect((idx) => { this.selected = this._values[idx]; })
+                    .selected($$this._selected)
+                    .value( this._entries[this._selected] )
+                    .font({size: 14}).optionFont({size:14}).selectedOptionFont({size:14})
+                    .fontColor($r('sys.color.font_secondary'))
+                    .backgroundColor($r('sys.color.ohos_id_list_background_color'))
+                    .optionWidth(OptionWidthMode.FIT_CONTENT)
+                    .controlSize(ControlSize.SMALL)
+                    .menuAlign(MenuAlignType.END)
+                    .width('auto')
+                    .height(48)
+            }
+            .height('auto')
+            .width('100%')
+        }
+    }
+}
+
+@Component
+export struct SettingListItemToggle {
     @Link selected: boolean
     @Require @Prop title: ResourceStr
     @Prop description: ResourceStr | undefined

@@ -122,6 +122,15 @@ export async function acquireAtl1Auth(): Promise<Atl1AuthResult> {
     return { authToken, timestamp };
 }
 
+export function validateAtl1Auth(atl1Auth: Atl1AuthResult): boolean {
+    const _now = Date.now();
+    if (_now - atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {
     const pbkdf2 = cryptoFramework.createKdf('PBKDF2|SHA256');
     const spec: cryptoFramework.PBKDF2Spec = {

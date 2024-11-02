@@ -1,4 +1,4 @@
-import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
 import { promptAction, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -11,7 +11,7 @@ import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
-import { DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
+import { AppLanguage, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
 import { AES_KEY_USAGE } from '../crypto/huksUtils';
 import { CodeRequestSchema, EVENT_CODE_REQUEST,
@@ -30,6 +30,7 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
     SettingUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
 import { AigisImporter } from '../importers/aigis';
+import { i18n } from '@kit.LocalizationKit';
 
 class PreferencesManager {
     private _instances: Map<string, OTP>;
@@ -232,6 +233,35 @@ export default class EntryAbility extends UIAbility {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onBackground');
     }
 
+    private applySettings(key: string, value: ValueType, init: boolean=false) {
+        const settingKey = `settings${key}`;
+        // apply application context configurations
+        const context = this.context.getApplicationContext();
+        if (key==='AppLanguage') {
+            const systemLanguage: string = i18n.System.getSystemLanguage();
+            if (value==='default') {
+                context.setLanguage(systemLanguage);
+            } else {
+                context.setLanguage(value as AppLanguage)
+            }
+        }
+        if (key==='DarkMode') {
+            if (value==='light') {
+                context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
+            } else if (value==='dark') {
+                context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK);
+            } else {
+                context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+            }
+        }
+        //
+        if (init) {
+            AppStorage.setAndProp(settingKey, value);
+        } else {
+            AppStorage.set(settingKey, value);
+        }
+    }
+
     private initUserPreferences(pref: preferences.Preferences) {
         // try to load user settings
         const settingString = pref.getSync(PREF_KEY_SETTINGS, '[]') as string;
@@ -241,9 +271,9 @@ export default class EntryAbility extends UIAbility {
             const key = obj[0], defaultValue = obj[1];
             const localValue = this.localSettings.get(key);
             if (localValue===undefined) {
-                AppStorage.setAndProp(`settings${key}`, defaultValue);
+                this.applySettings(key, defaultValue, true);
             } else {
-                AppStorage.setAndProp(`settings${key}`, localValue);
+                this.applySettings(key, localValue, true);
             }
         }
 
@@ -294,8 +324,8 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_UPDATE_SETTING, (data: SettingUpdateRequestSchema) => {
             if (this.localSettings) {
                 this.localSettings.set(data.key, data.value);
-                AppStorage.set(`settings${data.key}`, data.value);
-                //
+                this.applySettings(data.key, data.value);
+                // persist local settings
                 const settingItems = Array.from( this.localSettings.entries() );
                 const settingString = JSON.stringify(settingItems);
                 this.dataPreferences?.putSync(PREF_KEY_SETTINGS, settingString);
