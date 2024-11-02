@@ -13,6 +13,10 @@
       "name": "setting_enable_manual_input_title",
       "value": "启用手动输入"
     },
+    {
+      "name": "setting_enable_double_click_copy",
+      "value": "启用双击复制令牌"
+    },
 
     {
       "name": "section_title_outlook",

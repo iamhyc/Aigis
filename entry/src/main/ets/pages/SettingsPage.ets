@@ -40,12 +40,17 @@ export struct SettingsPage {
     @Consume ATL3AuthAvailable: boolean;
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
 
+    // general
+    @StorageProp('settingsEnableManualInput')
+    @Watch('onItChanged') EnableManualInput: boolean = false;
+    @StorageProp('settingsEnableDoubleClickCopy')
+    @Watch('onItChanged') EnableDoubleClickCopy: boolean = false;
+    // outlook
     @StorageProp('settingsAppLanguage')
     @Watch('onItChanged') AppLanguage: string = 'default';
     @StorageProp('settingsDarkMode')
     @Watch('onItChanged') DarkMode: string = 'default';
-    @StorageProp('settingsEnableManualInput')
-    @Watch('onItChanged') EnableManualInput: boolean = false;
+    // security
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsEnableBiometricAuth')
@@ -69,6 +74,10 @@ export struct SettingsPage {
                             SettingListItemToggle({
                                 title: $r('app.string.setting_enable_manual_input_title'),
                                 selected: this.EnableManualInput
+                            })
+                            SettingListItemToggle({
+                                title: $r('app.string.setting_enable_double_click_copy'),
+                                selected: this.EnableDoubleClickCopy
                             })
                         }
                         .divider(divider_style)
@@ -175,13 +184,6 @@ export struct SettingsPage {
         .width('100%')
     }
 
-    private setDragPlainText(ev: DragEvent, content: string) {
-        const textData = new unifiedDataChannel.PlainText
-        textData.textContent = content;
-        const unifiedData = new unifiedDataChannel.UnifiedData(textData);
-        (ev as DragEvent).setData(unifiedData);
-    }
-
     private onItChanged(key: string) {
         let value: ValueType = 0;
         const eventHub = getContext(this).eventHub;
@@ -190,6 +192,9 @@ export struct SettingsPage {
             // general
             case 'EnableManualInput':
                 value = this.EnableManualInput;
+                break;
+            case 'EnableDoubleClickCopy':
+                value = this.EnableDoubleClickCopy;
                 break;
             // outlook
             case 'AppLanguage':

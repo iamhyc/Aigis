@@ -12,8 +12,9 @@ import { SettingsPage } from './SettingsPage';
 import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtl1Auth } from '../crypto/authUtils';
 import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
-import { userAuth } from '@kit.UserAuthenticationKit';
 import { AppLockPage } from '../components/pages';
+import { unifiedDataChannel } from '@kit.ArkData';
+import { pasteboard } from '@kit.BasicServicesKit';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -259,6 +260,7 @@ struct OTPList {
 
 @Component
 struct OTPItem {
+    @StorageProp('settingsEnableDoubleClickCopy') EnableDoubleClickCopy: boolean = false;
     @Consume editState: EditState;
     @Consume selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
@@ -270,6 +272,7 @@ struct OTPItem {
     @State isVisible: Visibility = Visibility.Visible;
     @State showEditItemOnly: boolean = false;
     @State swipeBackgroundColor: Resource = $r('sys.color.comp_background_secondary');
+    @State codeCopied: boolean = false;
 
     private codeRequested: boolean = false;
     listScroller?: ListScroller;
@@ -333,7 +336,12 @@ struct OTPItem {
             .visibility(this.isVisible)
             .onClick(() => {
                 if (this.selected===this.keyAlias) {
-                    this.selected = '';
+                    if (this.EnableDoubleClickCopy && !this.codeCopied) {
+                        this.copyCodeToPateBoard();
+                        this.codeCopied = true;
+                    } else {
+                        this.selected = '';
+                    }
                 } else {
                     this.requestCodeUpdate();
                     this.selected = this.keyAlias;
@@ -461,8 +469,28 @@ struct OTPItem {
         this.listScroller?.closeAllSwipeActions();
     }
 
+    private copyCodeToPateBoard() {
+        const textData = new unifiedDataChannel.PlainText();
+        textData.textContent = this.code.code;
+        const unifiedData = new unifiedDataChannel.UnifiedData(textData);
+        // const unifiedData = new unifiedDataChannel.UnifiedData();
+        unifiedData.properties.shareOptions = unifiedDataChannel.ShareOptions.CROSS_APP;
+        // unifiedData.properties.getDelayData = (() => {
+        //     const textData = new unifiedDataChannel.PlainText();
+        //     textData.textContent = this.code.code;
+        //     const unifiedData = new unifiedDataChannel.UnifiedData(textData);
+        //     return unifiedData;
+        // });
+        pasteboard.getSystemPasteboard().setUnifiedData(unifiedData)
+            .then(() => {
+                promptAction.showToast({message: $r('app.string.code_copied_prompt'), duration:500});
+            });
+    }
+
     private splitDigits(): string {
+        this.codeCopied = false;
         this.onPeriodicCodeUpdated();
+        //
         const taskId = setInterval(() => {
             this.onPeriodicCodeUpdated();
         }, REFRESH_INTERVAL);

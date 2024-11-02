@@ -8,6 +8,7 @@ export type DarkMode = 'default' | 'light' | 'dark';
 export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType>([
     // general
     ['EnableManualInput', false],
+    ['EnableDoubleClickCopy', false],
     // outlook
     ['AppLanguage', 'default' as AppLanguage],
     ['DarkMode', 'default' as DarkMode],

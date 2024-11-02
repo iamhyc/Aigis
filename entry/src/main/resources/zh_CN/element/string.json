@@ -20,6 +20,10 @@
       "name": "search_hint",
       "value": "搜索"
     },
+    {
+      "name": "code_copied_prompt",
+      "value": "令牌已复制"
+    },
 
     {
       "name": "add_sheet_title",

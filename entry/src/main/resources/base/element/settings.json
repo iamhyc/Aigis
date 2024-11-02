@@ -13,6 +13,10 @@
       "name": "setting_enable_manual_input_title",
       "value": "Enable Manual Input"
     },
+    {
+      "name": "setting_enable_double_click_copy",
+      "value": "Double-click to copy the token"
+    },
 
     {
       "name": "section_title_outlook",

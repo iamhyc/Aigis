@@ -20,6 +20,10 @@
       "name": "search_hint",
       "value": "Search"
     },
+    {
+      "name": "code_copied_prompt",
+      "value": "Token Copied"
+    },
 
     {
       "name": "add_sheet_title",
