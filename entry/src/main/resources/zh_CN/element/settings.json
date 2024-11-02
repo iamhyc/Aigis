@@ -17,6 +17,14 @@
       "name": "setting_enable_double_click_copy",
       "value": "启用双击复制令牌"
     },
+    {
+      "name": "setting_enable_add_token_no_confirmation",
+      "value": "添加令牌无需确认"
+    },
+    {
+      "name": "setting_enable_add_token_no_confirmation_desc",
+      "value": "仅在存在重复时需要确认。"
+    },
 
     {
       "name": "section_title_outlook",

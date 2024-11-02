@@ -45,6 +45,8 @@ export struct SettingsPage {
     @Watch('onItChanged') EnableManualInput: boolean = false;
     @StorageProp('settingsEnableDoubleClickCopy')
     @Watch('onItChanged') EnableDoubleClickCopy: boolean = false;
+    @StorageProp('settingsDisableAddConfirm')
+    @Watch('onItChanged') DisableAddConfirm: boolean = false;
     // outlook
     @StorageProp('settingsAppLanguage')
     @Watch('onItChanged') AppLanguage: string = 'default';
@@ -73,11 +75,16 @@ export struct SettingsPage {
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
                             SettingListItemToggle({
                                 title: $r('app.string.setting_enable_manual_input_title'),
-                                selected: this.EnableManualInput
+                                selected: this.EnableManualInput,
                             })
                             SettingListItemToggle({
                                 title: $r('app.string.setting_enable_double_click_copy'),
-                                selected: this.EnableDoubleClickCopy
+                                selected: this.EnableDoubleClickCopy,
+                            })
+                            SettingListItemToggle({
+                                title: $r('app.string.setting_enable_add_token_no_confirmation'),
+                                description: $r('app.string.setting_enable_add_token_no_confirmation_desc'),
+                                selected: this.DisableAddConfirm,
                             })
                         }
                         .divider(divider_style)
@@ -195,6 +202,9 @@ export struct SettingsPage {
                 break;
             case 'EnableDoubleClickCopy':
                 value = this.EnableDoubleClickCopy;
+                break;
+            case 'DisableAddConfirm':
+                value = this.DisableAddConfirm;
                 break;
             // outlook
             case 'AppLanguage':

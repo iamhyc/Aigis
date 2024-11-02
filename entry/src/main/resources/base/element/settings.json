@@ -17,6 +17,14 @@
       "name": "setting_enable_double_click_copy",
       "value": "Double-click to copy the token"
     },
+    {
+      "name": "setting_enable_add_token_no_confirmation",
+      "value": "Add tokens without confirmation"
+    },
+    {
+      "name": "setting_enable_add_token_no_confirmation_desc",
+      "value": "Confirmation required only when duplicates present."
+    },
 
     {
       "name": "section_title_outlook",

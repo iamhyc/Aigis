@@ -11,7 +11,8 @@ import { TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtl1Auth } from '../crypto/authUtils';
 import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
-import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP } from '../common/events';
+import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
+    UpdateRequestSchema } from '../common/events';
 import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
@@ -149,7 +150,6 @@ struct Index {
     }
 
     private getExKeys(): string[] {
-        // this.editSchema?.secret
         if (this.editState.editNewItem) {
             return this.items.map(x => x.keyAlias);
         } else {
@@ -508,7 +508,9 @@ struct OTPItem {
 struct QrScanButton {
     @StorageProp('bottomRectHeight')
     @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
-    @StorageProp('settingsEnableManualInput') enableManualInput: boolean = false;
+    @StorageProp('settingsEnableManualInput') EnableManualInput: boolean = false;
+    @StorageProp('settingsDisableAddConfirm') DisableAddConfirm: boolean = false;
+    @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Consume selected: string;
     @Consume editState: EditState;
     @Consume btnVisibility: Visibility;
@@ -519,7 +521,7 @@ struct QrScanButton {
 
     build() {
         Button() {
-            if (this.enableManualInput) {
+            if (this.EnableManualInput) {
                 Image($r('sys.media.ohos_ic_public_add'))
                     .width($r('app.float.add_icon_size')).height($r('app.float.add_icon_size'))
                     .fillColor($r('sys.color.comp_background_primary'))
@@ -536,7 +538,7 @@ struct QrScanButton {
         .shadow({radius: 10})
         .visibility(this.btnVisibility)
         .onClick(async () => {
-            if (this.enableManualInput) {
+            if (this.EnableManualInput) {
                 this.addSheetShow = true;
             } else {
                 this.uriToEditPage( async () => { return await this.scanQrCode() } );
@@ -625,8 +627,14 @@ struct QrScanButton {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         //
-        this.selected = '';
-        this.editState.show(otp.keyAlias, otp.secret_leaked_schema, true);
+        const keyAlias = otp.keyAlias;
+        const exKeys = this.items.map(x => x.keyAlias);
+        if (this.DisableAddConfirm && !exKeys.includes(keyAlias)) {
+            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+        } else {
+            this.selected = '';
+            this.editState.show(otp.keyAlias, otp.secret_leaked_schema, true);
+        }
     }
 
     private getUserUriInput(): Promise<string> {
