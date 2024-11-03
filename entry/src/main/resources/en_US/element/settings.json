@@ -55,12 +55,48 @@
       "value": "System Default"
     },
     {
-      "name": "setting_show_issuer_icons",
-      "value": "Show Issuer Icons"
+      "name": "setting_digit_group_title",
+      "value": "Code Digit Grouping"
+    },
+    {
+      "name": "setting_digit_group_option_2",
+      "value": "Groups of 2       "
+    },
+    {
+      "name": "setting_digit_group_option_3",
+      "value": "Groups of 3       "
+    },
+    {
+      "name": "setting_digit_group_option_4",
+      "value": "Groups of 4       "
+    },
+    {
+      "name": "setting_digit_group_option_even",
+      "value": "Halves    "
+    },
+    {
+      "name": "setting_digit_group_option_none",
+      "value": "No grouping        "
     },
     {
       "name": "setting_show_account_name",
       "value": "Show Account Name"
+    },
+    {
+      "name": "setting_show_account_name_option_always",
+      "value": "Always show        "
+    },
+    {
+      "name": "setting_show_account_name_option_smart",
+      "value": "Necessary      "
+    },
+    {
+      "name": "setting_show_account_name_option_off",
+      "value": "Hide   "
+    },
+    {
+      "name": "setting_show_issuer_icons",
+      "value": "Show Issuer Icons"
     },
 
     {

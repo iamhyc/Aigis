@@ -16,6 +16,7 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_
 import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
+import { DigitGroup, ShowAccountName } from '../common/settings';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -261,6 +262,10 @@ struct OTPList {
 @Component
 struct OTPItem {
     @StorageProp('settingsEnableDoubleClickCopy') EnableDoubleClickCopy: boolean = false;
+    @StorageProp('settingsDigitGroup') DigitGroup: DigitGroup = '3';
+    @StorageProp('settingsShowAccountName') ShowAccountName: ShowAccountName = 'always';
+    @StorageProp('settingsShowIssuerIcons') ShowIssuerIcons: boolean = true;
+    @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Consume editState: EditState;
     @Consume selected: string;
     @Link @Watch('onFilterTextChanged') filterText: string;
@@ -283,12 +288,14 @@ struct OTPItem {
                 // Main Content
                 Row({ space: '16vp' }) {
                     // display issuer icon
-                    Image($rawfile(this.icon))
-                        .margin({left: $r('app.float.visual_space')})
-                        .borderRadius($r('app.float.issuer_icon_radius'))
-                        .height($r('app.float.issuer_icon_size'))
-                        .width($r('app.float.issuer_icon_size'))
-                        .alt(this.schema.issuer)
+                    if (this.ShowIssuerIcons) {
+                        Image($rawfile(this.icon))
+                            .margin({left: $r('app.float.visual_space')})
+                            .borderRadius($r('app.float.issuer_icon_radius'))
+                            .height($r('app.float.issuer_icon_size'))
+                            .width($r('app.float.issuer_icon_size'))
+                            .alt(this.schema.issuer)
+                    }
                     // display information area
                     Column({ space: '4vp' }) {
                         Text() {
@@ -296,14 +303,16 @@ struct OTPItem {
                                 .fontSize($r('sys.float.Subtitle_S'))
                                 .fontWeight(FontWeight.Bold)
                                 .fontColor($r('sys.color.font_primary'))
-                            Span(` (${this.schema.name})`)
-                                .fontSize($r('sys.float.Subtitle_S'))
-                                .fontWeight(FontWeight.Normal)
-                                .fontColor($r('sys.color.font_secondary'))
+                            if (this.ShowAccountName==='always' || (this.ShowAccountName==='smart' && this.hasDuplicateIssuers())) {
+                                Span(` (${this.schema.name})`)
+                                    .fontSize($r('sys.float.Subtitle_S'))
+                                    .fontWeight(FontWeight.Normal)
+                                    .fontColor($r('sys.color.font_secondary'))
+                            }
                         }
 
                         if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
-                            Text(this.splitDigits())
+                            Text(this.codeDigits())
                                 .fontSize(26)
                         } else {
                             Text(this.hiddenDigits())
@@ -473,21 +482,41 @@ struct OTPItem {
         const textData = new unifiedDataChannel.PlainText();
         textData.textContent = this.code.code;
         const unifiedData = new unifiedDataChannel.UnifiedData(textData);
-        // const unifiedData = new unifiedDataChannel.UnifiedData();
         unifiedData.properties.shareOptions = unifiedDataChannel.ShareOptions.CROSS_APP;
-        // unifiedData.properties.getDelayData = (() => {
-        //     const textData = new unifiedDataChannel.PlainText();
-        //     textData.textContent = this.code.code;
-        //     const unifiedData = new unifiedDataChannel.UnifiedData(textData);
-        //     return unifiedData;
-        // });
         pasteboard.getSystemPasteboard().setUnifiedData(unifiedData)
             .then(() => {
                 promptAction.showToast({message: $r('app.string.code_copied_prompt'), duration:500});
             });
     }
 
-    private splitDigits(): string {
+    private hasDuplicateIssuers(): boolean {
+        for (const item of this.items) {
+            if (item.schema.issuer===this.schema.issuer && item.keyAlias!==this.keyAlias) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private splitDigits(code: string): string {
+        switch(this.DigitGroup) {
+            case '2':
+                return code.match(/.{1,2}/g)!.join(' ');
+            case '3':
+                return code.match(/.{1,3}/g)!.join(' ');
+            case '4':
+                return code.match(/.{1,4}/g)!.join(' ');
+            case 'even':
+                const num = Math.floor(this.schema.digits / 2);
+                const re = new RegExp(`.{1,${num}}`, "g")
+                return code.match(re)!.join(' ');
+            case 'none':
+            default:
+                return code;
+        }
+    }
+
+    private codeDigits(): string {
         this.codeCopied = false;
         this.onPeriodicCodeUpdated();
         //
@@ -496,11 +525,12 @@ struct OTPItem {
         }, REFRESH_INTERVAL);
         if (taskId>0) { clearInterval(taskId-1); }
         //
-        return this.code.code.match(/.{1,3}/g)!.join(' ');
+        return this.splitDigits(this.code.code);
     }
 
     private hiddenDigits(): string {
-        return '⬤'.repeat(this.schema.digits).match(/.{1,3}/g)!.join(' ');
+        const code = '⬤'.repeat(this.schema.digits);
+        return this.splitDigits(code);
     }
 }
 

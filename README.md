@@ -68,11 +68,6 @@ Dst2-->Dst3
 
 **Release v0.2.6** (2024/11/08)
 
-- [ ] More Setting Items
-  - General - "Enable Double Click to Copy Token"
-  - General - "Directly add when no duplicates present"
-  - Outlook - "Account Name Display" (Always / Only Necessary / Off)
-  - Outlook - "Code Split Digits Option" (2/3/4/'Even'/'None')
 - [ ] Fix page transition animation (#13)
 - [ ] Better Icon Match
   - support [Aegis](https://github.com/beemdevelopment/Aegis) icon pack import

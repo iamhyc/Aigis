@@ -1,8 +1,7 @@
 import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
-import { unifiedDataChannel } from "@kit.ArkData";
 import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
     SettingListItemSelect } from "../components/settings";
-import { ValueType } from "../common/settings";
+import { AppLanguage, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
 import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
 import {
     EVENT_EXPORT_REQUEST,
@@ -32,6 +31,20 @@ const AppLanguageSelections: Map<ResourceStr, string> = new Map<ResourceStr, str
     ['English    ', 'en-Latn-US'],
 ]);
 
+const DigitGroupingSelection: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+    [$r('app.string.setting_digit_group_option_2'),    '2'],
+    [$r('app.string.setting_digit_group_option_3'),    '3'],
+    [$r('app.string.setting_digit_group_option_4'),    '4'],
+    [$r('app.string.setting_digit_group_option_even'), 'even'],
+    [$r('app.string.setting_digit_group_option_none'), 'none'],
+]);
+
+const AccountNameSelection: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+    [$r('app.string.setting_show_account_name_option_always'), 'always'],
+    [$r('app.string.setting_show_account_name_option_smart'), 'smart'],
+    [$r('app.string.setting_show_account_name_option_off'), 'off'],
+]);
+
 @Component
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
@@ -49,17 +62,21 @@ export struct SettingsPage {
     @Watch('onItChanged') DisableAddConfirm: boolean = false;
     // outlook
     @StorageProp('settingsAppLanguage')
-    @Watch('onItChanged') AppLanguage: string = 'default';
+    @Watch('onItChanged') AppLanguage: AppLanguage = 'default';
     @StorageProp('settingsDarkMode')
-    @Watch('onItChanged') DarkMode: string = 'default';
+    @Watch('onItChanged') DarkMode: DarkMode = 'default';
+    @StorageProp('settingsDigitGroup')
+    @Watch('onItChanged') DigitGroup: DigitGroup = '3';
+    @StorageProp('settingsShowAccountName')
+    @Watch('onItChanged') ShowAccountName: ShowAccountName = 'always';
+    @StorageProp('settingsShowIssuerIcons')
+    @Watch('onItChanged') ShowIssuerIcons: boolean = true;
+
     // security
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsEnableBiometricAuth')
     @Watch('onItChanged') EnableBiometricAuth: boolean = false;
-
-    @State ShowIssuerIcons: boolean = true;
-    @State ShowAccountName: boolean = true;
 
     private inputDialogId: number = -1;
 
@@ -103,8 +120,17 @@ export struct SettingsPage {
                                 selected: this.DarkMode,
                                 entries: DarkModeSelections
                             })
-                            SettingListItemToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons, disabled: true })
-                            SettingListItemToggle({ title: $r('app.string.setting_show_account_name'), selected: this.ShowAccountName, disabled: true })
+                            SettingListItemSelect({
+                                title: $r('app.string.setting_digit_group_title'),
+                                selected: this.DigitGroup,
+                                entries: DigitGroupingSelection,
+                            })
+                            SettingListItemSelect({
+                                title: $r('app.string.setting_show_account_name'),
+                                selected: this.ShowAccountName,
+                                entries: AccountNameSelection,
+                            })
+                            SettingListItemToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons })
                         }
                         .divider(divider_style)
                         .backgroundColor($r('sys.color.comp_background_tertiary'))
@@ -179,6 +205,7 @@ export struct SettingsPage {
                     .alignListItem(ListItemAlign.Center)
                     .scrollBar(BarState.Off)
                     .edgeEffect(EdgeEffect.Spring, {alwaysEnabled:true})
+                    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
                 }
             }
         }
@@ -207,11 +234,20 @@ export struct SettingsPage {
                 value = this.DisableAddConfirm;
                 break;
             // outlook
-            case 'AppLanguage':
+            case            'AppLanguage':
                 value = this.AppLanguage;
                 break;
-            case 'DarkMode':
+            case            'DarkMode':
                 value = this.DarkMode;
+                break;
+            case            'DigitGroup':
+                value = this.DigitGroup;
+                break;
+            case            'ShowAccountName':
+                value = this.ShowAccountName;
+                break;
+            case            'ShowIssuerIcons':
+                value = this.ShowIssuerIcons;
                 break;
             // security
             case 'EnableBiometricUnlock':

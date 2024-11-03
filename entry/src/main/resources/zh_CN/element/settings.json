@@ -55,13 +55,50 @@
       "value": "系统默认     "
     },
     {
-      "name": "setting_show_issuer_icons",
-      "value": "显示服务商图标"
+      "name": "setting_digit_group_title",
+      "value": "分组显示令牌"
+    },
+    {
+      "name": "setting_digit_group_option_2",
+      "value": "2 位一组     "
+    },
+    {
+      "name": "setting_digit_group_option_3",
+      "value": "3 位一组     "
+    },
+    {
+      "name": "setting_digit_group_option_4",
+      "value": "4 位一组     "
+    },
+    {
+      "name": "setting_digit_group_option_even",
+      "value": "均分   "
+    },
+    {
+      "name": "setting_digit_group_option_none",
+      "value": "不分组    "
     },
     {
       "name": "setting_show_account_name",
       "value": "显示账户名称"
     },
+    {
+      "name": "setting_show_account_name_option_always",
+      "value": "总是显示     "
+    },
+    {
+      "name": "setting_show_account_name_option_smart",
+      "value": "仅必要时     "
+    },
+    {
+      "name": "setting_show_account_name_option_off",
+      "value": "隐藏   "
+    },
+    {
+      "name": "setting_show_issuer_icons",
+      "value": "显示服务商图标"
+    },
+
 
     {
       "name": "section_title_security",
