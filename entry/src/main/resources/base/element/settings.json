@@ -225,6 +225,19 @@
       "name": "setting_official_website",
       "value": "Official Website"
     },
+    {
+      "name": "setting_feedback",
+      "value": "Feedback"
+    },
+
+    {
+      "name": "prompt_website_copied",
+      "value": "Website Copied"
+    },
+    {
+      "name": "prompt_icp_number_copied",
+      "value": "ICP Number Copied"
+    },
 
     {
       "name": "string_text_repo",

@@ -226,6 +226,19 @@
       "name": "setting_official_website",
       "value": "官方网站"
     },
+    {
+      "name": "setting_feedback",
+      "value": "问题反馈"
+    },
+
+    {
+      "name": "prompt_website_copied",
+      "value": "网址已复制"
+    },
+    {
+      "name": "prompt_icp_number_copied",
+      "value": "ICP备案号已复制"
+    },
 
     {
       "name": "string_text_repo",

@@ -1,3 +1,6 @@
+import { unifiedDataChannel } from "@kit.ArkData"
+import { pasteboard } from "@kit.BasicServicesKit"
+import { promptAction } from "@kit.ArkUI"
 
 @Component
 struct InformationArea {
@@ -37,6 +40,8 @@ struct InformationArea {
 export struct SettingListItemInfo {
     @Require @Prop title: ResourceStr
     @Require @Prop description: ResourceStr | undefined
+    @Prop clickToCopy: string
+    @Prop copyPrompt: ResourceStr
 
     build() {
         ListItem() {
@@ -45,6 +50,23 @@ export struct SettingListItemInfo {
             }
             .height('auto')
             .width('100%')
+            .clickEffect(this.clickToCopy? { level: ClickEffectLevel.MIDDLE } : null)
+            .gesture(
+                LongPressGesture({duration: 750})
+                    .onAction(() => {
+                        if (this.clickToCopy) {
+                            const textData = new unifiedDataChannel.PlainText();
+                            textData.textContent = this.clickToCopy;
+                            const unifiedData = new unifiedDataChannel.UnifiedData(textData);
+                            unifiedData.properties.shareOptions = unifiedDataChannel.ShareOptions.CROSS_APP;
+                            pasteboard.getSystemPasteboard().setUnifiedData(unifiedData)
+                                .then(() => {
+                                    const message = this.copyPrompt ?? 'Copied';
+                                    promptAction.showToast({message, duration:500});
+                                });
+                        }
+                    })
+            )
         }
     }
 }
@@ -89,7 +111,7 @@ export struct SettingListItem {
             .height('auto')
             .width('100%')
         }
-        .clickEffect(this.disabled? null : { level: ClickEffectLevel.MIDDLE })
+        .clickEffect(!this.disabled? { level: ClickEffectLevel.MIDDLE } : null)
     }
 }
 

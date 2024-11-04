@@ -15,6 +15,7 @@ import { common } from "@kit.AbilityKit";
 import { Atl1AuthResult } from "../common/schema";
 import { AppLockPage } from "../components/pages";
 import { validateAtl1Auth } from "../crypto/authUtils";
+import { FEEDBACK_WEBSITE, OFFICIAL_WEBSITE } from "../common/conts";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -189,11 +190,21 @@ export struct SettingsPage {
                                 description: $r('app.string.setting_about_information',
                                     $r('app.string.app_version'),
                                     $r('app.string.app_icp_string')
-                                )
+                                ),
+                                clickToCopy: getContext().resourceManager.getStringByNameSync('app_icp_string'),
+                                copyPrompt: $r('app.string.prompt_icp_number_copied'),
                             })
                             SettingListItemInfo({
                                 title: $r('app.string.setting_official_website'),
-                                description: 'https://github.com/iamhyc/Aigis'
+                                description: OFFICIAL_WEBSITE,
+                                clickToCopy: OFFICIAL_WEBSITE,
+                                copyPrompt: $r('app.string.prompt_website_copied'),
+                            })
+                            SettingListItemInfo({
+                                title: $r('app.string.setting_feedback'),
+                                description: FEEDBACK_WEBSITE,
+                                clickToCopy: FEEDBACK_WEBSITE,
+                                copyPrompt: $r('app.string.prompt_website_copied'),
                             })
                         }
                         .divider(divider_style)
