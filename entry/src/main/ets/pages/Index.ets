@@ -142,7 +142,10 @@ struct Index {
     }
 
     onPageHide() {
-        this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
+        if (this.EnableBiometricUnlock) {
+            this.editState.hide();
+            this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
+        }
         this.selected = '';
     }
 
