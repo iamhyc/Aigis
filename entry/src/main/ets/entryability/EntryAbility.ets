@@ -5,13 +5,14 @@ import { BusinessError, zlib } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
-import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
+import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     AigisContentSchema,
     MasterKeyInfo,
     IconPackStore,
     IconPackSchema} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
+    MAX_ICON_PACK_SIZE,
     PREF_ICON_PACKS,
     PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
@@ -42,19 +43,20 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
 import { AigisImporter } from '../importers/aigis';
 import { i18n } from '@kit.LocalizationKit';
 import { buffer } from '@kit.ArkTS';
+import { IconManager } from '../common/icons';
 
 class PreferencesManager {
     private _instances: Map<string, OTP>;
     private _secrets: SecretSchema[];
     private _items: OTPItemInfo[];
-    private _icons: IconPackStore[];
+    private iconManager: IconManager;
 
     constructor(items: OTPItemInfo[], secrets: SecretSchema[], icons: IconPackStore[]) {
         this._items = items;
         items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE}); //FIXME: remove this later
         //
         this._secrets = secrets;
-        this._icons = icons;
+        this.iconManager = new IconManager(icons);
         this._instances = new Map();
     }
 
@@ -67,7 +69,7 @@ class PreferencesManager {
     }
 
     get icons() {
-        return this._icons;
+        return this.iconManager.icons;
     }
 
     getOtpInstance(keyAlias: string): OTP {
@@ -118,7 +120,7 @@ class PreferencesManager {
         return failed;
     }
 
-    updatePreferenceItem(uri: string, oldKeyAlias?: string) {
+    async updatePreferenceItem(uri: string, oldKeyAlias?: string, icon?: string) {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         const secret = args.get('secret');
@@ -130,7 +132,7 @@ class PreferencesManager {
         if (oldItem!==undefined) {
             const oldKeyAlias = oldItem.keyAlias;
             oldItem.keyAlias = newKeyAlias;
-            oldItem.icon = iconMatcher(otp.schema.issuer);
+            oldItem.icon = icon ?? await this.iconManager.match( otp.schema.issuer );
             //
             oldItem.schema = otp.schema;
             if (secret && oldSecret) { oldSecret.secret = secret; }
@@ -138,16 +140,16 @@ class PreferencesManager {
             this._instances.delete(oldKeyAlias);
             this.requestCodeUpdate(newKeyAlias);
         } else {
-            this.appendPreferenceItem(otp, secret!);
+            await this.appendPreferenceItem(otp, secret!, icon);
         }
     }
 
-    private appendPreferenceItem(otp: OTP, secret: string) {
+    private async appendPreferenceItem(otp: OTP, secret: string, icon?: string) {
         const keyAlias = otp.keyAlias;
         const schema = otp.schema;
 
         // find issuer icon
-        const icon = iconMatcher(otp.schema.issuer);
+        icon = icon ?? await this.iconManager.match( otp.schema.issuer );
         const code: CodeResponseSchema = {timestamp:0, code:'000000'};
         this._items.push({keyAlias, icon, code, schema});
         this._secrets.push({keyAlias, secret});
@@ -183,7 +185,7 @@ class PreferencesManager {
         try {
             const userFileFd = (await fs.open(uri)).fd;
             // check archive size
-            if ((await fs.stat(userFileFd)).size > 5*1024*1024) {
+            if ((await fs.stat(userFileFd)).size > MAX_ICON_PACK_SIZE) {
                 throw new Error('import-fail-file-too-large');
             }
             // decompress to tempDir
@@ -191,7 +193,7 @@ class PreferencesManager {
             await fs.copyFile(userFileFd, tempArchiveName);
             await zlib.decompressFile(tempArchiveName, tempFolderPath);
             // load `pack.json`
-            const arrayBuffer = new ArrayBuffer(1024*1024); //1024KB
+            const arrayBuffer = new ArrayBuffer(1*1024*1024); //1MB
             const tempPackFile = await fs.open(tempFolderPath + '/pack.json');
             const readLen = await fs.read(tempPackFile.fd, arrayBuffer);
             const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
@@ -203,15 +205,16 @@ class PreferencesManager {
             }
             await fs.rename(tempFolderPath, targetFolderPath);
             // insert into local preferences
-            const isDefault = (this._icons.length==0);
-            this._icons.push({
+            const isDefault = (this.icons.length==0);
+            const pack: IconPackStore = {
                 uuid: iconPack.uuid,
                 name: iconPack.name,
                 version: iconPack.version,
                 icons: iconPack.icons.length,
                 uri: targetFolderPath,
                 isDefault,
-            });
+            };
+            await this.iconManager.appendPack(pack);
             //
             promptAction.showToast({message: $r('app.string.setting_icon_pack_success'), duration: 500});
             if (isDefault) {
@@ -234,45 +237,55 @@ class PreferencesManager {
     }
 
     async removeIconPack(uuid: string) {
-        const packIdx = this._icons.findIndex(x => x.uuid===uuid);
+        const _icons = this.icons;
+        const packIdx = _icons.findIndex(x => x.uuid===uuid);
         if (packIdx>=0) {
             try{
-                await fs.rmdir( this._icons[packIdx].uri );
+                await fs.rmdir( _icons[packIdx].uri );
             } finally {
-                if (this._icons[packIdx].isDefault) {
+                if (_icons[packIdx].isDefault) {
                     if (packIdx > 0) {
-                        const newDefault = this._icons[packIdx-1];
-                        this._icons[packIdx-1].isDefault = true;
-                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: newDefault.uuid, force:true});
-                    } else if (this._icons.length > 1) {
-                        const newDefault = this._icons[packIdx+1];
-                        this._icons[packIdx+1].isDefault = true;
-                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: newDefault.uuid, force:true});
+                        _icons[packIdx-1].isDefault = true;
+                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: _icons[packIdx-1].uuid, force:true});
+                    } else if (_icons.length > 1) {
+                        _icons[packIdx+1].isDefault = true;
+                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: _icons[packIdx+1].uuid, force:true});
+                    } else {
+                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: '', force: true});
                     }
                 }
-                this._icons.splice(packIdx, 1);
+                this.iconManager.removePack(uuid);
             }
         }
     }
 
     async applyIconPack(uuid: string, force: boolean = false) {
-        const packIdx = this._icons.findIndex(x => x.uuid===uuid);
-        const prevDefault = this._icons.findIndex(x => x.isDefault);
-        if (prevDefault==packIdx && !force) { return; }
-        this._icons[prevDefault].isDefault = false;
-        this._icons[packIdx].isDefault = true;
-        //TODO: apply icon pack to existing items
+        if (!this.iconManager.setDefaultIconPack(uuid) && !force) {
+            return;
+        }
+        // reset icon pack
+        if (uuid==='') {
+            for (const item of this._items) {
+                item.icon = '';
+            }
+            return;
+        }
+        // apply icon pack to existing items
+        for (const item of this._items) {
+            item.icon = await this.iconManager.match(item.schema.issuer, uuid);
+        }
+        // show prompt toast
         if (!force) {
             promptAction.showToast({message: $r('app.string.setting_icon_pack_applied'), duration:500})
         } else {
-            promptAction.showToast({message: 'Icon Pack Force Applied'})
+            promptAction.showToast({message: $r('app.string.setting_icon_pack_changed'), duration:500})
         }
     }
 
     persists(dataPreferences: preferences.Preferences) {
         dataPreferences!.putSync(PREF_KEY_ITEMS, this._items);
         dataPreferences!.putSync(PREF_KEY_SECRETS, this._secrets);
-        dataPreferences!.putSync(PREF_ICON_PACKS, this._icons);
+        dataPreferences!.putSync(PREF_ICON_PACKS, this.icons);
         dataPreferences!.flush();
     }
 }
@@ -404,10 +417,10 @@ export default class EntryAbility extends UIAbility {
                 }
             }
         });
-        this.context.eventHub.on(EVENT_UPDATE_ITEM, (data: UpdateRequestSchema) => {
+        this.context.eventHub.on(EVENT_UPDATE_ITEM, async (data: UpdateRequestSchema) => {
             if (this.instPreferences) {
                 // update local preferences
-                this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias);
+                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.icon);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items
@@ -529,7 +542,7 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_ICON_PACK_APPLY_REQUEST, async (data: IconPackApplyRequest) => {
             if (this.instPreferences) {
                 // update local preferences
-                this.instPreferences.applyIconPack(data.uuid, data.force);
+                await this.instPreferences.applyIconPack(data.uuid, data.force);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items

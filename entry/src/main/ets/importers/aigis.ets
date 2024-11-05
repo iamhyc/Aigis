@@ -51,7 +51,7 @@ export class AigisImporter extends ImporterClass {
     }
 
     async load(fd: number, password: string): Promise<AigisContentSchema> {
-        const arrayBuffer = new ArrayBuffer(1024*1024);//1MB
+        const arrayBuffer = new ArrayBuffer(1*1024*1024);//1MB
         const readLen = await fs.read(fd, arrayBuffer);
         const exported: AigisExportFormat = JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
 

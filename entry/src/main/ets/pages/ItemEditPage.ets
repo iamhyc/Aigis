@@ -1,6 +1,8 @@
 import { promptAction } from "@kit.ArkUI";
 import { EVENT_REMOVE_ITEM, EVENT_UPDATE_ITEM, RemovalRequestSchema, UpdateRequestSchema } from "../common/events";
-import { iconMatcher } from "../common/schema";
+import { IconManager } from "../common/icons";
+import { IconPackStore } from "../common/schema";
+import { IssuerIcon } from "../components/icons";
 import { LabeledSelect, LabeledTextInput } from "../components/labeled";
 import { OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
 
@@ -15,11 +17,12 @@ export function ItemEditBuilder(
     exKeys: string[],
     keyAlias: string,
     schema: OTPSchema,
+    icon: string,
     editNewItem: boolean,
 ) {
     Column() {
         ItemEditComponent({
-            context, exKeys, keyAlias, schema, editNewItem,
+            context, exKeys, keyAlias, schema, icon, editNewItem,
             issuer: schema.issuer,
             name: schema.name,
             typeIndex: typeEntries.indexOf(schema.type.toUpperCase()),
@@ -36,6 +39,7 @@ export function ItemEditBuilder(
 @Component
 struct ItemEditComponent {
     @StorageProp('bottomRectHeight') bottomRectHeight: number = 0;
+    @StorageProp('IconPacks') IconPacks: IconPackStore[] = [];
     @Require @Prop context: Context;
     @Require @Prop exKeys: string[];
     @Require @Prop keyAlias: string;
@@ -46,18 +50,22 @@ struct ItemEditComponent {
     @Watch('onValueChanged') @Require @Prop typeIndex: number;
     @Watch('onValueChanged') @Require @Prop hashIndex: number;
     @Watch('onValueChanged') @Require @Prop digits: string;
+    @Watch('onValueChanged') @Require @Prop icon: string;
     @Watch('onValueChanged') @Prop note: string;
     @Watch('onValueChanged') @Prop period: string;
     @Watch('onValueChanged') @Prop counter: string;
     @Prop secret: string;
+    @State validatedIcon: string = IconManager.validateUri(this.icon);
     @State secretInputEnabled: boolean = this.editNewItem;
-    @State icon: Resource = $rawfile(iconMatcher(this.issuer));
     @State saveBtnEnabled: boolean = this.editNewItem;
+
+    iconManager = new IconManager(this.IconPacks);
 
     private onValueChanged(propName: string) {
         this.saveBtnEnabled = true;
         if (propName==='issuer') {
-            this.icon = $rawfile(iconMatcher(this.issuer));
+            this.iconManager.match(this.issuer)
+                .then(icon => { this.icon = icon; })
         }
     }
 
@@ -123,6 +131,7 @@ struct ItemEditComponent {
             return;
         }
         //
+        const icon = this.icon;
         const type = typeEntries[this.typeIndex].toLowerCase();
         const issuer_name = `${this.issuer}:${this.name}`;
         const algorithm = hashEntries[this.hashIndex];
@@ -136,22 +145,32 @@ struct ItemEditComponent {
         if (this.exKeys.includes(issuer_name)) {
             const keyAlias = this.keyAlias;
             this.requestOverwriteConfirm(issuer_name, allow_overwrite, () => {
-                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
             });
         } else {
             const keyAlias = this.editNewItem? undefined : this.keyAlias;
-            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
         }
         // this.saveBtnEnabled = false;
     }
 
     build() {
         Column({space: COLUMN_ITEM_GAP}) {
-            //
-            Image(this.icon)
-                .height(64).width(64)
-                .borderRadius(32)
-                .margin({top:COLUMN_ITEM_GAP, bottom:COLUMN_ITEM_GAP})
+            if (this.validatedIcon) {
+                Image(this.validatedIcon)
+                    .height(64).width(64)
+                    .borderRadius(32)
+                    .margin({bottom:COLUMN_ITEM_GAP})
+            } else {
+                IssuerIcon({
+                    issuer: this.issuer,
+                    iconSize: '64vp',
+                    iconRadius: '32vp',
+                    fontSize: 36,
+                })
+                    .margin({bottom:COLUMN_ITEM_GAP})
+            }
+
             Divider().strokeWidth('1px').width('90%')
             //
             Column({space: COLUMN_ITEM_GAP}) {

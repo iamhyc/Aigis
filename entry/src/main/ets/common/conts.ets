@@ -5,7 +5,10 @@ export const PREF_KEY_SECRETS  = 'secrets';
 export const PREF_KEY_ITEMS    = 'items';
 export const PREF_KEY_SETTINGS = 'settings';
 export const PREF_MASTER_KEY   = 'master-key';
+
 export const PREF_ICON_PACKS   = 'icon-packs';
+export const MAX_ICON_PACK_NUM = 5;
+export const MAX_ICON_PACK_SIZE = 5*1024*1024;//5MB
 
 export const FAKE_OTP_CODE = '******';
 

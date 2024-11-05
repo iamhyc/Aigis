@@ -17,6 +17,8 @@ import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { DigitGroup, ShowAccountName } from '../common/settings';
+import { IconManager } from '../common/icons';
+import { IssuerIcon } from '../components/icons';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -25,14 +27,16 @@ class EditState {
     public editPageShow: boolean = false;
     public editKeyAlias: string = '';
     public editSchema: OTPSchema | undefined = undefined;
+    public editIcon: string = '';
     public editNewItem: boolean = false;
 
     constructor() {}
 
-    show(editKeyAlias: string, editSchema: OTPSchema, editNewItem: boolean = false) {
+    show(editKeyAlias: string, editSchema: OTPSchema, editIcon: string, editNewItem: boolean = false) {
         this.editKeyAlias = editKeyAlias;
         this.editSchema = editSchema;
         this.editNewItem = editNewItem;
+        this.editIcon = editIcon;
         this.editPageShow = true;
     }
 
@@ -40,6 +44,7 @@ class EditState {
         this.editPageShow = false;
         this.editKeyAlias = '';
         this.editSchema = undefined;
+        this.editIcon = '';
         this.editNewItem = false;
     }
 }
@@ -81,6 +86,7 @@ struct Index {
                         this.getExKeys(),
                         this.editState.editKeyAlias,
                         this.editState.editSchema!,
+                        this.editState.editIcon,
                         this.editState.editNewItem,
                     ),
                     {
@@ -276,6 +282,7 @@ struct OTPItem {
     @Prop code: CodeResponseSchema;
     @Prop keyAlias: string;
     @Prop schema: OTPSchema;
+    @State validatedIcon: string = IconManager.validateUri(this.icon);
     @State passed_time: number = 0;
     @State isVisible: Visibility = Visibility.Visible;
     @State showEditItemOnly: boolean = false;
@@ -292,12 +299,22 @@ struct OTPItem {
                 Row({ space: '16vp' }) {
                     // display issuer icon
                     if (this.ShowIssuerIcons) {
-                        Image($rawfile(this.icon))
-                            .margin({left: $r('app.float.visual_space')})
-                            .borderRadius($r('app.float.issuer_icon_radius'))
-                            .height($r('app.float.issuer_icon_size'))
-                            .width($r('app.float.issuer_icon_size'))
-                            .alt(this.schema.issuer)
+                        if (this.validatedIcon) {
+                            Image(this.validatedIcon)
+                                .margin({left: $r('app.float.visual_space')})
+                                .borderRadius($r('app.float.issuer_icon_radius'))
+                                .height($r('app.float.issuer_icon_size'))
+                                .width($r('app.float.issuer_icon_size'))
+                                .alt(this.schema.issuer)
+                        } else {
+                            IssuerIcon({
+                                issuer: this.schema.issuer,
+                                iconSize: $r('app.float.issuer_icon_size'),
+                                iconRadius: $r('app.float.issuer_icon_radius'),
+                                fontSize: 28,
+                            })
+                                .margin({left: $r('app.float.visual_space')})
+                        }
                     }
                     // display information area
                     Column({ space: '4vp' }) {
@@ -325,6 +342,7 @@ struct OTPItem {
                         }
                     }
                     .alignItems(HorizontalAlign.Start)
+                    .margin(this.ShowIssuerIcons? {} : {left: $r('app.float.visual_space')})
                 }
                 .align(Alignment.Top)
                 .height('100%')
@@ -379,7 +397,7 @@ struct OTPItem {
                 },
                 onAction: () => {
                     this.selected = '';
-                    this.editState.show(this.keyAlias, this.schema);
+                    this.editState.show(this.keyAlias, this.schema, this.icon);
                     this.listScroller!.closeAllSwipeActions();
                 },
             },
@@ -420,7 +438,7 @@ struct OTPItem {
                 .backgroundColor($r('sys.color.brand'))
                 .onClick(() => {
                     this.selected = '';
-                    this.editState.show(this.keyAlias, this.schema);
+                    this.editState.show(this.keyAlias, this.schema, this.icon);
                     this.listScroller?.closeAllSwipeActions();
                 })
             }
@@ -666,7 +684,7 @@ struct QrScanButton {
             getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
         } else {
             this.selected = '';
-            this.editState.show(otp.keyAlias, otp.secret_leaked_schema, true);
+            this.editState.show(otp.keyAlias, otp.secret_leaked_schema, '', true);
         }
     }
 

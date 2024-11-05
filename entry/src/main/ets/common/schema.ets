@@ -9,11 +9,6 @@ export function name2keyAlias(props: IssuerName): string {
     return `${props.issuer}:${props.name}`;
 }
 
-export function iconMatcher(issuer: string): string {
-    const issuerKey = issuer.toLowerCase().replace(/(\.org|\.com)$/, '')
-    return `icons/issuers/${issuerKey}.svg`;
-}
-
 export interface CodeResponseSchema {
     timestamp: number,
     code: string,

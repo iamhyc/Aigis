@@ -133,7 +133,7 @@
     },
     {
       "name": "setting_icon_pack_add_text_hint",
-      "value": "（点击 或 拖拽 以获取下载链接）"
+      "value": "1. 点击上面任一链接下载图标包ZIP文件；\n2. 点击下面按钮，选择下载好的ZIP文件。"
     },
     {
       "name": "setting_icon_pack_add_button",
@@ -158,6 +158,10 @@
     {
       "name": "setting_icon_pack_applied",
       "value": "图标包已应用"
+    },
+    {
+      "name": "setting_icon_pack_changed",
+      "value": "图标包已更改"
     },
     {
       "name": "setting_icon_pack_delete_title",

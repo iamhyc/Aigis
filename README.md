@@ -69,9 +69,6 @@ Dst2-->Dst3
 **Release v0.2.6** (2024/11/08)
 
 - [ ] Better Icon Match
-  - support drawable icons via `Shape`
-  - Match Rules: 1) issuer full match 2) keyword match (e.g., Mail)
-  - validate icon path (with drawable icons as fallback)
   - support select alternative icons when edit
 - [ ] Fix page transition animation (#13)
 

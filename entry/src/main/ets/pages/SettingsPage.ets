@@ -21,7 +21,7 @@ import { common } from "@kit.AbilityKit";
 import { Atl1AuthResult, IconPackStore } from "../common/schema";
 import { AppLockPage } from "../components/pages";
 import { validateAtl1Auth } from "../crypto/authUtils";
-import { FEEDBACK_WEBSITE, OFFICIAL_WEBSITE } from "../common/conts";
+import { FEEDBACK_WEBSITE, MAX_ICON_PACK_NUM, OFFICIAL_WEBSITE } from "../common/conts";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -141,7 +141,7 @@ export struct SettingsPage {
             this.IconPackItem(pack)
         })
         // add button
-        if (this.IconPacks.length < 10) {
+        if (this.IconPacks.length < MAX_ICON_PACK_NUM) {
             ListItem() {
                 Button($r('app.string.setting_icon_pack_add_button'))
                     .width('100%')

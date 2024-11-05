@@ -133,7 +133,7 @@
     },
     {
       "name": "setting_icon_pack_add_text_hint",
-      "value": "(Click or drag to get the download link)"
+      "value": "1. Choose one of the hyperlinks above to download the icon pack.\n2. Click the button below and install the downloaded archive (*.zip file)."
     },
     {
       "name": "setting_icon_pack_add_button",
@@ -158,6 +158,10 @@
     {
       "name": "setting_icon_pack_applied",
       "value": "The icon pack has been applied."
+    },
+    {
+      "name": "setting_icon_pack_changed",
+      "value": "The icon pack has been changed."
     },
     {
       "name": "setting_icon_pack_delete_title",
