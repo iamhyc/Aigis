@@ -94,11 +94,79 @@
       "name": "setting_show_account_name_option_off",
       "value": "隐藏   "
     },
+
+    {
+      "name": "section_title_icons",
+      "value": "图标"
+    },
     {
       "name": "setting_show_issuer_icons",
       "value": "显示服务商图标"
     },
-
+    {
+      "name": "setting_icon_pack_title",
+      "value": "图标包"
+    },
+    {
+      "name": "setting_icon_pack_desc",
+      "value": "管理和导入图标包"
+    },
+    {
+      "name": "setting_icon_pack_preview",
+      "value": "%d 个已安装"
+    },
+    {
+      "name": "setting_icon_pack_num_icons",
+      "value": "%d 个图标"
+    },
+    {
+      "name": "setting_icon_pack_add_text_try",
+      "value": "下载 "
+    },
+    {
+      "name": "setting_icon_pack_add_text_or",
+      "value": " 或 "
+    },
+    {
+      "name": "setting_icon_pack_add_text_dot",
+      "value": "。"
+    },
+    {
+      "name": "setting_icon_pack_add_text_hint",
+      "value": "（点击 或 拖拽 以获取下载链接）"
+    },
+    {
+      "name": "setting_icon_pack_add_button",
+      "value": "安装图标包"
+    },
+    {
+      "name": "setting_icon_pack_fail_common",
+      "value": "安装失败：无效的压缩文件"
+    },
+    {
+      "name": "setting_icon_pack_fail_file_too_large",
+      "value": "安装失败：压缩文件不能超过5MB"
+    },
+    {
+      "name": "setting_icon_pack_fail_already_exists",
+      "value": "安装失败：图标包已存在"
+    },
+    {
+      "name": "setting_icon_pack_success",
+      "value": "安装成功"
+    },
+    {
+      "name": "setting_icon_pack_applied",
+      "value": "图标包已应用"
+    },
+    {
+      "name": "setting_icon_pack_delete_title",
+      "value": "⚠ 删除图标包"
+    },
+    {
+      "name": "setting_icon_pack_delete_hint",
+      "value": "您确定要删除此图标包吗？使用此图标包的令牌将会受到影响。"
+    },
 
     {
       "name": "section_title_security",
@@ -233,7 +301,7 @@
 
     {
       "name": "prompt_website_copied",
-      "value": "网址已复制"
+      "value": "网址已复制，请粘贴到浏览器中打开"
     },
     {
       "name": "prompt_icp_number_copied",

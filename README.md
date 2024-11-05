@@ -68,9 +68,12 @@ Dst2-->Dst3
 
 **Release v0.2.6** (2024/11/08)
 
-- [ ] Fix page transition animation (#13)
 - [ ] Better Icon Match
-  - support [Aegis](https://github.com/beemdevelopment/Aegis) icon pack import
+  - support drawable icons via `Shape`
+  - Match Rules: 1) issuer full match 2) keyword match (e.g., Mail)
+  - validate icon path (with drawable icons as fallback)
+  - support select alternative icons when edit
+- [ ] Fix page transition animation (#13)
 
 **Release v0.3.0** (2024/11/15)
 

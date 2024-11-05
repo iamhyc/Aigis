@@ -1,10 +1,16 @@
 import { mediaquery, promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
-    SettingListItemSelect } from "../components/settings";
+    SettingListItemSelect,
+    SettingListCollapsableItem,
+    NoInternetHyperLink,
+    SettingListIconItem} from "../components/settings";
 import { AppLanguage, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
 import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
 import {
     EVENT_EXPORT_REQUEST,
+    EVENT_ICON_PACK_APPLY_REQUEST,
+    EVENT_ICON_PACK_IMPORT_REQUEST,
+    EVENT_ICON_PACK_REMOVAL_REQUEST,
     EVENT_IMPORT_REQUEST,
     EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING,
     FileExportRequestSchema,
@@ -12,7 +18,7 @@ import {
     SettingUpdateRequestSchema } from "../common/events";
 import { picker } from "@kit.CoreFileKit";
 import { common } from "@kit.AbilityKit";
-import { Atl1AuthResult } from "../common/schema";
+import { Atl1AuthResult, IconPackStore } from "../common/schema";
 import { AppLockPage } from "../components/pages";
 import { validateAtl1Auth } from "../crypto/authUtils";
 import { FEEDBACK_WEBSITE, OFFICIAL_WEBSITE } from "../common/conts";
@@ -52,7 +58,9 @@ export struct SettingsPage {
     @Consume atl1Auth: Atl1AuthResult;
     @Consume ATL1AuthAvailable: boolean;
     @Consume ATL3AuthAvailable: boolean;
+    @Require @Prop pageTitle: string;
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
+    @StorageProp('IconPacks') IconPacks: IconPackStore[] = [];
 
     // general
     @StorageProp('settingsEnableManualInput')
@@ -70,16 +78,85 @@ export struct SettingsPage {
     @Watch('onItChanged') DigitGroup: DigitGroup = '3';
     @StorageProp('settingsShowAccountName')
     @Watch('onItChanged') ShowAccountName: ShowAccountName = 'always';
+    // icons
     @StorageProp('settingsShowIssuerIcons')
     @Watch('onItChanged') ShowIssuerIcons: boolean = true;
-
     // security
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsEnableBiometricAuth')
     @Watch('onItChanged') EnableBiometricAuth: boolean = false;
 
+    @State iconPacksCollapsed: boolean = true;
+
     private inputDialogId: number = -1;
+
+    @LocalBuilder IconPackItem(pack: IconPackStore) {
+        SettingListIconItem({
+            title: `${pack.name} (v${pack.version})`,
+            description: $r('app.string.setting_icon_pack_num_icons', pack.icons),
+            checked: pack.isDefault,
+            onApply: () => { this.applyIconPack(pack.uuid); },
+            onRemove: () => { this.removeIconPack(pack.uuid); },
+        })
+            .width('100%')
+    }
+
+    @LocalBuilder IconPackContainer(_packs: IconPackStore[]) {
+        // icon pack download hint
+        if (this.IconPacks.length===0) {
+            ListItem() {
+                Column({space:6}) {
+                    Row() {
+                        Text($r('app.string.setting_icon_pack_add_text_try')).fontColor($r('sys.color.font_secondary')).fontSize(14)
+                        NoInternetHyperLink({
+                            link: 'https://github.com/aegis-icons/aegis-icons/releases/latest/download/aegis-icons.zip',
+                            text: 'aegis-icons',
+                        })
+                        Text($r('app.string.setting_icon_pack_add_text_or')).fontColor($r('sys.color.font_secondary')).fontSize(14)
+                        NoInternetHyperLink({
+                            link: 'https://github.com/Delta-Icons/aegis/releases/latest/download/delta-aegis-icons.zip',
+                            text: 'delta-icons',
+                        })
+                        Text($r('app.string.setting_icon_pack_add_text_dot')).fontColor($r('sys.color.font_secondary')).fontSize(14)
+                    }
+                    .clip(true)
+                    Row() {
+                        Text($r('app.string.setting_icon_pack_add_text_hint'))
+                            .fontColor($r('sys.color.font_tertiary'))
+                            .fontSize(12)
+                    }
+                }
+            }
+            .margin({top:6,bottom:6})
+            .width('90%')
+        }
+        // icon pack list
+        ForEach(this.IconPacks, (pack: IconPackStore) => {
+            ListItem() {
+                Divider().strokeWidth('1px').color($r('sys.color.comp_divider')).margin({left:6,right:6})
+            }
+            .padding({left:32})
+            .width('100%')
+            this.IconPackItem(pack)
+        })
+        // add button
+        if (this.IconPacks.length < 10) {
+            ListItem() {
+                Button($r('app.string.setting_icon_pack_add_button'))
+                    .width('100%')
+                    .buttonStyle(ButtonStyleMode.TEXTUAL)
+                    .backgroundColor($r('sys.color.comp_background_tertiary'))
+                    .fontColor($r('sys.color.font_secondary'))
+                    .onClick(() => {
+                        this.importIconPackFromArchive();
+                    })
+            }
+            .margin({top:6,bottom:6})
+            .width('80%')
+            .height(32)
+        }
+    }
 
     build() {
         NavDestination() {
@@ -131,9 +208,29 @@ export struct SettingsPage {
                                 selected: this.ShowAccountName,
                                 entries: AccountNameSelection,
                             })
-                            SettingListItemToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons })
                         }
                         .divider(divider_style)
+                        .backgroundColor($r('sys.color.comp_background_tertiary'))
+
+                        // Icons
+                        ListItemGroupHeader({name: $r('app.string.section_title_icons')}).margin({bottom:-6})
+                        ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListItemToggle({ title: $r('app.string.setting_show_issuer_icons'), selected: this.ShowIssuerIcons })
+                            ListItem() {
+                                Divider().strokeWidth('1px').color($r('sys.color.comp_divider')).margin({left:6,right:6})
+                            }
+                            SettingListCollapsableItem({
+                                title: $r('app.string.setting_icon_pack_title'),
+                                description: $r('app.string.setting_icon_pack_desc'),
+                                preview: $r('app.string.setting_icon_pack_preview', this.IconPacks.length),
+                                collapsable: true,
+                                collapsed: this.iconPacksCollapsed,
+                            })
+                            if (!this.iconPacksCollapsed) {
+                                this.IconPackContainer(this.IconPacks)
+                            }
+                        }
+                        // .divider(divider_style)
                         .backgroundColor($r('sys.color.comp_background_tertiary'))
 
                         // Security
@@ -220,7 +317,7 @@ export struct SettingsPage {
                 }
             }
         }
-        .title('Settings', {
+        .title(this.pageTitle, {
             backgroundColor: $r('app.color.color_background')
         })
         .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.close_sidebar')) )
@@ -393,6 +490,45 @@ export struct SettingsPage {
                 this.inputDialogId = -1;
             }, () => { promptAction.closeCustomDialog(this.inputDialogId); })
         });
+    }
+
+    private importIconPackFromArchive() {
+        const context = getContext(this) as common.Context;
+        const documentViewPicker = new picker.DocumentViewPicker(context);
+        const documentSelectOptions = new picker.DocumentSelectOptions();
+        documentSelectOptions.maxSelectNumber = 1;
+        documentSelectOptions.fileSuffixFilters = ['.zip'];
+        documentSelectOptions.defaultFilePathUri = "file://docs/storage/Users/currentUser/Download";
+        documentViewPicker.select(documentSelectOptions).then((uris) => {
+           if (uris[0]!=undefined) {
+               const uri = uris[0];
+               getContext().eventHub.emit(EVENT_ICON_PACK_IMPORT_REQUEST, {uri});
+           }
+        });
+    }
+    private removeIconPack(uuid: string) {
+        AlertDialog.show({
+            title: $r('app.string.setting_icon_pack_delete_title'),
+            message: $r('app.string.setting_icon_pack_delete_hint'),
+            autoCancel: true,
+            primaryButton: {
+                value: $r('app.string.button_text_cancel'),
+                defaultFocus: true,
+                style: DialogButtonStyle.DEFAULT,
+                action: () => {},
+            },
+            secondaryButton: {
+                value: $r('app.string.button_text_ok'),
+                fontColor: $r('sys.color.warning'),
+                style: DialogButtonStyle.DEFAULT,
+                action: () => {
+                    getContext().eventHub.emit(EVENT_ICON_PACK_REMOVAL_REQUEST, {uuid});
+                },
+            }
+        });
+    }
+    private applyIconPack(uuid: string) {
+        getContext().eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid});
     }
 }
 

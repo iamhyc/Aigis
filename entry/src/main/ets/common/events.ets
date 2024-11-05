@@ -10,6 +10,7 @@ export const EVENT_UPDATE_ITEM: string = 'update-item';
 export interface UpdateRequestSchema {
     uri: string,
     keyAlias?: string,
+    icon?: string,
 }
 export interface UpdateResponseSchema {
     success: boolean,
@@ -49,4 +50,20 @@ export interface FileImportRequestSchema {
     uri: string,
     password?: string,
     importPassword?: boolean,
+}
+
+export const EVENT_ICON_PACK_IMPORT_REQUEST: string = 'import-icon-pack';
+export interface IconPackImportRequest {
+    uri: string,
+}
+
+export const EVENT_ICON_PACK_REMOVAL_REQUEST: string = 'remove-icon-pack';
+export interface IconPackRemovalRequest {
+    uuid: string,
+}
+
+export const EVENT_ICON_PACK_APPLY_REQUEST: string = 'apply-icon-pack';
+export interface IconPackApplyRequest {
+    uuid: string,
+    force?: boolean,
 }

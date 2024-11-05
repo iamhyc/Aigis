@@ -1,21 +1,28 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
 import { promptAction, window } from '@kit.ArkUI';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { BusinessError, zlib } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, iconMatcher, SecretSchema,
     AigisContentSchema,
-    MasterKeyInfo} from '../common/schema'
+    MasterKeyInfo,
+    IconPackStore,
+    IconPackSchema} from '../common/schema'
 import { arrayRearrange, shallowCopy } from '../common/utils';
-import { AIGIS_PREF_NAME, FAKE_OTP_CODE, PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
+import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
+    PREF_ICON_PACKS,
+    PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { AppLanguage, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
 import { AES_KEY_USAGE } from '../crypto/huksUtils';
 import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
+    EVENT_ICON_PACK_APPLY_REQUEST,
+    EVENT_ICON_PACK_IMPORT_REQUEST,
+    EVENT_ICON_PACK_REMOVAL_REQUEST,
     EVENT_IMPORT_REQUEST,
     EVENT_MOVE_TO_TOP,
     EVENT_REMOVE_ITEM,
@@ -24,6 +31,9 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_UPDATE_SETTING,
     FileExportRequestSchema,
     FileImportRequestSchema,
+    IconPackApplyRequest,
+    IconPackImportRequest,
+    IconPackRemovalRequest,
     MoveToTopRequestSchema,
     PasswordUpdateRequestSchema,
     RemovalRequestSchema,
@@ -31,17 +41,20 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
     UpdateRequestSchema } from '../common/events';
 import { AigisImporter } from '../importers/aigis';
 import { i18n } from '@kit.LocalizationKit';
+import { buffer } from '@kit.ArkTS';
 
 class PreferencesManager {
     private _instances: Map<string, OTP>;
     private _secrets: SecretSchema[];
     private _items: OTPItemInfo[];
+    private _icons: IconPackStore[];
 
-    constructor(items: OTPItemInfo[], secrets: SecretSchema[]) {
+    constructor(items: OTPItemInfo[], secrets: SecretSchema[], icons: IconPackStore[]) {
         this._items = items;
         items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE}); //FIXME: remove this later
         //
         this._secrets = secrets;
+        this._icons = icons;
         this._instances = new Map();
     }
 
@@ -51,6 +64,10 @@ class PreferencesManager {
 
     get items() {
         return this._items;
+    }
+
+    get icons() {
+        return this._icons;
     }
 
     getOtpInstance(keyAlias: string): OTP {
@@ -159,9 +176,103 @@ class PreferencesManager {
         arrayRearrange(this._secrets, keySecret1, keySecret2);
     }
 
+    async importIconPack(uri: string) {
+        const tempDirPath = getContext(this).tempDir;
+        const tempArchiveName = tempDirPath + '/temp.zip';
+        const tempFolderPath  = tempDirPath + '/temp';
+        try {
+            const userFileFd = (await fs.open(uri)).fd;
+            // check archive size
+            if ((await fs.stat(userFileFd)).size > 5*1024*1024) {
+                throw new Error('import-fail-file-too-large');
+            }
+            // decompress to tempDir
+            await fs.mkdir(tempFolderPath);
+            await fs.copyFile(userFileFd, tempArchiveName);
+            await zlib.decompressFile(tempArchiveName, tempFolderPath);
+            // load `pack.json`
+            const arrayBuffer = new ArrayBuffer(1024*1024); //1024KB
+            const tempPackFile = await fs.open(tempFolderPath + '/pack.json');
+            const readLen = await fs.read(tempPackFile.fd, arrayBuffer);
+            const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
+            // move to `uuid` folder
+            const fileDirPath = getContext(this).filesDir;
+            const targetFolderPath: string = fileDirPath + '/' + iconPack.uuid;
+            if (await fs.access(targetFolderPath)) {
+                throw new Error('import-fail-already-exists');
+            }
+            await fs.rename(tempFolderPath, targetFolderPath);
+            // insert into local preferences
+            const isDefault = (this._icons.length==0);
+            this._icons.push({
+                uuid: iconPack.uuid,
+                name: iconPack.name,
+                version: iconPack.version,
+                icons: iconPack.icons.length,
+                uri: targetFolderPath,
+                isDefault,
+            });
+            //
+            promptAction.showToast({message: $r('app.string.setting_icon_pack_success'), duration: 500});
+            if (isDefault) {
+                getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: iconPack.uuid, force: true});
+            }
+        } catch (e) {
+            const errorMsg = (e as Error).message;
+            console.error(errorMsg);
+            let message = $r('app.string.setting_icon_pack_fail_common');
+            if (errorMsg==='import-fail-file-too-large') {
+                message = $r('app.string.setting_icon_pack_fail_file_too_large');
+            } else if (errorMsg==='import-fail-already-exists') {
+                message = $r('app.string.setting_icon_pack_fail_already_exists');
+            }
+            promptAction.showToast({message, duration: 500});
+        } finally {
+            fs.unlink(tempArchiveName);
+            fs.rmdir(tempFolderPath);
+        }
+    }
+
+    async removeIconPack(uuid: string) {
+        const packIdx = this._icons.findIndex(x => x.uuid===uuid);
+        if (packIdx>=0) {
+            try{
+                await fs.rmdir( this._icons[packIdx].uri );
+            } finally {
+                if (this._icons[packIdx].isDefault) {
+                    if (packIdx > 0) {
+                        const newDefault = this._icons[packIdx-1];
+                        this._icons[packIdx-1].isDefault = true;
+                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: newDefault.uuid, force:true});
+                    } else if (this._icons.length > 1) {
+                        const newDefault = this._icons[packIdx+1];
+                        this._icons[packIdx+1].isDefault = true;
+                        getContext(this).eventHub.emit(EVENT_ICON_PACK_APPLY_REQUEST, {uuid: newDefault.uuid, force:true});
+                    }
+                }
+                this._icons.splice(packIdx, 1);
+            }
+        }
+    }
+
+    async applyIconPack(uuid: string, force: boolean = false) {
+        const packIdx = this._icons.findIndex(x => x.uuid===uuid);
+        const prevDefault = this._icons.findIndex(x => x.isDefault);
+        if (prevDefault==packIdx && !force) { return; }
+        this._icons[prevDefault].isDefault = false;
+        this._icons[packIdx].isDefault = true;
+        //TODO: apply icon pack to existing items
+        if (!force) {
+            promptAction.showToast({message: $r('app.string.setting_icon_pack_applied'), duration:500})
+        } else {
+            promptAction.showToast({message: 'Icon Pack Force Applied'})
+        }
+    }
+
     persists(dataPreferences: preferences.Preferences) {
         dataPreferences!.putSync(PREF_KEY_ITEMS, this._items);
         dataPreferences!.putSync(PREF_KEY_SECRETS, this._secrets);
+        dataPreferences!.putSync(PREF_ICON_PACKS, this._icons);
         dataPreferences!.flush();
     }
 }
@@ -200,10 +311,12 @@ export default class EntryAbility extends UIAbility {
                 this.dataPreferences = pref;
                 // init
                 this.instPreferences = new PreferencesManager(
-                  this.dataPreferences.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
-                  this.dataPreferences.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
+                    pref.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
+                    pref.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
+                    pref.getSync(PREF_ICON_PACKS, []) as IconPackStore[],
                 );
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
+                AppStorage.setAndProp('IconPacks', this.instPreferences.icons);
                 // setup global user settings
                 this.initUserPreferences(pref);
                 // register event handler
@@ -393,5 +506,36 @@ export default class EntryAbility extends UIAbility {
                 promptAction.showToast({message: $r('app.string.setting_import_message_failed_decryption'), duration: 1000});
             }
         })
+        this.context.eventHub.on(EVENT_ICON_PACK_IMPORT_REQUEST, async (data: IconPackImportRequest) => {
+            if (this.instPreferences) {
+                // update local preferences
+                await this.instPreferences.importIconPack(data.uri);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated icon packs
+                AppStorage.set('IconPacks', this.instPreferences.icons);
+            }
+        });
+        this.context.eventHub.on(EVENT_ICON_PACK_REMOVAL_REQUEST, async (data: IconPackRemovalRequest) => {
+            if (this.instPreferences) {
+                // update local preferences
+                await this.instPreferences.removeIconPack(data.uuid);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated icon packs
+                AppStorage.set('IconPacks', this.instPreferences.icons);
+            }
+        });
+        this.context.eventHub.on(EVENT_ICON_PACK_APPLY_REQUEST, async (data: IconPackApplyRequest) => {
+            if (this.instPreferences) {
+                // update local preferences
+                this.instPreferences.applyIconPack(data.uuid, data.force);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+                AppStorage.set('IconPacks', this.instPreferences.icons);
+            }
+        });
     }
 }

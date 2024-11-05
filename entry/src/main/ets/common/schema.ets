@@ -40,6 +40,28 @@ export interface AigisContentSchema {
     settings?: string,
 }
 
+export interface IconPackStore {
+    uuid: string,
+    version: string,
+    name: string,
+    icons: number,
+    uri: string,
+    isDefault: boolean,
+}
+
+export interface IconPackSchema {
+    uuid: string,
+    version: string,
+    name: string,
+    icons: IssuerIconFormat[],
+}
+
+export interface IssuerIconFormat {
+    filename: string,
+    category?: string,
+    issuer: string[],
+}
+
 export interface PBKDF2Material {
     salt: string,
     iteration: number,

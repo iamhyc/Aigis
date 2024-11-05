@@ -131,7 +131,7 @@ struct Index {
 
     @Builder pageJump(name: string) {
         if (name==='settings') {
-            SettingsPage()
+            SettingsPage({pageTitle: getContext().resourceManager.getStringByNameSync('settings_page_title')})
         }
     }
 

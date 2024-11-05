@@ -94,9 +94,78 @@
       "name": "setting_show_account_name_option_off",
       "value": "Hide   "
     },
+
+    {
+      "name": "section_title_icons",
+      "value": "Icons"
+    },
     {
       "name": "setting_show_issuer_icons",
       "value": "Show Issuer Icons"
+    },
+    {
+      "name": "setting_icon_pack_title",
+      "value": "Icon Pack"
+    },
+    {
+      "name": "setting_icon_pack_desc",
+      "value": "Manage and import icon packs"
+    },
+    {
+      "name": "setting_icon_pack_preview",
+      "value": "%d Installed"
+    },
+    {
+      "name": "setting_icon_pack_num_icons",
+      "value": "%d Icons"
+    },
+    {
+      "name": "setting_icon_pack_add_text_try",
+      "value": "Try "
+    },
+    {
+      "name": "setting_icon_pack_add_text_or",
+      "value": " or "
+    },
+    {
+      "name": "setting_icon_pack_add_text_dot",
+      "value": " ."
+    },
+    {
+      "name": "setting_icon_pack_add_text_hint",
+      "value": "(Click or drag to get the download link)"
+    },
+    {
+      "name": "setting_icon_pack_add_button",
+      "value": "Install Icon Pack"
+    },
+    {
+      "name": "setting_icon_pack_fail_common",
+      "value": "Install Failed: Invalid Icon Pack File."
+    },
+    {
+      "name": "setting_icon_pack_fail_file_too_large",
+      "value": "Install Failed: Archive File Should be Smaller than 5MB."
+    },
+    {
+      "name": "setting_icon_pack_fail_already_exists",
+      "value": "Install Failed: Icon Pack Already Exists."
+    },
+    {
+      "name": "setting_icon_pack_success",
+      "value": "Install Success"
+    },
+    {
+      "name": "setting_icon_pack_applied",
+      "value": "The icon pack has been applied."
+    },
+    {
+      "name": "setting_icon_pack_delete_title",
+      "value": "⚠ Remove Icon Pack"
+    },
+    {
+      "name": "setting_icon_pack_delete_hint",
+      "value": "Are you sure you want to remove this icon pack? Entries that use icons from this pack will be affected."
     },
 
     {
@@ -232,7 +301,7 @@
 
     {
       "name": "prompt_website_copied",
-      "value": "Website Copied"
+      "value": "Website copied, please paste into your browser to open."
     },
     {
       "name": "prompt_icp_number_copied",
