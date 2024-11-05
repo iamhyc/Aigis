@@ -66,16 +66,11 @@ Dst2-->Dst3
 
 ### Roadmap
 
-**Release v0.2.6** (2024/11/08)
-
-- [ ] Better Icon Match
-  - support select alternative icons when edit
-- [ ] Fix page transition animation (#13)
-
 **Release v0.3.0** (2024/11/15)
 
 - [ ] Access Control with Biometric Authentication
   - Encrypt secrets with `enc_master_key` (HUKS with no auth)
+- [ ] Fix page transition animation (#13)
 
 **Release v0.5.0** (2024/11/22)
 

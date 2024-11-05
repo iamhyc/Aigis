@@ -113,6 +113,18 @@
       "value": "类型"
     },
     {
+      "name": "edit_label_icon",
+      "value": "图标"
+    },
+    {
+      "name": "edit_icon_embedded",
+      "value": "内置图标"
+    },
+    {
+      "name": "edit_icon_default",
+      "value": "默认图标"
+    },
+    {
       "name": "edit_label_hash_function",
       "value": "哈希函数"
     },

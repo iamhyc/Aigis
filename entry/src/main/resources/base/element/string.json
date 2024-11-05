@@ -121,6 +121,18 @@
       "value": "Type"
     },
     {
+      "name": "edit_label_icon",
+      "value": "Icon"
+    },
+    {
+      "name": "edit_icon_embedded",
+      "value": "Embedded Icon"
+    },
+    {
+      "name": "edit_icon_default",
+      "value": "Default Icon"
+    },
+    {
       "name": "edit_label_hash_function",
       "value": "Hash Function"
     },

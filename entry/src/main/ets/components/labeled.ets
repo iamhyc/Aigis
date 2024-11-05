@@ -50,8 +50,9 @@ export struct LabeledTextInput {
 @Component
 export struct LabeledSelect {
     @Link selected: number;
-    @State label: Resource | string = '';
-    @State entries: string[] = [];
+    @Require @Prop label: Resource | string = '';
+    @Require @Prop entries: ResourceStr[];
+    @Prop values: ResourceStr[] = this.entries;
 
     build() {
         Column({space: COLUMN_LABEL_GAP}) {
@@ -66,6 +67,7 @@ export struct LabeledSelect {
                 Select(this.entries.map(x => {return {value:x} as SelectOption}))
                     .selected($$this.selected)
                     .value(this.entries[this.selected])
+                    .optionWidth(OptionWidthMode.FIT_TRIGGER)
                     .width('100%')
             }.width('100%')
         }

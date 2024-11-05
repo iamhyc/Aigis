@@ -31,12 +31,12 @@ export class IconManager {
         this._icons = icons;
     }
 
-    private async load(pack: IconPackStore) {
+    private async load(pack: IconPackStore, sync: boolean = false) {
         // load `pack.json`
         const manifestFile = `${pack.uri}/pack.json`;
         const arrayBuffer = new ArrayBuffer(1*1024*1024); //1MB
-        const tempPackFile = await fs.open(manifestFile);
-        const readLen = await fs.read(tempPackFile.fd, arrayBuffer);
+        const tempPackFile = sync? fs.openSync(manifestFile) : await fs.open(manifestFile);
+        const readLen = sync? fs.readSync(tempPackFile.fd, arrayBuffer) : await fs.read(tempPackFile.fd, arrayBuffer);
         const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
         // convert into `IssuerIconsMap`
         const subMap: IssuerIconsMap = new Map();
@@ -55,13 +55,15 @@ export class IconManager {
         this.map.set(iconPack.uuid, subMap);
     }
 
-    private async loadAll() {
+    private async loadAll(sync: boolean=false) {
         for (const pack of this._icons) {
             if (!this.map.has(pack.uuid)) {
-                await this.load(pack);
+                sync ? this.load(pack, true) : await this.load(pack);
             }
         }
     }
+
+    private loadAllSync() { this.loadAll(true); }
 
     private removeAll() {
         this.map.clear();
@@ -127,15 +129,41 @@ export class IconManager {
         return '';
     }
 
-    async matchAll(issuer: string): Promise<string[]> {
-        await this.loadAll();
+    matchAllSync(issuer: string): Map<ResourceStr,string> {
+        this.loadAllSync();
 
-        return [];
+        const key = issuer.toLowerCase().replace(/(\.org|\.com)$/, '');
+        const results: Map<ResourceStr, string> = new Map();
+        // 1. append exact matches or generic keyword matches
+        for (const uuid of this.map.keys()) {
+            const iconPack = this._icons.find(x => x.uuid===uuid)!;
+            const rootUri = iconPack.uri + '/';
+            const subMap = this.map.get(uuid)!;
+            for (const keyword of [key].concat(ConstKeywords)) {
+                if (key.includes(keyword) && subMap.has(keyword)) {
+                    const files = subMap.get(keyword)!;
+                    for (const file of files) {
+                        const stem = file.filename.split('/').slice(-1)[0];
+                        const entry = [iconPack.name, stem].join(' ▸ ');
+                        results.set(entry, rootUri + file.filename);
+                    }
+                }
+            }
+        }
+        // 2. append embedded match
+        const resDir = getContext().resourceDir;
+        const resFile = `${resDir}/icons/issuers/${key}.svg`;
+        if (fs.accessSync(resFile)) {
+            results.set($r('app.string.edit_icon_embedded'), resFile);
+        }
+        // 3. append `IssuerIcon`
+        results.set($r('app.string.edit_icon_default'), '');
+        return results;
     }
 
     static validateUri(uri: string): string {
         const resDir = getContext().resourceDir;
-        const isAbsPath = uri.startsWith('/data/storage/el2');
+        const isAbsPath = uri.startsWith('/data/storage');
 
         uri = uri.trim();
         if (uri==='') { return ''; }

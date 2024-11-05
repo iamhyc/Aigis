@@ -59,13 +59,17 @@ struct ItemEditComponent {
     @State secretInputEnabled: boolean = this.editNewItem;
     @State saveBtnEnabled: boolean = this.editNewItem;
 
-    iconManager = new IconManager(this.IconPacks);
+    iconManager: IconManager = new IconManager(this.IconPacks);
+    IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
+    IconCandidatesEntry: ResourceStr[] = Array.from(this.IconCandidates.keys());
+    IconCandidatesValues: string[] = Array.from(this.IconCandidates.values());
+    @Watch('onValueChanged') @State iconIndex: number = this.IconCandidatesValues.findIndex(x => x===this.icon);
 
     private onValueChanged(propName: string) {
         this.saveBtnEnabled = true;
-        if (propName==='issuer') {
-            this.iconManager.match(this.issuer)
-                .then(icon => { this.icon = icon; })
+        if (propName==='iconIndex') {
+            this.icon = this.IconCandidatesValues[ this.iconIndex ];
+            this.validatedIcon = IconManager.validateUri(this.icon);
         }
     }
 
@@ -170,10 +174,15 @@ struct ItemEditComponent {
                 })
                     .margin({bottom:COLUMN_ITEM_GAP})
             }
-
             Divider().strokeWidth('1px').width('90%')
             //
             Column({space: COLUMN_ITEM_GAP}) {
+                LabeledSelect({
+                    label: $r('app.string.edit_label_icon'),
+                    entries: Array.from( this.IconCandidates.keys() ),
+                    values: Array.from( this.IconCandidates.values() ),
+                    selected: this.iconIndex,
+                })
                 LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
                 LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})
                 // LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
