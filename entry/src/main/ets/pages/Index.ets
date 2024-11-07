@@ -16,7 +16,7 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_
 import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { DigitGroup, ShowAccountName } from '../common/settings';
+import { AuthTypePriority, DigitGroup, ShowAccountName } from '../common/settings';
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
 
@@ -53,6 +53,7 @@ class EditState {
 @Component
 struct Index {
     @StorageLink('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
+    @StorageProp('settingsAuthTypePriority') AuthTypePriority: AuthTypePriority = 'face';
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Provide navStack: NavPathStack = new NavPathStack();
     @Provide ATL1AuthAvailable: boolean = ATL1AuthAvailable();
@@ -69,7 +70,7 @@ struct Index {
                 Stack() {
                     // main content
                     if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-                        AppLockPage({atl1Auth: this.atl1Auth})
+                        AppLockPage({atl1Auth: this.atl1Auth, priority: this.AuthTypePriority})
                     } else if (this.items.length===0) {
                         EmptyPage()
                     } else {
@@ -143,7 +144,7 @@ struct Index {
 
     onPageShow() {
         if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-            acquireAtl1Auth().then(result => { this.atl1Auth = result; })
+            acquireAtl1Auth(this.AuthTypePriority).then(result => { this.atl1Auth = result; })
         }
     }
 

@@ -1,10 +1,12 @@
 import { Atl1AuthResult } from "../common/schema";
 import { LengthUnit } from "@kit.ArkUI";
 import { acquireAtl1Auth } from "../crypto/authUtils";
+import { AuthTypePriority } from '../common/settings';
 
 @Component
 export struct AppLockPage {
     @Link atl1Auth: Atl1AuthResult;
+    @Require @Prop priority: AuthTypePriority;
 
     build() {
         Flex({
@@ -33,7 +35,7 @@ export struct AppLockPage {
         .height('100%')
         .width('80%')
         .onClick(async () => {
-            this.atl1Auth = await acquireAtl1Auth();
+            this.atl1Auth = await acquireAtl1Auth(this.priority);
         })
     }
 }
