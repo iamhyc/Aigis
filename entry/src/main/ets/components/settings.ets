@@ -281,13 +281,18 @@ export struct SettingListItemToggle {
                 InformationArea({ title: this.title, description: this.description })
                 //
                 Column() {
-                    Toggle({type: this.type, isOn: $$this.selected})
-                        .enabled(!this.disabled)
-                        .onChange((isOn) => { this.onChange && this.onChange(isOn); })
+                    Row() {
+                        Toggle({type: this.type, isOn: $$this.selected})
+                            .enabled(!this.disabled)
+                            .onChange((isOn) => { this.onChange && this.onChange(isOn); })
+                    }
+                    .height('100%')
+                    .alignItems(VerticalAlign.Center)
                 }
+                .height(48)
                 .flexBasis(this.toggleWidth)
             }
-            .height(48)
+            .height('auto')
             .width('100%')
         }
     }
