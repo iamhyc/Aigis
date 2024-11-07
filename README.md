@@ -68,7 +68,6 @@ Dst2-->Dst3
 
 **Release v0.3.0** (2024/11/15)
 
-- [ ] Support QR Code for `otpauth-migration` transfer link
 - [ ] Fix page transition animation (#13)
 - [ ] Access Control with Biometric Authentication
   - Encrypt secrets with `enc_master_key` (HUKS with no auth)
