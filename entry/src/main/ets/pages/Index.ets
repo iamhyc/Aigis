@@ -96,6 +96,9 @@ struct Index {
                         showClose: false,
                         detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
                         preferType: SheetType.BOTTOM,
+                        mode: SheetMode.OVERLAY,
+                        height: SheetSize.FIT_CONTENT,
+                        width: '100%',
                         // onWillDismiss: (action) => {},
                     }
                 )
@@ -602,9 +605,11 @@ struct QrScanButton {
             },
             backgroundColor: $r('app.color.color_face'),
             showClose: false,
-            dragBar: true,
             detents: [SheetSize.FIT_CONTENT],
             preferType: SheetType.BOTTOM,
+            mode: SheetMode.OVERLAY,
+            height: SheetSize.FIT_CONTENT,
+            width: '100%',
         })
     }
 
