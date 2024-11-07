@@ -6,6 +6,7 @@ export type AppLanguage = 'default' | 'zh-Hans' | 'en-Latn-US';
 export type DarkMode = 'default' | 'light' | 'dark';
 export type DigitGroup = '2' | '3' | '4' | 'even' | 'none';
 export type ShowAccountName = 'always' | 'smart' | 'off';
+export type AuthTypePriority = 'face' | 'touch' | 'pin';
 
 export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType>([
     // general
@@ -20,5 +21,6 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     ['ShowIssuerIcons', true],
     // security
     ['EnableBiometricUnlock', false],
+    ['AuthTypePriority',      'face' as AuthTypePriority],
     ['EnableBiometricAuth',   false],
 ]);

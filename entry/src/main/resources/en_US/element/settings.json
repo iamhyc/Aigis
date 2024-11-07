@@ -185,6 +185,22 @@
       "value": "Use to restrict application access only."
     },
     {
+      "name": "setting_auth_priority",
+      "value": "Biometric prioritization"
+    },
+    {
+      "name": "setting_auth_priority_face_first",
+      "value": "Face ID First       "
+    },
+    {
+      "name": "setting_auth_priority_touch_first",
+      "value": "Touch ID First        "
+    },
+    {
+      "name": "setting_auth_priority_pin_only",
+      "value": "PIN Only     "
+    },
+    {
       "name": "setting_enable_biometric_auth",
       "value": "Enhance Biometric Authentication"
     },

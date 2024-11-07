@@ -68,7 +68,6 @@ Dst2-->Dst3
 
 **Release v0.3.0** (2024/11/15)
 
-- [ ] Choose TouchID / FaceID First Authentication
 - [ ] Support QR Code for `otpauth-migration` transfer link
 - [ ] Fix page transition animation (#13)
 - [ ] Access Control with Biometric Authentication

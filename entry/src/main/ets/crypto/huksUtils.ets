@@ -4,6 +4,7 @@ import { AesGcmMaterial, PBKDF2Material } from '../common/schema';
 import { stringToUint8Array } from '../common/utils';
 import { JSON } from '@kit.ArkTS';
 import { acquireUserAuthToken, AuthLevelSupport } from './authUtils';
+import { userAuth } from '@kit.UserAuthenticationKit';
 
 export type HmacDigestSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 export type PurposeParams = Array<huks.HuksParam>;
@@ -236,7 +237,7 @@ export class HUKSAgent {
         await huks.finishSession(session.handle, finishOptions);
     }
 
-    static async applyAesGcmEncryption(keyAlias: string, material: AesGcmMaterial, inData: Uint8Array, level?: AuthLevelSupport): Promise<Uint8Array|undefined> {
+    static async applyAesGcmEncryption(keyAlias: string, material: AesGcmMaterial, inData: Uint8Array, level?: AuthLevelSupport, authType?: userAuth.UserAuthType[]): Promise<Uint8Array|undefined> {
         const agent = new HUKSAgent(PARAMS_AES_ENCRYPT).withAesGcmMaterial(material);
         const huksOptions: huks.HuksOptions = {
             properties: agent.props,
@@ -245,15 +246,15 @@ export class HUKSAgent {
         const session = await huks.initSession(keyAlias, huksOptions);
         //
         let authToken: Uint8Array | undefined = undefined;
-        if (level && session.challenge) {
-            authToken = await acquireUserAuthToken(level, session.challenge);
+        if (level && authType && session.challenge) {
+            authToken = await acquireUserAuthToken(level, authType, session.challenge);
         }
         //
         const result = await huks.finishSession(session.handle, huksOptions, authToken);
         return result.outData;
     }
 
-    static async applyAesGcmDecryption(keyAlias: string, material: AesGcmMaterial, cipherData: Uint8Array, level?: AuthLevelSupport): Promise<Uint8Array|undefined> {
+    static async applyAesGcmDecryption(keyAlias: string, material: AesGcmMaterial, cipherData: Uint8Array, level?: AuthLevelSupport, authType?: userAuth.UserAuthType[]): Promise<Uint8Array|undefined> {
         const agent = new HUKSAgent(PARAMS_AES_DECRYPT).withAesGcmMaterial(material);
         agent.with([{
             tag: huks.HuksTag.HUKS_TAG_AE_TAG,
@@ -266,23 +267,23 @@ export class HUKSAgent {
         const session = await huks.initSession(keyAlias, huksOptions);
         //
         let authToken: Uint8Array | undefined = undefined;
-        if (level && session.challenge) {
-            authToken = await acquireUserAuthToken(level, session.challenge);
+        if (level && authType && session.challenge) {
+            authToken = await acquireUserAuthToken(level, authType, session.challenge);
         }
         //
         const result = await huks.finishSession(session.handle, huksOptions, authToken);
         return result.outData;
     }
 
-    static async applyHmacOperation(hashKeyAlias: string, inData: Uint8Array, level?: AuthLevelSupport) {
+    static async applyHmacOperation(hashKeyAlias: string, inData: Uint8Array, level?: AuthLevelSupport, authType?: userAuth.UserAuthType[]) {
         const propResult = await huks.getKeyItemProperties(hashKeyAlias, {properties:[]});
         const properties = propResult.properties!;
         const huksOptions: huks.HuksOptions = {properties, inData};
         const session = await huks.initSession(hashKeyAlias, huksOptions);
         //
         let authToken: Uint8Array | undefined = undefined;
-        if (level && session.challenge) {
-            authToken = await acquireUserAuthToken(level, session.challenge);
+        if (level && authType && session.challenge) {
+            authToken = await acquireUserAuthToken(level, authType, session.challenge);
         }
         //
         const hmacResult = await huks.finishSession(session.handle, huksOptions, authToken);

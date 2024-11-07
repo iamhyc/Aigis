@@ -4,7 +4,7 @@ import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
     SettingListCollapsableItem,
     NoInternetHyperLink,
     SettingListIconItem} from "../components/settings";
-import { AppLanguage, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
+import { AppLanguage, AuthTypePriority, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
 import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
 import {
     EVENT_EXPORT_REQUEST,
@@ -26,19 +26,19 @@ import { FEEDBACK_WEBSITE, MAX_ICON_PACK_NUM, OFFICIAL_WEBSITE } from "../common
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
 
-const DarkModeSelections: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+const DarkModeSelections: Map<ResourceStr, DarkMode> = new Map([
     [$r('app.string.setting_dark_mode_follow_system'), 'default'],
     [$r('app.string.setting_dark_mode_always_dark'), 'dark'],
     [$r('app.string.setting_dark_mode_always_light'), 'light'],
 ]);
 
-const AppLanguageSelections: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+const AppLanguageSelections: Map<ResourceStr, AppLanguage> = new Map<ResourceStr, AppLanguage>([
     [$r('app.string.setting_language_system_default'), 'default'],
     ['简体中文     ', 'zh-Hans'],
     ['English    ', 'en-Latn-US'],
 ]);
 
-const DigitGroupingSelection: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+const DigitGroupingSelection: Map<ResourceStr, DigitGroup> = new Map([
     [$r('app.string.setting_digit_group_option_2'),    '2'],
     [$r('app.string.setting_digit_group_option_3'),    '3'],
     [$r('app.string.setting_digit_group_option_4'),    '4'],
@@ -46,10 +46,21 @@ const DigitGroupingSelection: Map<ResourceStr, string> = new Map<ResourceStr, st
     [$r('app.string.setting_digit_group_option_none'), 'none'],
 ]);
 
-const AccountNameSelection: Map<ResourceStr, string> = new Map<ResourceStr, string>([
+const AccountNameSelection: Map<ResourceStr, ShowAccountName> = new Map([
     [$r('app.string.setting_show_account_name_option_always'), 'always'],
     [$r('app.string.setting_show_account_name_option_smart'), 'smart'],
     [$r('app.string.setting_show_account_name_option_off'), 'off'],
+]);
+
+const ATL1AuthTypePrioritySelection: Map<ResourceStr, AuthTypePriority> = new Map([
+    [$r('app.string.setting_auth_priority_face_first'),  'face'],
+    [$r('app.string.setting_auth_priority_touch_first'), 'touch'],
+    [$r('app.string.setting_auth_priority_pin_only'),    'pin'],
+]);
+
+const ATL3AuthTypePrioritySelection: Map<ResourceStr, AuthTypePriority> = new Map([
+    [$r('app.string.setting_auth_priority_face_first'),  'face'],
+    [$r('app.string.setting_auth_priority_touch_first'), 'touch'],
 ]);
 
 @Component
@@ -84,6 +95,8 @@ export struct SettingsPage {
     // security
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
+    @StorageProp('settingsAuthTypePriority')
+    @Watch('onItChanged') AuthTypePriority: AuthTypePriority = 'face';
     @StorageProp('settingsEnableBiometricAuth')
     @Watch('onItChanged') EnableBiometricAuth: boolean = false;
 
@@ -161,7 +174,7 @@ export struct SettingsPage {
     build() {
         NavDestination() {
             if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-                AppLockPage({atl1Auth: this.atl1Auth})
+                AppLockPage({atl1Auth: this.atl1Auth, priority: this.AuthTypePriority})
             } else {
                 RelativeContainer() {
                     List({space:10}) {
@@ -257,6 +270,11 @@ export struct SettingsPage {
                                         description: $r('app.string.setting_biometric_auth_hint'),
                                         disabled: true,//!this.ATL3AuthAvailable,
                                         selected: this.EnableBiometricAuth,
+                                    })
+                                    SettingListItemSelect({
+                                        title: $r('app.string.setting_auth_priority'),
+                                        selected: this.AuthTypePriority,
+                                        entries: this.EnableBiometricAuth? ATL3AuthTypePrioritySelection : ATL1AuthTypePrioritySelection,
                                     })
                                 }
                             }
@@ -358,8 +376,14 @@ export struct SettingsPage {
                 value = this.ShowIssuerIcons;
                 break;
             // security
-            case 'EnableBiometricUnlock':
+            case            'EnableBiometricUnlock':
                 value = this.EnableBiometricUnlock;
+                break;
+            case            'EnableBiometricAuth':
+                value = this.EnableBiometricAuth;
+                break;
+            case            'AuthTypePriority':
+                value = this.AuthTypePriority;
                 break;
             default:
                 return;

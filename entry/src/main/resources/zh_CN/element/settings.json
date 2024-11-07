@@ -185,6 +185,22 @@
       "value": "仅用于限制应用程序访问。"
     },
     {
+      "name": "setting_auth_priority",
+      "value": "生物识别优先顺序"
+    },
+    {
+      "name": "setting_auth_priority_face_first",
+      "value": "人脸识别优先        "
+    },
+    {
+      "name": "setting_auth_priority_touch_first",
+      "value": "指纹识别优先        "
+    },
+    {
+      "name": "setting_auth_priority_pin_only",
+      "value": "仅使用PIN码       "
+    },
+    {
       "name": "setting_enable_biometric_auth",
       "value": "增强生物识别认证"
     },
