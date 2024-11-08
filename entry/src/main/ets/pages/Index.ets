@@ -63,6 +63,9 @@ struct Index {
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editState: EditState = new EditState();
+    @State addSheetShow: boolean = false;
+
+    @State settingPageTranslateX: string = '0%';
 
     build() {
         RelativeContainer() {
@@ -71,13 +74,15 @@ struct Index {
                     // main content
                     if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
                         AppLockPage({atl1Auth: this.atl1Auth, priority: this.AuthTypePriority})
-                    } else if (this.items.length===0) {
-                        EmptyPage()
                     } else {
-                        OTPList({items: this.items})
+                        if (this.items.length===0) {
+                            EmptyPage()
+                        } else {
+                            OTPList({items: this.items})
+                        }
+                        // floating add button
+                        QrScanButton({addSheetShow: this.addSheetShow})
                     }
-                    // floating add button
-                    QrScanButton()
                 }
                 .height('100%')
                 .width('100%')
@@ -109,6 +114,35 @@ struct Index {
             .hideBackButton(true)
             .mode(NavigationMode.Stack)
             .navDestination(this.pageJump)
+            .customNavContentTransition((from: NavContentInfo, to: NavContentInfo, operation: NavigationOperation) => {
+                if (from.mode == NavDestinationMode.DIALOG || to.mode == NavDestinationMode.DIALOG) {
+                    return undefined;
+                }
+                // return settings page transition
+                if (from.name==='settings' || to.name==='settings') {
+                    return {transition: (transitionProxy: NavigationTransitionProxy) => {
+                        // prepare start/end position
+                        let startPos: string, endPos: string;
+                        if (operation===NavigationOperation.PUSH) {
+                            startPos = '-100%'; endPos = '0%';
+                        } else {
+                            startPos = '0%'; endPos = '-100%';
+                        }
+                        this.settingPageTranslateX = startPos;
+                        // animate from start to end
+                        animateTo({
+                            duration: 250,
+                            onFinish: () => {
+                                transitionProxy.finishTransition();
+                            },
+                        }, () => {
+                            this.settingPageTranslateX = endPos;
+                        });
+                    }};
+                }
+                // return default page transition
+                return undefined;
+            })
         }
         .height('100%')
         .width('100%')
@@ -117,7 +151,7 @@ struct Index {
     @Builder titleBar() {
         Row({space:10}) {
             Button({type: ButtonType.Circle}) {
-                SymbolGlyph($r('sys.symbol.open_sidebar'))
+                SymbolGlyph($r('sys.symbol.close_sidebar'))
                     .fontWeight(FontWeight.Normal)
                     .fontColor([$r('sys.color.font_primary')])
                     .fontSize(24)
@@ -141,7 +175,10 @@ struct Index {
 
     @Builder pageJump(name: string) {
         if (name==='settings') {
-            SettingsPage({pageTitle: getContext().resourceManager.getStringByNameSync('settings_page_title')})
+            SettingsPage({
+                pageTitle: getContext().resourceManager.getStringByNameSync('settings_page_title'),
+                pageTranslateX: this.settingPageTranslateX,
+            })
         }
     }
 
@@ -153,6 +190,7 @@ struct Index {
 
     onPageHide() {
         if (this.EnableBiometricUnlock) {
+            this.addSheetShow = false;
             this.editState.hide();
             this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
         }
@@ -569,8 +607,8 @@ struct QrScanButton {
     @Consume selected: string;
     @Consume editState: EditState;
     @Consume btnVisibility: Visibility;
+    @Link addSheetShow: boolean;
     @State _position: Edges = {bottom: 0, right: 0};
-    @State addSheetShow: boolean = false;
 
     private inputDialogId = -1;
 

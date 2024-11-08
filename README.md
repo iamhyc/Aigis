@@ -68,24 +68,20 @@ Dst2-->Dst3
 
 **Release v0.3.0** (2024/11/15)
 
-- [ ] Fix page transition animation (#13)
 - [ ] Access Control with Biometric Authentication
   - Encrypt secrets with `enc_master_key` (HUKS with no auth)
-- [ ] Fix Steam Token (b64) Import (#19)
-
-**Release v0.3.1**
-
-- [ ] Item Sorting "Custom / Alphabetic / Usage Count"
-- [ ] Support Drag Item to Sort (#16)
-
-**Release v0.5.0** (2024/11/22)
-
 - [ ] ATL3 Authentication
   - Import MAC secrets to HUKS with ATL3 auth access
   - Request Password to disable Biometric Auth
   - Require password to re-import (overwrite) the secrets in HUKS
+- [ ] Fix Steam Token (b64) Import (#19)
 
-**Release v0.6.0** (2024/11/29)
+**Release v0.3.1** (2024/11/22)
+
+- [ ] Item Sorting "Custom / Alphabetic / Usage Count"
+- [ ] Support Drag Item to Sort (#16)
+
+**Release v0.5.0** (2024/11/29)
 
 - [ ] Change Password Procedure Design
 - [ ] Password Challenge Design
@@ -94,7 +90,7 @@ Dst2-->Dst3
 **Release v1.0.0**:
 
 - [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
-
+  - `scrypt` Implementation based on PBKDF2
 
 
 ### References

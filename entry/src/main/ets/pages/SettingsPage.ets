@@ -69,10 +69,11 @@ export struct SettingsPage {
     @Consume atl1Auth: Atl1AuthResult;
     @Consume ATL1AuthAvailable: boolean;
     @Consume ATL3AuthAvailable: boolean;
+    @Link pageTranslateX: string;
     @Require @Prop pageTitle: string;
+
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
     @StorageProp('IconPacks') IconPacks: IconPackStore[] = [];
-
     // general
     @StorageProp('settingsEnableManualInput')
     @Watch('onItChanged') EnableManualInput: boolean = false;
@@ -338,10 +339,11 @@ export struct SettingsPage {
         .title(this.pageTitle, {
             backgroundColor: $r('app.color.color_background')
         })
-        .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.close_sidebar')) )
+        .backButtonIcon( new SymbolGlyphModifier($r('sys.symbol.open_sidebar')) )
         .backgroundColor($r('app.color.color_face'))
         .height('100%')
         .width('100%')
+        .translate({x: this.pageTranslateX})
     }
 
     private onItChanged(key: string) {
