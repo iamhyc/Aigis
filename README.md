@@ -23,12 +23,11 @@ Dst3[("Aigis Exports")]
 Src0(["Biometric/PIN (ATL1)"])
 
 Src1(["Biometric (ATL3)"])
-Via1["MAC Secrets"]
 
 Src2(["Password"])
-Src2a["(one-time) dec_master_key"]
+Src2a["dec_master_key"]
 Via2[("Encrypted Secrets<br/>(AES256-GCM)")]
-Src2b["(persisted) enc_master_key"]
+Src2b["enc_master_key"]
 
 subgraph "User Input"
 Src0
@@ -37,7 +36,6 @@ Src2
 end
 
 subgraph "HUKS (TEE)"
-Via1
 Src2a
 Src2b
 end
@@ -52,8 +50,8 @@ Dst1
 Dst3
 end
 
-Src1-->Via1--"secure compute"-->Dst1
-Src2--PBKDF2/AES256-->Src2a--decrypt-->Via2
+Src1--Authenticate-->Src2a
+Src2--PBKDF2/AES256-->Src2a--decrypt-->Via2-->Dst1
 Src2--PBKDF2/AES256-->Src2b--encrypt-->Via2
 
 Src0--"Authenticate"-->Dst2
@@ -62,32 +60,36 @@ Via2-->Dst3
 Dst2-->Dst3
 ```
 
-**Fallback Security Design**: If ATL3 is invalidated for any reason, the password will be prompted to decrypt the "Encrypted Secrets", and then re-imported to overwrite "MAC secrets" in HUKS without auth required. If ATL1 is invalidated for any reason, the APP will be inaccessible until reinstalled.
+**Fallback Security Design**: If ATL3 is invalidated for any reason, the password will be prompted to decrypt the "Encrypted Secrets", and then re-import `dec_master_key` with no auth. If ATL1 is invalidated for any reason, the APP will be inaccessible until reinstalled.
 
 ### Roadmap
 
 **Release v0.3.0** (2024/11/15)
 
 - [ ] Access Control with Biometric Authentication
-  - Encrypt secrets with `enc_master_key` (HUKS with no auth)
-- [ ] ATL3 Authentication
-  - Import MAC secrets to HUKS with ATL3 auth access
-  - Request Password to disable Biometric Auth
-  - Require password to re-import (overwrite) the secrets in HUKS
+  
+  - Encrypt secrets with `enc_master_key`, Decrypt with `dec_master_key`
+  
+  - ATL3: need auth to access `dec_master_key`
+  - ATL3: Request Password to disable ATL3, then re-import `dec_master_key` with no auth
+  
+- [ ] Password Challenge Page Design
+
+  - Periodic Notification in the Local Non-Working Hours
+  - Also allow to skip
+
 - [ ] Fix Steam Token (b64) Import (#19)
 
-**Release v0.3.1** (2024/11/22)
+**Release v0.5.0** (2024/11/22)
 
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)
-
-**Release v0.5.0** (2024/11/29)
-
 - [ ] Change Password Procedure Design
-- [ ] Password Challenge Design
-  - Password Challenge Periodic Notification
+  - Change password dialog
+  - Decrypt and then re-encrypt the secrets
+  - Re-import the `enc_master_key` and `dec_master_key`
 
-**Release v1.0.0**:
+**Release v1.0.0** (2024/11/29)
 
 - [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
   - `scrypt` Implementation based on PBKDF2
