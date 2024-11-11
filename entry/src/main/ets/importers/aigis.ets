@@ -7,8 +7,7 @@ import { AesGcmMaterial, AigisContentSchema,
     SecretSchema} from '../common/schema';
 import { stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
-import { AES_KEY_USAGE, generateRandomAad32, generateRandomNonce12, HUKSAgent,
-    PARAMS_DERIVE_SRC_KEY } from '../crypto/huksUtils';
+import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from '../crypto/huksUtils';
 
 interface AigisExportFormat {
     keyParams: AesGcmMaterial,
@@ -26,10 +25,7 @@ export class AigisImporter extends ImporterClass {
             const b64 = new util.Base64Helper();
             const settings = Uint8ArrayToString(await b64.encode( stringToUint8Array(content.settings ?? '[]') ));
             //
-            const keyParams: AesGcmMaterial = {
-                aad: Uint8ArrayToString(await generateRandomAad32()),
-                nonce: Uint8ArrayToString(await generateRandomNonce12()),
-            };
+            const keyParams: AesGcmMaterial = await generateAesGcmMaterial();
             const items = Uint8ArrayToString(
               (await HUKSAgent.applyAesGcmEncryption(masterKeyAlias, keyParams,
                 stringToUint8Array(JSON.stringify(content.items))))!

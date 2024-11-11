@@ -1,10 +1,14 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { shallowCopy, splitOnce } from '../common/utils';
-import { name2keyAlias } from '../common/schema';
 
 export type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
 export type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 export type AlgorithmModern = 'SHA1' | 'SHA256' | 'SHA512';
+
+export interface IssuerName {
+    issuer: string,
+    name: string
+}
 
 export interface OTPSchema {
     type: OtpSchemaSupport,
@@ -76,28 +80,8 @@ function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
     return byteArray;
 }
 
-function b32decode(input: string): Uint8Array {
-    input = input.toUpperCase().replace(/\s|=/g, '');
-
-    const dic = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const length = input.length;
-    const output = new Uint8Array(length * 5 / 8);
-
-    let value = 0;
-    let index = 0;
-    let offset = 0;
-
-    for (let i = 0; i < length; i++) {
-        value = (value << 5) | dic.indexOf(input[i]);
-        offset += 5;
-
-        if (offset >= 8) {
-            output[index++] = (value >>> (offset - 8)) & 255;
-            offset -= 8;
-        }
-    }
-
-    return output;
+export function name2keyAlias(props: IssuerName): string {
+    return `${props.issuer}:${props.name}`;
 }
 
 export function parseURI(uri: string): Map<string, string> {
@@ -149,7 +133,7 @@ export abstract class OTP {
     }
 
     abstract get uri(): string;
-    abstract generateOTP(): Promise<string>;
+    abstract generateOTP(secret: Uint8Array): Promise<string>;
 
     get schema() {
         const _leak_schema = shallowCopy(this._schema) as OTPSchema;
@@ -166,16 +150,27 @@ export abstract class OTP {
         return name2keyAlias({issuer:this._schema.issuer, name:this._schema.name});
     }
 
-    async generateHash(realCounter?: number): Promise<Uint8Array> {
+    async generateHash(secret: Uint8Array, realCounter?: number): Promise<Uint8Array> {
         realCounter = realCounter ?? this._schema.counter;
         const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
 
-        const keyData = b32decode(this._schema.secret!);
+        const keyData = secret;
         const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:keyData});
 
         const mac = cryptoFramework.createMac(this._schema.algorithm);
         await mac.init(symKey);
+        await mac.update({data: counterBytes});
+        const macResult = await mac.doFinal();
+        return macResult.data;
+    }
 
+    async generateHashWithSecret(secret: Uint8Array, realCounter?: number): Promise<Uint8Array> {
+        realCounter = realCounter ?? this._schema.counter;
+        const counterBytes: Uint8Array = numberToBigEndianByteArray(realCounter, 8);
+
+        const symKey = await cryptoFramework.createSymKeyGenerator('HMAC').convertKey({data:secret});
+        const mac = cryptoFramework.createMac(this._schema.algorithm);
+        await mac.init(symKey);
         await mac.update({data: counterBytes});
         const macResult = await mac.doFinal();
         return macResult.data;
@@ -222,8 +217,8 @@ export class HOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&counter=${s.counter}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
-        const hash = await this.generateHash();
+    async generateOTP(secret: Uint8Array): Promise<string> {
+        const hash = await this.generateHash(secret);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToString(otp);
     }
@@ -259,11 +254,11 @@ export class TOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
+    async generateOTP(secret: Uint8Array): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
         const realCounter = Math.floor(Date.now() / 1000 / period);
         //
-        const hash = await this.generateHash(realCounter);
+        const hash = await this.generateHash(secret, realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToString(otp);
     }
@@ -297,11 +292,11 @@ export class SteamOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(): Promise<string> {
+    async generateOTP(secret: Uint8Array): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
         const realCounter = Math.floor(Date.now() / 1000 / period);
         //
-        const hash = await this.generateHash(realCounter);
+        const hash = await this.generateHash(secret, realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
         return this.otpToSteamString(otp);
     }
@@ -309,9 +304,9 @@ export class SteamOTP extends OTP {
     private otpToSteamString(otp: number): string {
         let res: string = '';
         for (let i=0; i < this._schema.digits; i++) {
-            const _index = otp & this.STEAM_ALPHABET.length;
+            const _index = otp % this.STEAM_ALPHABET.length;
             res += this.STEAM_ALPHABET[_index];
-            otp /= this.STEAM_ALPHABET.length;
+            otp = Math.floor(otp / this.STEAM_ALPHABET.length);
         }
         return res;
     }

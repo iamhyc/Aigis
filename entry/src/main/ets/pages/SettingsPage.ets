@@ -438,8 +438,8 @@ export struct SettingsPage {
         }
     }
 
-    @Builder passwordInputDialogBuilder(title: ResourceStr, warning?: ResourceStr, optionText?: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
-        PasswordInputDialog({ title, warning, optionText, confirm, cancel })
+    @Builder passwordInputDialogBuilder(title: ResourceStr, usage: ResourceStr, optionText?: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
+        PasswordInputDialog({ title, usage, optionText, confirm, cancel })
     }
     @Builder customSelectDialogBuilder(title: ResourceStr, subtitle: ResourceStr | undefined, entries: ResourceStr[], confirm?: (value: ResourceStr) => void, cancel?: () => void) {
         CustomSelectDialog({ title, subtitle, entries, confirm, cancel })
@@ -467,7 +467,7 @@ export struct SettingsPage {
                         const uri = uris[0];
                         this.showCustomDialog(() => {
                             this.passwordInputDialogBuilder(
-                                $r('app.string.setting_import_enter_password_title'), undefined,
+                                $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_decrypt_import'),
                                 this.MasterKeyAvailable? undefined : $r('app.string.setting_import_enter_password_option_as_master_key'),
                                 (password, importPassword) => {
                                     context.eventHub.emit(EVENT_IMPORT_REQUEST, {format, uri, password, importPassword} as FileImportRequestSchema);

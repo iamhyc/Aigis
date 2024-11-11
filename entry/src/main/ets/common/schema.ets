@@ -1,14 +1,5 @@
 import { OTPSchema } from "../crypto/otpUtils";
 
-interface IssuerName {
-    issuer: string,
-    name: string
-}
-
-export function name2keyAlias(props: IssuerName): string {
-    return `${props.issuer}:${props.name}`;
-}
-
 export interface CodeResponseSchema {
     timestamp: number,
     code: string,
@@ -65,6 +56,7 @@ export interface MasterKeyInfo {
     type: 'PBKDF2',
     version: 'v1',
     keyAlias: string,
+    decKeyAlias?: string,
     secret: PBKDF2Material,
     params: PBKDF2Material,
 }

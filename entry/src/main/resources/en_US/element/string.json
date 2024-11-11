@@ -43,7 +43,7 @@
     },
     {
       "name": "input_parse_uri_placeholder",
-      "value": "Please input the URI"
+      "value": "Please input a single line \"otpauth://\" link"
     },
 
     {
@@ -164,6 +164,23 @@
     {
       "name": "lock_page_hint",
       "value": "Tap on the screen for authentication."
+    },
+
+    {
+      "name": "password_usage_title",
+      "value": "Usage: %s"
+    },
+    {
+      "name": "password_usage_decrypt_import",
+      "value": "Decrypt Backup File"
+    },
+    {
+      "name": "password_usage_generate_dec_key",
+      "value": "Generate Decryption Key"
+    },
+    {
+      "name": "password_usage_generate_dec_key_atl3",
+      "value": "Generate Decryption Key (ATL3)"
     },
 
     {
