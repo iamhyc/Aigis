@@ -4,13 +4,13 @@ import { promptAction, window } from '@kit.ArkUI';
 import { BusinessError, zlib } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OTP, OTPSchema, parseURI } from '../crypto/otpUtils'
+import { OTP, OtpSchemaSupport, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     AigisContentSchema,
     MasterKeyInfo,
     IconPackStore,
     IconPackSchema} from '../common/schema'
-import { arrayRearrange, shallowCopy } from '../common/utils';
+import { arrayRearrange, b32decode, isValidBase32String } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
     PREF_ICON_PACKS,
@@ -42,7 +42,7 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
     UpdateRequestSchema } from '../common/events';
 import { AigisImporter } from '../importers/aigis';
 import { i18n } from '@kit.LocalizationKit';
-import { buffer } from '@kit.ArkTS';
+import { buffer, util } from '@kit.ArkTS';
 import { IconManager } from '../common/icons';
 
 class PreferencesManager {
@@ -76,25 +76,23 @@ class PreferencesManager {
         let otp = this._instances.get(keyAlias);
         if (otp===undefined) {
             const schema = this._items.find(x => x.keyAlias===keyAlias)?.schema;
-            const secret = this._secrets.find(x => x.keyAlias===keyAlias)?.secret;
             if (schema===undefined) {
                 throw Error(`"${keyAlias}" not found in local manager.`);
             }
-            //
-            let schema_tmp = shallowCopy(schema) as OTPSchema;
-            schema_tmp.secret = secret;
-            otp = OTP.fromSchema(schema_tmp);
+            otp = OTP.fromSchema(schema);
         }
         return otp;
     }
 
     async requestCodeUpdate(keyAlias: string): Promise<boolean> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
-        if (item) {
+        const secret = this._secrets.find(x => x.keyAlias===keyAlias);
+        if (item && secret) {
             const otp = this.getOtpInstance(keyAlias);
+            const rawSecret = await this.requestSecret(item.schema.type, secret);
             item.code = {
                 timestamp: Date.now(),
-                code: await otp.generateOTP(),
+                code: await otp.generateOTP(rawSecret),
             }
             return true;
         } else {
@@ -142,6 +140,17 @@ class PreferencesManager {
         } else {
             await this.appendPreferenceItem(otp, secret!, icon);
         }
+    }
+
+    private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema): Promise<Uint8Array> {
+        let encodedSecret = secret.secret;
+        if (secret.encrypted) {
+            throw Error('Not implemented');
+        }
+        //
+        const b64Encoded: boolean = (otpType==='steam' && !isValidBase32String(encodedSecret));
+        const rawSecret: Uint8Array = b64Encoded? (new util.Base64Helper()).decodeSync(encodedSecret) : b32decode(encodedSecret);
+        return rawSecret;
     }
 
     private async appendPreferenceItem(otp: OTP, secret: string, icon?: string) {

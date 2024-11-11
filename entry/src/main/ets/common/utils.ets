@@ -72,3 +72,37 @@ export function stringToUint8Array(str: string): Uint8Array {
 export function Uint8ArrayToString(array: Uint8Array): string {
     return Array.from(array).map(x => String.fromCharCode(x)).join('');
 }
+
+export function b32decode(input: string): Uint8Array {
+    input = input.toUpperCase().replace(/\s|=/g, '');
+
+    const dic = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const length = input.length;
+    const output = new Uint8Array(length * 5 / 8);
+
+    let value = 0;
+    let index = 0;
+    let offset = 0;
+
+    for (let i = 0; i < length; i++) {
+        value = (value << 5) | dic.indexOf(input[i]);
+        offset += 5;
+
+        if (offset >= 8) {
+            output[index++] = (value >>> (offset - 8)) & 255;
+            offset -= 8;
+        }
+    }
+
+    return output;
+}
+
+export function isValidBase32String(str: string): boolean {
+    const base32Regex = /^[A-Z2-7]+=*$/;
+    return base32Regex.test(str);
+}
+
+export function isValidBase64String(str: string): boolean {
+    const base64Regex = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
+    return base64Regex.test(str);
+}

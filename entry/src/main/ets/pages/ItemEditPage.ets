@@ -120,6 +120,7 @@ struct ItemEditComponent {
     }
 
     private requestUpdateItem() {
+        const secret = this.secret===FAKE_SECRET? '' : encodeURIComponent(this.secret);
         if (this.issuer.length===0 || this.name.length===0 || this.digits.length===0 || this.period.length===0 || this.counter.length===0) {
             promptAction.showToast({
                 message: $r('app.string.error_required_missing_check'),
@@ -127,7 +128,7 @@ struct ItemEditComponent {
             });
             return;
         }
-        if (this.editNewItem && this.secret.length===0) {
+        if (this.editNewItem && secret.length===0) {
             promptAction.showToast({
                 message: $r('app.string.error_required_missing_check'),
                 duration: 1500
@@ -137,9 +138,8 @@ struct ItemEditComponent {
         //
         const icon = this.icon;
         const type = typeEntries[this.typeIndex].toLowerCase();
-        const issuer_name = `${this.issuer}:${this.name}`;
+        const issuer_name = encodeURIComponent(`${this.issuer}:${this.name}`);
         const algorithm = hashEntries[this.hashIndex];
-        const secret = this.secret===FAKE_SECRET? '' : this.secret;
         const counter = Number.parseInt(this.counter).toString();
         const digits = Number.parseInt(this.digits).toString();
         const period = Number.parseInt(this.period).toString();

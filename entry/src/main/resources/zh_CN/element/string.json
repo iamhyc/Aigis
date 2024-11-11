@@ -43,7 +43,7 @@
     },
     {
       "name": "input_parse_uri_placeholder",
-      "value": "请输入 URI"
+      "value": "请输入单行 \"otpauth://\" 链接"
     },
 
     {
@@ -164,6 +164,23 @@
     {
       "name": "lock_page_hint",
       "value": "轻点屏幕进行身份验证。"
+    },
+
+    {
+      "name": "password_usage_title",
+      "value": "用途：%s"
+    },
+    {
+      "name": "password_usage_decrypt_import",
+      "value": "解密备份文件"
+    },
+    {
+      "name": "password_usage_generate_dec_key",
+      "value": "生成解密密钥"
+    },
+    {
+      "name": "password_usage_generate_dec_key_atl3",
+      "value": "生成解密密钥（ATL3）"
     },
 
     {

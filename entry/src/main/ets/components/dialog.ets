@@ -77,7 +77,7 @@ export struct CustomSelectDialog {
 @Component
 export struct PasswordInputDialog {
     @Require @Prop title: ResourceStr
-    @Prop warning: ResourceStr | undefined
+    @Require @Prop usage: ResourceStr
     @Prop optionText: ResourceStr
     @State password: string = ''
     @State checked: boolean = true
@@ -92,11 +92,10 @@ export struct PasswordInputDialog {
                     Text(this.title)
                         .fontWeight(FontWeight.Medium)
                         .fontSize(20)
-                    if (this.warning) {
-                        Text(this.warning)
-                            .fontColor($r('sys.color.warning'))
-                            .fontSize(14)
-                    }
+                    Text($r('app.string.password_usage_title', this.usage))
+                        .textAlign(TextAlign.Start)
+                        .fontColor($r('sys.color.font_secondary'))
+                        .fontSize(12)
                 }
                 .width('90%')
                 //
