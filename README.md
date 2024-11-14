@@ -72,16 +72,19 @@ Dst2-->Dst3
   
   - ATL3: need auth to access `dec_master_key`
   - ATL3: Request Password to disable ATL3, then re-import `dec_master_key` with no auth
-  
 - [ ] Password Challenge Page Design
 
   - Periodic Notification in the Local Non-Working Hours
   - Also allow to skip
 
-- [ ] Fix Steam Token (b64) Import (#19)
-
 **Release v0.5.0** (2024/11/22)
 
+- [ ] Some UX Improvement
+  - Better Setting Item Descriptions
+  - URI Parse Support Multi-line (`otpauth` only)
+  - Support Notes Add & Display on Edit Page
+  - URI & QR Code Display on Edit Page (Auth Required)
+  - "Move-to-Top" --> "Favorite Items"
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)
 - [ ] Change Password Procedure Design
@@ -91,6 +94,9 @@ Dst2-->Dst3
 
 **Release v1.0.0** (2024/11/29)
 
+- [ ] Support started with `otpauth://` link Want Param
+- [ ] Support `otpauth-migration://` link
+  - via Handwritten ProtoBuf Decode
 - [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
   - `scrypt` Implementation based on PBKDF2
 
