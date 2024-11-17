@@ -1,7 +1,11 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
 import { Atl1AuthResult, MasterKeyInfo, PBKDF2Material } from '../common/schema';
 import { getRandomInt, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
-import { AES_KEY_USAGE, generateRandomSalt24, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from './huksUtils';
+import { AES_KEY_USAGE,
+    generateAesGcmMaterial,
+    generateRandomSalt24, HUKSAgent,
+    PARAMS_AES_DECRYPT,
+    PARAMS_DERIVE_SRC_KEY } from './huksUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ATL1_MAX_REUSE_DURATION, ATL3_MAX_REUSE_DURATION } from '../common/conts';
 import { AuthTypePriority } from '../common/settings';
@@ -67,6 +71,17 @@ export function ATL3AuthAvailable(): boolean {
     return checkAuthEnvironment() >= AuthTrustLevel.ATL3;
 }
 
+export function genUserAuthType(authLevel?: AuthLevelSupport, priority?: AuthTypePriority): userAuth.UserAuthType[] {
+    priority = priority ?? 'face';
+    if (authLevel==='ATL1') {
+        return priority==='face'? [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN] : [userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN];
+    } else if (authLevel==='ATL3') {
+        return priority==='face'? [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT] : [userAuth.UserAuthType.FINGERPRINT];
+    } else {
+        return [];
+    }
+}
+
 export async function acquireUserAuthToken(level: AuthLevelSupport, authType: userAuth.UserAuthType[], challenge?: Uint8Array): Promise<Uint8Array> {
     return new Promise(async (resolve, reject) => {
         const rand = cryptoFramework.createRandom();
@@ -78,8 +93,7 @@ export async function acquireUserAuthToken(level: AuthLevelSupport, authType: us
         switch (level) {
             case 'ATL1':
                 authParam = {
-                    challenge, authTrustLevel: userAuth.AuthTrustLevel.ATL1,
-                    authType: authType ?? [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN],
+                    challenge, authType, authTrustLevel: userAuth.AuthTrustLevel.ATL1,
                     reuseUnlockResult: {
                         reuseMode: userAuth.ReuseMode.AUTH_TYPE_RELEVANT,
                         reuseDuration: ATL1_MAX_REUSE_DURATION,
@@ -88,8 +102,7 @@ export async function acquireUserAuthToken(level: AuthLevelSupport, authType: us
                 break;
             case 'ATL3':
                 authParam = {
-                    challenge, authTrustLevel: userAuth.AuthTrustLevel.ATL3,
-                    authType: authType ?? [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT],
+                    challenge, authType, authTrustLevel: userAuth.AuthTrustLevel.ATL3,
                     reuseUnlockResult: {
                         reuseMode: userAuth.ReuseMode.AUTH_TYPE_RELEVANT,
                         reuseDuration: ATL3_MAX_REUSE_DURATION
@@ -159,7 +172,7 @@ async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySi
     return secret.data;
 }
 
-export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE, secret?: PBKDF2Material, params?: PBKDF2Material): Promise<MasterKeyInfo> {
+export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE, authLevel?: AuthLevelSupport, secret?: PBKDF2Material, params?: PBKDF2Material): Promise<MasterKeyInfo> {
     const type = 'PBKDF2';
     const version = 'v1';
     // derive AES256 key from password and import in HUKS
@@ -178,7 +191,21 @@ export async function generateMasterKeyInHUKS(keyAlias: string, password: string
             iteration: getRandomInt(1000, 10000),
         };
     }
-    await HUKSAgent.deriveAesKeyItem(keyAlias, purpose, password, params, keyAlias);
+    await HUKSAgent.deriveAesKeyItem(keyAlias, purpose, authLevel, password, params, keyAlias);
     //
     return { type, version, keyAlias, secret, params };
+}
+
+export async function validatePassword(encMasterKeyInfo: MasterKeyInfo, password: string): Promise<boolean> {
+    // derive temporary master key
+    const tmpKeyAlias = 'tmp-key';
+    const tmpMasterKeyInfo = await generateMasterKeyInHUKS(tmpKeyAlias, password, AES_KEY_USAGE.ENCRYPT, undefined, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+    // test encryption result
+    const material = await generateAesGcmMaterial();
+    const nonce = await generateRandomSalt24();
+    const gt_cipher = await HUKSAgent.applyAesGcmEncryption(encMasterKeyInfo.keyAlias, material, nonce);
+    const ts_cipher = await HUKSAgent.applyAesGcmEncryption(tmpMasterKeyInfo.keyAlias, material, nonce);
+    await HUKSAgent.deleteKeyItem(tmpMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
+    // return
+    return gt_cipher===ts_cipher;
 }

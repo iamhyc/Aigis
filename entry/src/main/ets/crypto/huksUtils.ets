@@ -5,6 +5,7 @@ import { stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { JSON } from '@kit.ArkTS';
 import { acquireUserAuthToken, AuthLevelSupport } from './authUtils';
 import { userAuth } from '@kit.UserAuthenticationKit';
+import { ATL1_MAX_REUSE_DURATION, ATL3_MAX_REUSE_DURATION } from '../common/conts';
 
 export type HmacDigestSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
 export type PurposeParams = Array<huks.HuksParam>;
@@ -62,6 +63,7 @@ export const PARAMS_EXPORT_ALL: PurposeParams = [{
 export const PARAMS_AUTH_ATL1: PurposeParams = [
     { tag: huks.HuksTag.HUKS_TAG_KEY_AUTH_ACCESS_TYPE, value: huks.HuksAuthAccessType.HUKS_AUTH_ACCESS_INVALID_CLEAR_PASSWORD },
     { tag: huks.HuksTag.HUKS_TAG_CHALLENGE_TYPE, value: huks.HuksChallengeType.HUKS_CHALLENGE_TYPE_NORMAL },
+    { tag: huks.HuksTag.HUKS_TAG_AUTH_TIMEOUT, value: ATL1_MAX_REUSE_DURATION },
     {
         tag: huks.HuksTag.HUKS_TAG_USER_AUTH_TYPE,
         value: huks.HuksUserAuthType.HUKS_USER_AUTH_TYPE_FINGERPRINT
@@ -71,6 +73,7 @@ export const PARAMS_AUTH_ATL1: PurposeParams = [
 export const PARAMS_AUTH_ATL3: PurposeParams = [
     { tag: huks.HuksTag.HUKS_TAG_KEY_AUTH_ACCESS_TYPE, value: huks.HuksAuthAccessType.HUKS_AUTH_ACCESS_INVALID_CLEAR_PASSWORD },
     { tag: huks.HuksTag.HUKS_TAG_CHALLENGE_TYPE, value: huks.HuksChallengeType.HUKS_CHALLENGE_TYPE_NORMAL },
+    { tag: huks.HuksTag.HUKS_TAG_AUTH_TIMEOUT, value: ATL3_MAX_REUSE_DURATION },
     {
         tag: huks.HuksTag.HUKS_TAG_USER_AUTH_TYPE,
         value: huks.HuksUserAuthType.HUKS_USER_AUTH_TYPE_FINGERPRINT
@@ -228,7 +231,7 @@ export class HUKSAgent {
         await huks.deleteKeyItem(keyAlias, huksOptions);
     }
 
-    static async deriveAesKeyItem(srcKeyAlias: string, purpose: AES_KEY_USAGE, password: string, material: PBKDF2Material, outKeyAlias: string): Promise<void> {
+    static async deriveAesKeyItem(srcKeyAlias: string, purpose: AES_KEY_USAGE, authLevel: AuthLevelSupport|undefined, password: string, material: PBKDF2Material, outKeyAlias: string): Promise<void> {
         // init
         const initAgent = new HUKSAgent(PARAMS_KEY256_DERIVE).withPBKDF2Material(material);
         const initOptions: huks.HuksOptions = {
@@ -238,9 +241,21 @@ export class HUKSAgent {
         const session = await huks.initSession(srcKeyAlias, initOptions);
         initOptions.inData = stringToUint8Array(password);
         await huks.updateSession(session.handle, initOptions);
-        // finish
+        // update params
         const purposeParams = purpose===AES_KEY_USAGE.DECRYPT? PARAMS_AES_DECRYPT : PARAMS_AES_ENCRYPT;
         const finishAgent = new HUKSAgent(purposeParams).withKeyAlias(outKeyAlias).with(PARAMS_IN_HUKS);
+        switch (authLevel) {
+            case 'ATL1':
+                finishAgent.with(PARAMS_AUTH_ATL1);
+                break;
+            case 'ATL3':
+                finishAgent.with(PARAMS_AUTH_ATL3);
+                break;
+            case undefined:
+            default:
+                break;
+        }
+        // finish
         const finishOptions: huks.HuksOptions = {
             properties: finishAgent.props,
             inData: new Uint8Array(new Array()),

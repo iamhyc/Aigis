@@ -218,7 +218,7 @@
     },
     {
       "name": "setting_setup_password_hint",
-      "value": "仅用于加密用户数据。"
+      "value": "用于加密令牌密钥和导出数据。"
     },
     {
       "name": "setting_setup_password_title",

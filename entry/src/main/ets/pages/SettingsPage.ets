@@ -100,6 +100,7 @@ export struct SettingsPage {
     @Watch('onItChanged') AuthTypePriority: AuthTypePriority = 'face';
     @StorageProp('settingsEnableBiometricAuth')
     @Watch('onItChanged') EnableBiometricAuth: boolean = false;
+    @State _EnableBiometricAuth: boolean = this.EnableBiometricAuth;
 
     @State iconPacksCollapsed: boolean = true;
 
@@ -255,29 +256,36 @@ export struct SettingsPage {
                                 description: $r('app.string.setting_setup_password_hint'),
                                 preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
                             }).onClick(() => { this.handleSetupPassword() })
-                            // enable biometric only when master password available
-                            if (this.MasterKeyAvailable) {
-                                if (!this.EnableBiometricAuth) {
-                                    SettingListItemToggle({
-                                        title: $r('app.string.setting_enable_biometric_unlock'),
-                                        description: $r('app.string.setting_biometric_unlock_hint'),
-                                        disabled: !this.ATL1AuthAvailable,
-                                        selected: this.EnableBiometricUnlock,
-                                    })
-                                }
-                                if (this.EnableBiometricUnlock) {
-                                    SettingListItemToggle({
+                            if (!this.EnableBiometricAuth) {
+                                SettingListItemToggle({
+                                    title: $r('app.string.setting_enable_biometric_unlock'),
+                                    description: $r('app.string.setting_biometric_unlock_hint'),
+                                    disabled: !this.ATL1AuthAvailable,
+                                    selected: this.EnableBiometricUnlock,
+                                })
+                            }
+                            if (this.MasterKeyAvailable && this.EnableBiometricUnlock) {
+                                SettingListItemToggle({
                                         title: $r('app.string.setting_enable_biometric_auth'),
                                         description: $r('app.string.setting_biometric_auth_hint'),
                                         disabled: true,//!this.ATL3AuthAvailable,
-                                        selected: this.EnableBiometricAuth,
+                                        selected: this._EnableBiometricAuth,
+                                        onChange: (() => {
+                                            if (this._EnableBiometricAuth===this.EnableBiometricAuth) { return; }
+                                            this._EnableBiometricAuth = this.EnableBiometricAuth;
+                                            //TODO: password prompt for dec key re-import
+                                            // at last
+                                            // this.EnableBiometricAuth = !this._EnableBiometricAuth;
+                                            // this._EnableBiometricAuth = this.EnableBiometricAuth;
+                                        }),
                                     })
-                                    SettingListItemSelect({
-                                        title: $r('app.string.setting_auth_priority'),
-                                        selected: this.AuthTypePriority,
-                                        entries: this.EnableBiometricAuth? ATL3AuthTypePrioritySelection : ATL1AuthTypePrioritySelection,
-                                    })
-                                }
+                            }
+                            if (this.EnableBiometricUnlock) {
+                                SettingListItemSelect({
+                                    title: $r('app.string.setting_auth_priority'),
+                                    selected: this.AuthTypePriority,
+                                    entries: this.EnableBiometricAuth? ATL3AuthTypePrioritySelection : ATL1AuthTypePrioritySelection,
+                                })
                             }
                         }
                         .divider(divider_style)
@@ -380,9 +388,6 @@ export struct SettingsPage {
             // security
             case            'EnableBiometricUnlock':
                 value = this.EnableBiometricUnlock;
-                break;
-            case            'EnableBiometricAuth':
-                value = this.EnableBiometricAuth;
                 break;
             case            'AuthTypePriority':
                 value = this.AuthTypePriority;
