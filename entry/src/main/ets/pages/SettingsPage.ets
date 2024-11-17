@@ -15,12 +15,13 @@ import {
     EVENT_UPDATE_PASSWORD, EVENT_UPDATE_SETTING,
     FileExportRequestSchema,
     FileImportRequestSchema,
+    PasswordUpdateRequestSchema,
     SettingUpdateRequestSchema } from "../common/events";
 import { picker } from "@kit.CoreFileKit";
 import { common } from "@kit.AbilityKit";
-import { Atl1AuthResult, IconPackStore } from "../common/schema";
+import { AtlAuthResult, IconPackStore, MasterKeyInfo } from "../common/schema";
 import { AppLockPage } from "../components/pages";
-import { validateAtl1Auth } from "../crypto/authUtils";
+import { validateAtlAuth, validatePassword } from "../crypto/authUtils";
 import { FEEDBACK_WEBSITE, MAX_ICON_PACK_NUM, OFFICIAL_WEBSITE } from "../common/conts";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
@@ -66,12 +67,13 @@ const ATL3AuthTypePrioritySelection: Map<ResourceStr, AuthTypePriority> = new Ma
 @Component
 export struct SettingsPage {
     @Consume navStack: NavPathStack;
-    @Consume atl1Auth: Atl1AuthResult;
+    @Consume atlAuth: AtlAuthResult;
     @Consume ATL1AuthAvailable: boolean;
     @Consume ATL3AuthAvailable: boolean;
     @Link pageTranslateX: string;
     @Require @Prop pageTitle: string;
 
+    @StorageProp('EncMasterKey') EncMasterKey: MasterKeyInfo = {} as MasterKeyInfo;
     @StorageProp('MasterKeyAvailable') MasterKeyAvailable: boolean = false;
     @StorageProp('IconPacks') IconPacks: IconPackStore[] = [];
     // general
@@ -175,8 +177,8 @@ export struct SettingsPage {
 
     build() {
         NavDestination() {
-            if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-                AppLockPage({atl1Auth: this.atl1Auth, priority: this.AuthTypePriority})
+            if (this.EnableBiometricUnlock && !validateAtlAuth(this.atlAuth)) {
+                AppLockPage({atlAuth: this.atlAuth, authLevel: 'ATL1', priority: this.AuthTypePriority})
             } else {
                 RelativeContainer() {
                     List({space:10}) {
@@ -256,7 +258,8 @@ export struct SettingsPage {
                                 description: $r('app.string.setting_setup_password_hint'),
                                 preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
                             }).onClick(() => { this.handleSetupPassword() })
-                            if (!this.EnableBiometricAuth) {
+                            if (true) {
+                            // if (!this.EnableBiometricAuth) { //FIXME: Not Support Cause of "External Error"
                                 SettingListItemToggle({
                                     title: $r('app.string.setting_enable_biometric_unlock'),
                                     description: $r('app.string.setting_biometric_unlock_hint'),
@@ -264,19 +267,40 @@ export struct SettingsPage {
                                     selected: this.EnableBiometricUnlock,
                                 })
                             }
-                            if (this.MasterKeyAvailable && this.EnableBiometricUnlock) {
+                            if (false) { //FIXME: Not Support Cause of "External Error"
+                            // if (this.MasterKeyAvailable && this.EnableBiometricUnlock) {
                                 SettingListItemToggle({
                                         title: $r('app.string.setting_enable_biometric_auth'),
                                         description: $r('app.string.setting_biometric_auth_hint'),
-                                        disabled: true,//!this.ATL3AuthAvailable,
+                                        disabled: !this.ATL3AuthAvailable,
                                         selected: this._EnableBiometricAuth,
                                         onChange: (() => {
                                             if (this._EnableBiometricAuth===this.EnableBiometricAuth) { return; }
                                             this._EnableBiometricAuth = this.EnableBiometricAuth;
-                                            //TODO: password prompt for dec key re-import
-                                            // at last
-                                            // this.EnableBiometricAuth = !this._EnableBiometricAuth;
-                                            // this._EnableBiometricAuth = this.EnableBiometricAuth;
+                                            // password prompt for dec key re-import
+                                            const usage = this.EnableBiometricAuth ? $r('app.string.password_usage_generate_dec_key') : $r('app.string.password_usage_generate_dec_key_atl3');
+                                            this.showCustomDialog(() => {
+                                                this.passwordInputDialogBuilder(
+                                                    $r('app.string.setting_enter_master_password'), usage, undefined,
+                                                    (password) => {
+                                                        validatePassword(this.EncMasterKey, password)
+                                                            .then(validated => {
+                                                                if (!validated) {
+                                                                    promptAction.showToast({message:$r('app.string.setting_input_wrong_password')})
+                                                                    return;
+                                                                } else {
+                                                                    const authLevel = this.EnableBiometricAuth? undefined : 'ATL3';
+                                                                    getContext().eventHub.emit(EVENT_UPDATE_PASSWORD, {password, authLevel} as PasswordUpdateRequestSchema);
+                                                                    // at last
+                                                                    this.EnableBiometricAuth = !this._EnableBiometricAuth;
+                                                                    this._EnableBiometricAuth = this.EnableBiometricAuth;
+                                                                }
+                                                            });
+                                                        this.inputDialogId = -1;
+                                                        promptAction.closeCustomDialog(this.inputDialogId);
+                                                    }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                                            })
+
                                         }),
                                     })
                             }
@@ -391,6 +415,9 @@ export struct SettingsPage {
                 break;
             case            'AuthTypePriority':
                 value = this.AuthTypePriority;
+                break;
+            case            'EnableBiometricAuth':
+                value = this.EnableBiometricAuth;
                 break;
             default:
                 return;

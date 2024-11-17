@@ -21,7 +21,7 @@ import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { AppLanguage, AuthTypePriority, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { AuthLevelSupport, generateMasterKeyInHUKS, genUserAuthType } from '../crypto/authUtils';
-import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent } from '../crypto/huksUtils';
+import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_AES_DECRYPT } from '../crypto/huksUtils';
 import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
     EVENT_ICON_PACK_APPLY_REQUEST,
@@ -126,12 +126,12 @@ class PreferencesManager {
         return otp;
     }
 
-    async requestCodeUpdate(keyAlias: string): Promise<boolean> {
+    async requestCodeUpdate(keyAlias: string, authToken?: Uint8Array): Promise<boolean> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
         const secret = this._secrets.find(x => x.keyAlias===keyAlias);
         if (item && secret) {
             const otp = this.getOtpInstance(keyAlias);
-            const rawSecret = await this.requestSecret(item.schema.type, secret);
+            const rawSecret = await this.requestSecret(item.schema.type, secret, authToken);
             item.code = {
                 timestamp: rawSecret.byteLength? Date.now() : 0,
                 code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
@@ -144,11 +144,11 @@ class PreferencesManager {
 
     //------------------ Secret Manager ------------------//
 
-    private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema): Promise<Uint8Array> {
+    private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema, authToken?: Uint8Array): Promise<Uint8Array> {
         let encodedSecret = secret.secret;
         // decrypt secret
         if (secret.encrypted) {
-            encodedSecret = await this.decryptSecret(encodedSecret, secret.encrypted!);
+            encodedSecret = await this.decryptSecret(encodedSecret, secret.encrypted!, authToken);
             if (encodedSecret==='') { return new Uint8Array(); }
         }
         // return decoded raw secret
@@ -170,12 +170,11 @@ class PreferencesManager {
         }
     }
 
-    private async decryptSecret(cipher: string, material: AesGcmMaterial): Promise<string> {
+    private async decryptSecret(cipher: string, material: AesGcmMaterial, authToken?: Uint8Array): Promise<string> {
         if (this._authPriority && this._decMasterKeyInfo?.keyAlias) {
             if (this._decMasterKeyInfo?.keyAlias) {
                 const inData = stringToUint8Array(cipher);
-                const authType = genUserAuthType(this._authLevel, this._authPriority);
-                const result = await HUKSAgent.applyAesGcmDecryption(this._decMasterKeyInfo?.keyAlias, material, inData, this._authLevel, authType);
+                const result = await HUKSAgent.applyAesGcmDecryption(this._decMasterKeyInfo?.keyAlias, material, inData, this._authLevel, authToken);
                 if (result) {
                     return Uint8ArrayToString(result);
                 }
@@ -208,22 +207,23 @@ class PreferencesManager {
         }
     }
 
-    async updateMasterKeyInfo(password: string, newPassword: boolean = false) {
+    async updateMasterKeyInfo(password: string, newPassword?: boolean, authLevel?: AuthLevelSupport) {
         // update encryption master key
         const encKeyAlias = PREF_MASTER_KEY;
         if (this._encMasterKeyInfo?.keyAlias===undefined) {
-            const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT, this.authLevel);
+            const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
             this._encMasterKeyInfo = encMasterKeyInfo;
         } else if (newPassword) {
             //TODO: change password procedure
         }
         // update decryption master key
         const decKeyAlias = PREF_DEC_MASTER_KEY;
-        if (this._decMasterKeyInfo?.keyAlias===undefined) {
-            const encMasterKeyInfo = this._encMasterKeyInfo!;
-            const decMasterKeyInfo = await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, this.authLevel, encMasterKeyInfo.secret, encMasterKeyInfo.params);
-            this._decMasterKeyInfo = decMasterKeyInfo;
+        if (this._decMasterKeyInfo?.keyAlias) {
+            await HUKSAgent.deleteKeyItem(this._decMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
         }
+        const encMasterKeyInfo = this._encMasterKeyInfo!;
+        const decMasterKeyInfo = await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, authLevel, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+        this._decMasterKeyInfo = decMasterKeyInfo;
         // check secrets encryption
         await this.encryptAllSecrets();
     }
@@ -462,6 +462,7 @@ export default class EntryAbility extends UIAbility {
                 // try to load master key
                 const encMasterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
                 const decMasterKeyInfo = pref.getSync(PREF_DEC_MASTER_KEY, {}) as MasterKeyInfo;
+                AppStorage.setAndProp('EncMasterKey', encMasterKeyInfo);
                 AppStorage.setAndProp('MasterKeyAvailable', encMasterKeyInfo.keyAlias!==undefined);
                 AppStorage.setAndLink('StatusDecKeyRequired', encMasterKeyInfo.keyAlias!==undefined && decMasterKeyInfo.keyAlias===undefined);
                 // init controller
@@ -563,7 +564,7 @@ export default class EntryAbility extends UIAbility {
     private registerEventHubHandlers() {
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {
-                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias);
+                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.authToken);
                 if (res) {
                     this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 }
@@ -612,7 +613,7 @@ export default class EntryAbility extends UIAbility {
         });
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD, async (data: PasswordUpdateRequestSchema) => {
             if (this.dataPreferences && this.instPreferences) {
-                await this.instPreferences.updateMasterKeyInfo(data.password);
+                await this.instPreferences.updateMasterKeyInfo(data.password, data.newPassword, data.authLevel);
                 this.dataPreferences?.putSync(PREF_MASTER_KEY, this.instPreferences.encMasterKeyInfo);
                 this.dataPreferences.putSync(PREF_DEC_MASTER_KEY, this.instPreferences.decMasterKeyInfo);
                 this.dataPreferences?.flush();

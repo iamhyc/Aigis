@@ -1,3 +1,4 @@
+import { AuthLevelSupport } from "../crypto/authUtils";
 import { OTPSchema } from "../crypto/otpUtils";
 
 export interface CodeResponseSchema {
@@ -65,7 +66,8 @@ export interface AesGcmMaterial {
     nonce: string,
 }
 
-export interface Atl1AuthResult {
+export interface AtlAuthResult {
+    authLevel: AuthLevelSupport,
     authToken: Uint8Array,
     timestamp: number,
 };

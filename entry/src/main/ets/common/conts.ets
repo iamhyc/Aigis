@@ -13,7 +13,9 @@ export const MAX_ICON_PACK_SIZE = 5*1024*1024;//5MB
 
 export const FAKE_OTP_CODE = '******';
 export const ATL1_MAX_REUSE_DURATION = 5*1000;//5s
-export const ATL3_MAX_REUSE_DURATION = 90*1000;//90s
+export const ATL3_MAX_REUSE_DURATION = 5*1000;//5s
+export const ATL1_AUTH_TIMEOUT = 90*1000;//90s
+export const ATL3_AUTH_TIMEOUT = 90*1000;//90s
 
 export const OFFICIAL_WEBSITE = 'https://github.com/iamhyc/Aigis';
 export const FEEDBACK_WEBSITE = 'https://github.com/iamhyc/Aigis/issues/new';

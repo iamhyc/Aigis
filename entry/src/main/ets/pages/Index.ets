@@ -9,8 +9,8 @@ import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
-import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtl1Auth } from '../crypto/authUtils';
-import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
+import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth } from '../crypto/authUtils';
+import { AtlAuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
     EVENT_UPDATE_PASSWORD,
     PasswordUpdateRequestSchema,
@@ -55,13 +55,14 @@ class EditState {
 @Component
 struct Index {
     @Watch('onDecKeyRequired') @StorageLink('StatusDecKeyRequired') StatusDecKeyRequired: boolean = false;
-    @StorageProp('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
+    @Watch('onAuthLevelChanged') @StorageProp('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
+    @Watch('onAuthLevelChanged') @StorageProp('settingsEnableBiometricAuth') EnableBiometricAuth: boolean = false;
     @StorageProp('settingsAuthTypePriority') AuthTypePriority: AuthTypePriority = 'face';
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Provide navStack: NavPathStack = new NavPathStack();
     @Provide ATL1AuthAvailable: boolean = ATL1AuthAvailable();
     @Provide ATL3AuthAvailable: boolean = ATL3AuthAvailable();
-    @Provide atl1Auth: Atl1AuthResult = {authToken: new Uint8Array(), timestamp:0};
+    @Provide atlAuth: AtlAuthResult = {authLevel: 'ATL1', authToken: new Uint8Array(), timestamp:0};
 
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
@@ -77,8 +78,8 @@ struct Index {
             Navigation(this.navStack) {
                 Stack() {
                     // main content
-                    if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-                        AppLockPage({atl1Auth: this.atl1Auth, priority: this.AuthTypePriority})
+                    if (this.EnableBiometricUnlock && !validateAtlAuth(this.atlAuth)) {
+                        AppLockPage({atlAuth: this.atlAuth, authLevel:this.EnableBiometricAuth?'ATL3':'ATL1', priority: this.AuthTypePriority})
                     } else {
                         if (this.items.length===0) {
                             EmptyPage()
@@ -188,8 +189,9 @@ struct Index {
     }
 
     onPageShow() {
-        if (this.EnableBiometricUnlock && !validateAtl1Auth(this.atl1Auth)) {
-            acquireAtl1Auth(this.AuthTypePriority).then(result => { this.atl1Auth = result; })
+        if (this.EnableBiometricUnlock && !validateAtlAuth(this.atlAuth)) {
+            const authLevel = this.EnableBiometricAuth? 'ATL3' : 'ATL1';
+            acquireAtlAuth(authLevel, this.AuthTypePriority).then(result => { this.atlAuth = result; })
         }
     }
 
@@ -197,7 +199,7 @@ struct Index {
         if (this.EnableBiometricUnlock) {
             this.addSheetShow = false;
             this.editState.hide();
-            this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
+            this.atlAuth = { authLevel: 'ATL1', authToken: new Uint8Array(), timestamp: 0 };
         }
         this.selected = '';
     }
@@ -236,7 +238,7 @@ struct Index {
         // password prompt for dec key update
         this.showCustomDialog(() => {
             this.passwordInputDialogBuilder(
-                $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_generate_dec_key'),
+                $r('app.string.setting_enter_master_password'), $r('app.string.password_usage_generate_dec_key'),
                 (password) => {
                     getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password} as PasswordUpdateRequestSchema);
                     this.StatusDecKeyRequired = false;
@@ -248,6 +250,15 @@ struct Index {
                     promptAction.closeCustomDialog(this.inputDialogId);
                 });
         });
+    }
+
+    private onAuthLevelChanged() {
+        const newAuthLevel = this.EnableBiometricUnlock? (this.EnableBiometricAuth ? 'ATL3' : 'ATL1') : undefined;
+        if (newAuthLevel!==this.atlAuth.authLevel) {
+            if (newAuthLevel) {
+                this.atlAuth = {authLevel: newAuthLevel, authToken: new Uint8Array(), timestamp:0};
+            }
+        }
     }
 
     private onItemListChanged() {
@@ -372,6 +383,7 @@ struct OTPItem {
     @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Consume editState: EditState;
     @Consume selected: string;
+    @Consume atlAuth: AtlAuthResult;
     @Link @Watch('onFilterTextChanged') filterText: string;
     @Prop icon: string;
     @Prop code: CodeResponseSchema;
@@ -507,15 +519,6 @@ struct OTPItem {
             Row({space:8}) {
                 //
                 if (!this.showEditItemOnly) {
-                    // removal button
-                    // Button({ type: ButtonType.Circle }) {
-                    //     SymbolGlyph($r('sys.symbol.trash_fill'))
-                    //         .fontColor([Color.White])
-                    //         .fontSize(24)
-                    // }
-                    // .height(40).width(40)
-                    // .backgroundColor($r('sys.color.ohos_id_closebtn_color_warning'))
-                    // .onClick(() => { this.requestItemRemoval(this.keyAlias, this.schema.issuer, this.schema.name); })
                     // Move-To-Top button
                     Button({ type: ButtonType.Circle }) {
                         SymbolGlyph($r('sys.symbol.arrowshape_up_to_line_fill'))
@@ -586,7 +589,8 @@ struct OTPItem {
         // apply code update request
         if (!this.codeRequested) {
             getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
-            keyAlias: this.keyAlias,
+                keyAlias: this.keyAlias,
+                authToken: this.atlAuth.authToken,
         } as CodeRequestSchema);
             this.codeRequested = true;
         }

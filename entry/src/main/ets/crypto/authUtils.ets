@@ -1,5 +1,5 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
-import { Atl1AuthResult, MasterKeyInfo, PBKDF2Material } from '../common/schema';
+import { AtlAuthResult, MasterKeyInfo, PBKDF2Material } from '../common/schema';
 import { getRandomInt, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { AES_KEY_USAGE,
     generateAesGcmMaterial,
@@ -7,7 +7,9 @@ import { AES_KEY_USAGE,
     PARAMS_AES_DECRYPT,
     PARAMS_DERIVE_SRC_KEY } from './huksUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { ATL1_MAX_REUSE_DURATION, ATL3_MAX_REUSE_DURATION } from '../common/conts';
+import { ATL1_AUTH_TIMEOUT, ATL1_MAX_REUSE_DURATION,
+    ATL3_AUTH_TIMEOUT,
+    ATL3_MAX_REUSE_DURATION } from '../common/conts';
 import { AuthTypePriority } from '../common/settings';
 
 // Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/errorcode-useriam-V5
@@ -131,29 +133,17 @@ export async function acquireUserAuthToken(level: AuthLevelSupport, authType: us
     });
 }
 
-export async function acquireAtl1Auth(priority: AuthTypePriority): Promise<Atl1AuthResult> {
-    let authType: userAuth.UserAuthType[];
-    switch (priority) {
-        case 'face':
-            authType = [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN];
-            break;
-        case 'touch':
-            authType = [userAuth.UserAuthType.FINGERPRINT, userAuth.UserAuthType.PIN];
-            break;
-        case 'pin':
-        default:
-            authType = [userAuth.UserAuthType.PIN];
-            break;
-    }
-    //
-    const authToken = await acquireUserAuthToken('ATL1', authType);
+export async function acquireAtlAuth(authLevel: AuthLevelSupport, priority: AuthTypePriority): Promise<AtlAuthResult> {
+    const authType = genUserAuthType(authLevel, priority);
+    const authToken = await acquireUserAuthToken(authLevel, authType);
     const timestamp  = Date.now();
-    return { authToken, timestamp };
+    return { authLevel, authToken, timestamp };
 }
 
-export function validateAtl1Auth(atl1Auth: Atl1AuthResult): boolean {
+export function validateAtlAuth(atlAuth: AtlAuthResult): boolean {
     const _now = Date.now();
-    if (_now - atl1Auth.timestamp < userAuth.MAX_ALLOWABLE_REUSE_DURATION) {
+    const timeout_duration = atlAuth.authLevel==='ATL1'? ATL1_AUTH_TIMEOUT : ATL3_AUTH_TIMEOUT;
+    if (_now - atlAuth.timestamp < timeout_duration) {
         return true;
     } else {
         return false;
@@ -207,5 +197,5 @@ export async function validatePassword(encMasterKeyInfo: MasterKeyInfo, password
     const ts_cipher = await HUKSAgent.applyAesGcmEncryption(tmpMasterKeyInfo.keyAlias, material, nonce);
     await HUKSAgent.deleteKeyItem(tmpMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
     // return
-    return gt_cipher===ts_cipher;
+    return Uint8ArrayToString(gt_cipher!)===Uint8ArrayToString(ts_cipher!);
 }
