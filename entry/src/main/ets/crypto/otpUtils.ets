@@ -1,5 +1,5 @@
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
-import { shallowCopy, splitOnce } from '../common/utils';
+import { numberToBigEndianByteArray, shallowCopy, splitOnce } from '../common/utils';
 
 export type OtpSchemaSupport = 'totp' | 'hotp' | 'steam';
 export type AlgorithmSupport = 'MD5' | 'SHA1' | 'SHA256' | 'SHA512';
@@ -69,15 +69,6 @@ function rfc4226Sec5_4Impl(hash: Uint8Array): number {
         | ((hash[offset + 2] & 0xff) << 8)
         | (hash[offset + 3] & 0xff);
     return otp;
-}
-
-function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
-    const byteArray = new Uint8Array(byteSize);
-    for (let i = 0; i < byteSize; i++) {
-        byteArray[byteSize - 1 - i] = num & 0xff;
-        num = num >> 8;
-    }
-    return byteArray;
 }
 
 export function name2keyAlias(props: IssuerName): string {

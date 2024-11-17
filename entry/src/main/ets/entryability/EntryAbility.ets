@@ -9,16 +9,19 @@ import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     AigisContentSchema,
     MasterKeyInfo,
     IconPackStore,
-    IconPackSchema} from '../common/schema'
-import { arrayRearrange, b32decode, isValidBase32String } from '../common/utils';
+    IconPackSchema,
+    AesGcmMaterial} from '../common/schema'
+import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
+    Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
+    PREF_DEC_MASTER_KEY,
     PREF_ICON_PACKS,
     PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
-import { AppLanguage, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
-import { generateMasterKeyInHUKS } from '../crypto/authUtils';
-import { AES_KEY_USAGE } from '../crypto/huksUtils';
+import { AppLanguage, AuthTypePriority, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
+import { AuthLevelSupport, generateMasterKeyInHUKS, genUserAuthType } from '../crypto/authUtils';
+import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent } from '../crypto/huksUtils';
 import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
     EVENT_ICON_PACK_APPLY_REQUEST,
@@ -50,17 +53,33 @@ class PreferencesManager {
     private _secrets: SecretSchema[];
     private _items: OTPItemInfo[];
     private iconManager: IconManager;
+    private _encMasterKeyInfo: MasterKeyInfo | undefined;
+    private _decMasterKeyInfo: MasterKeyInfo | undefined;
+    private _authLevel: AuthLevelSupport | undefined;
+    private _authPriority: AuthTypePriority = 'face';
 
-    constructor(items: OTPItemInfo[], secrets: SecretSchema[], icons: IconPackStore[]) {
+    constructor(items: OTPItemInfo[], secrets: SecretSchema[], icons: IconPackStore[], encMasterKeyInfo?: MasterKeyInfo, decMasterKeyInfo?: MasterKeyInfo, authLevel?: AuthLevelSupport, authPriority?: AuthTypePriority) {
         this._items = items;
-        items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE}); //FIXME: remove this later
-        //
+        items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE});
         this._secrets = secrets;
+        //
         this.iconManager = new IconManager(icons);
         this._instances = new Map();
+        //
+        this._encMasterKeyInfo = encMasterKeyInfo;
+        this._decMasterKeyInfo = decMasterKeyInfo;
+        this._authLevel = authLevel;
+        this._authPriority = authPriority ?? 'face';
     }
 
-    get leaked_secrets() {
+    get encrypted_secrets(): SecretSchema[] | undefined {
+        // check secrets encryption status
+        for (const secret of this._secrets) {
+            if (secret.encrypted===undefined) {
+                return undefined;
+            }
+        }
+        // return encrypted secrets
         return this._secrets;
     }
 
@@ -71,6 +90,29 @@ class PreferencesManager {
     get icons() {
         return this.iconManager.icons;
     }
+
+    get encMasterKeyInfo() {
+        return this._encMasterKeyInfo;
+    }
+
+    get decMasterKeyInfo() {
+        return this._decMasterKeyInfo;
+    }
+
+    get MasterKeyAvailable(): boolean {
+        const encKeyAlias = this._encMasterKeyInfo?.keyAlias;
+        return encKeyAlias? true : false;
+    }
+
+    set authLevel(authLevel: AuthLevelSupport | undefined) {
+        this._authLevel = authLevel;
+    }
+
+    set authPriority(priority: AuthTypePriority) {
+        this._authPriority = priority;
+    }
+
+    //------------------ OTP Manager ------------------//
 
     getOtpInstance(keyAlias: string): OTP {
         let otp = this._instances.get(keyAlias);
@@ -91,14 +133,102 @@ class PreferencesManager {
             const otp = this.getOtpInstance(keyAlias);
             const rawSecret = await this.requestSecret(item.schema.type, secret);
             item.code = {
-                timestamp: Date.now(),
-                code: await otp.generateOTP(rawSecret),
+                timestamp: rawSecret.byteLength? Date.now() : 0,
+                code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
             }
             return true;
         } else {
             return false;
         }
     }
+
+    //------------------ Secret Manager ------------------//
+
+    private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema): Promise<Uint8Array> {
+        let encodedSecret = secret.secret;
+        // decrypt secret
+        if (secret.encrypted) {
+            encodedSecret = await this.decryptSecret(encodedSecret, secret.encrypted!);
+            if (encodedSecret==='') { return new Uint8Array(); }
+        }
+        // return decoded raw secret
+        const b64Encoded: boolean = (otpType==='steam' && !isValidBase32String(encodedSecret));
+        const rawSecret: Uint8Array = b64Encoded? (new util.Base64Helper()).decodeSync(encodedSecret) : b32decode(encodedSecret);
+        return rawSecret;
+    }
+
+    private async encryptSecret(secret: string): Promise<[string, AesGcmMaterial|undefined]> {
+        if (this.encMasterKeyInfo?.keyAlias) {
+            const material = await generateAesGcmMaterial();
+            const inData = stringToUint8Array(secret);
+            const authType = genUserAuthType(this._authLevel, this._authPriority);
+            const result = await HUKSAgent.applyAesGcmEncryption(this.encMasterKeyInfo.keyAlias, material, inData, this._authLevel, authType);
+            const _secret = Uint8ArrayToString(result!);
+            return [_secret, material];
+        } else {
+            return [secret, undefined];
+        }
+    }
+
+    private async decryptSecret(cipher: string, material: AesGcmMaterial): Promise<string> {
+        if (this._authPriority && this._decMasterKeyInfo?.keyAlias) {
+            if (this._decMasterKeyInfo?.keyAlias) {
+                const inData = stringToUint8Array(cipher);
+                const authType = genUserAuthType(this._authLevel, this._authPriority);
+                const result = await HUKSAgent.applyAesGcmDecryption(this._decMasterKeyInfo?.keyAlias, material, inData, this._authLevel, authType);
+                if (result) {
+                    return Uint8ArrayToString(result);
+                }
+            }
+        }
+        // fail to decrypt the secrets
+        AppStorage.set('StatusDecKeyRequired', true);
+        return '';
+    }
+
+    private async decryptAllSecrets() {
+        if (!this.MasterKeyAvailable) { return; }
+        for (const secret of this._secrets) {
+            if (secret.encrypted) {
+                const result = await this.decryptSecret(secret.secret, secret.encrypted);
+                secret.secret = result;
+                secret.encrypted = undefined;
+            }
+        }
+    }
+
+    async encryptAllSecrets() {
+        if (!this.MasterKeyAvailable) { return; }
+        for (const secret of this._secrets) {
+            if (secret.encrypted===undefined) {
+                const result = await this.encryptSecret(secret.secret);
+                secret.secret = result[0];
+                secret.encrypted = result[1];
+            }
+        }
+    }
+
+    async updateMasterKeyInfo(password: string, newPassword: boolean = false) {
+        // update encryption master key
+        const encKeyAlias = PREF_MASTER_KEY;
+        if (this._encMasterKeyInfo?.keyAlias===undefined) {
+            const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT, this.authLevel);
+            this._encMasterKeyInfo = encMasterKeyInfo;
+        } else if (newPassword) {
+            //TODO: change password procedure
+        }
+        // update decryption master key
+        const decKeyAlias = PREF_DEC_MASTER_KEY;
+        if (this._decMasterKeyInfo?.keyAlias===undefined) {
+            const encMasterKeyInfo = this._encMasterKeyInfo!;
+            const decMasterKeyInfo = await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, this.authLevel, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+            this._decMasterKeyInfo = decMasterKeyInfo;
+        }
+        // check secrets encryption
+        await this.encryptAllSecrets();
+    }
+
+    //------------------ Item Manager ------------------//
 
     importPreferenceItems(dataPreferences: preferences.Preferences, items: OTPItemInfo[], secrets: SecretSchema[]): OTPItemInfo[] {
         const failed: OTPItemInfo[] = [];
@@ -133,7 +263,11 @@ class PreferencesManager {
             oldItem.icon = icon ?? await this.iconManager.match( otp.schema.issuer );
             //
             oldItem.schema = otp.schema;
-            if (secret && oldSecret) { oldSecret.secret = secret; }
+            if (secret && oldSecret) {
+                const result = await this.encryptSecret(secret);
+                oldSecret.secret = result[0];
+                oldSecret.encrypted = result[1];
+            }
             // update new instances
             this._instances.delete(oldKeyAlias);
             this.requestCodeUpdate(newKeyAlias);
@@ -142,26 +276,19 @@ class PreferencesManager {
         }
     }
 
-    private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema): Promise<Uint8Array> {
-        let encodedSecret = secret.secret;
-        if (secret.encrypted) {
-            throw Error('Not implemented');
-        }
-        //
-        const b64Encoded: boolean = (otpType==='steam' && !isValidBase32String(encodedSecret));
-        const rawSecret: Uint8Array = b64Encoded? (new util.Base64Helper()).decodeSync(encodedSecret) : b32decode(encodedSecret);
-        return rawSecret;
-    }
-
-    private async appendPreferenceItem(otp: OTP, secret: string, icon?: string) {
+    private async appendPreferenceItem(otp: OTP, _secret: string, icon?: string) {
         const keyAlias = otp.keyAlias;
         const schema = otp.schema;
 
+        // encrypt secret
+        const result = await this.encryptSecret(_secret);
+        const secret = result[0];
+        const encrypted = result[1];
         // find issuer icon
         icon = icon ?? await this.iconManager.match( otp.schema.issuer );
-        const code: CodeResponseSchema = {timestamp:0, code:'000000'};
+        const code: CodeResponseSchema = {timestamp:0, code:FAKE_OTP_CODE};
         this._items.push({keyAlias, icon, code, schema});
-        this._secrets.push({keyAlias, secret});
+        this._secrets.push({keyAlias, secret, encrypted});
         this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
     }
 
@@ -186,6 +313,8 @@ class PreferencesManager {
         const keySecret2 = keyAlias2 ? this._items.findIndex(x => x.keyAlias===keyAlias2) : 0;
         arrayRearrange(this._secrets, keySecret1, keySecret2);
     }
+
+    //--------------- Icon Pack Manager ---------------//
 
     async importIconPack(uri: string) {
         const tempDirPath = getContext(this).tempDir;
@@ -304,7 +433,6 @@ export default class EntryAbility extends UIAbility {
     private localStorage: LocalStorage = new LocalStorage();
     private instPreferences?: PreferencesManager;
     private localSettings?: UserPreferences;
-    private masterKeyInfo?: MasterKeyInfo;
 
     onCreate(_want: Want, _launchParam: AbilityConstant.LaunchParam): void {
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
@@ -329,21 +457,27 @@ export default class EntryAbility extends UIAbility {
         });
 
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
-            .then((pref: preferences.Preferences) => {
+            .then(async (pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
-                // init
+                // try to load master key
+                const encMasterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
+                const decMasterKeyInfo = pref.getSync(PREF_DEC_MASTER_KEY, {}) as MasterKeyInfo;
+                AppStorage.setAndProp('MasterKeyAvailable', encMasterKeyInfo.keyAlias!==undefined);
+                AppStorage.setAndLink('StatusDecKeyRequired', encMasterKeyInfo.keyAlias!==undefined && decMasterKeyInfo.keyAlias===undefined);
+                // init controller
                 this.instPreferences = new PreferencesManager(
                     pref.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
                     pref.getSync(PREF_KEY_SECRETS, []) as SecretSchema[],
                     pref.getSync(PREF_ICON_PACKS, []) as IconPackStore[],
+                    encMasterKeyInfo, decMasterKeyInfo,
                 );
                 this.localStorage.setAndProp(PREF_KEY_ITEMS, this.instPreferences.items);
                 AppStorage.setAndProp('IconPacks', this.instPreferences.icons);
                 // setup global user settings
                 this.initUserPreferences(pref);
+                await this.instPreferences.encryptAllSecrets();
                 // register event handler
                 this.registerEventHubHandlers();
-
                 // init index page
                 windowStage.loadContent('pages/Index', this.localStorage);
             })
@@ -389,7 +523,20 @@ export default class EntryAbility extends UIAbility {
                 context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
             }
         }
-        //
+        // update local auth preference
+        if (key==='EnableBiometricAuth' && this.instPreferences) {
+            const authLevel = value===true? 'ATL3' : 'ATL1';
+            this.instPreferences.authLevel = authLevel;
+        }
+        if (key==='EnableBiometricUnlock' && this.instPreferences) {
+            if (value===false) {
+                this.instPreferences.authLevel = undefined;
+            }
+        }
+        if (key==='AuthTypePriority' && this.instPreferences) {
+            this.instPreferences.authPriority = value as AuthTypePriority;
+        }
+        // propagate settings
         if (init) {
             AppStorage.setAndProp(settingKey, value);
         } else {
@@ -411,10 +558,6 @@ export default class EntryAbility extends UIAbility {
                 this.applySettings(key, localValue, true);
             }
         }
-
-        // try to load master key
-        this.masterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
-        AppStorage.setAndProp('MasterKeyAvailable', this.masterKeyInfo.keyAlias!==undefined);
     }
 
     private registerEventHubHandlers() {
@@ -468,18 +611,18 @@ export default class EntryAbility extends UIAbility {
             }
         });
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD, async (data: PasswordUpdateRequestSchema) => {
-            if (this.dataPreferences) {
-                const keyAlias = PREF_MASTER_KEY;
-                const masterKeyInfo = await generateMasterKeyInHUKS(keyAlias, data.password, AES_KEY_USAGE.ENCRYPT);
-                this.masterKeyInfo = masterKeyInfo;
-                //
-                this.dataPreferences?.putSync(PREF_MASTER_KEY, masterKeyInfo);
+            if (this.dataPreferences && this.instPreferences) {
+                await this.instPreferences.updateMasterKeyInfo(data.password);
+                this.dataPreferences?.putSync(PREF_MASTER_KEY, this.instPreferences.encMasterKeyInfo);
+                this.dataPreferences.putSync(PREF_DEC_MASTER_KEY, this.instPreferences.decMasterKeyInfo);
                 this.dataPreferences?.flush();
+                // propagate
                 AppStorage.set('MasterKeyAvailable', true);
+                AppStorage.set('StatusDecKeyRequired', false);
             }
         });
         this.context.eventHub.on(EVENT_EXPORT_REQUEST, async (data: FileExportRequestSchema) => {
-            if (this.masterKeyInfo===undefined || this.instPreferences===undefined) {
+            if (!this.instPreferences!.MasterKeyAvailable || this.instPreferences===undefined) {
                 return;
             }
 
@@ -487,13 +630,14 @@ export default class EntryAbility extends UIAbility {
                 const settingString = this.localSettings? JSON.stringify(Array.from( this.localSettings.entries() )) : undefined;
                 //
                 const file = await fs.open(data.uri, fs.OpenMode.CREATE|fs.OpenMode.WRITE_ONLY);
+                const masterKey = this.instPreferences.encMasterKeyInfo!;
                 const content: AigisContentSchema = {
-                    masterKey: this.masterKeyInfo,
+                    masterKey,
                     items: this.instPreferences.items,
-                    secrets: this.instPreferences.leaked_secrets,
+                    secrets: this.instPreferences.encrypted_secrets!,
                     settings: settingString,
                 };
-                const result = await (new AigisImporter()).save(file.fd, this.masterKeyInfo.keyAlias, content);
+                const result = await (new AigisImporter()).save(file.fd, masterKey.keyAlias, content);
                 if (result) {
                     promptAction.showToast({message: $r('app.string.setting_export_message_success', data.uri)});
                 } else {
@@ -520,7 +664,7 @@ export default class EntryAbility extends UIAbility {
                 // refresh local storage
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences!.items);
                 // import password as master key
-                if (this.masterKeyInfo?.keyAlias===undefined && data.password!==undefined && data.importPassword) {
+                if (!this.instPreferences!.MasterKeyAvailable && data.password!==undefined && data.importPassword) {
                     this.context.eventHub.emit(EVENT_UPDATE_PASSWORD, {password: data.password} as PasswordUpdateRequestSchema);
                 }
                 // TODO: restore settings

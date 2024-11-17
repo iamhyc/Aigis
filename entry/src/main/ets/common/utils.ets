@@ -65,6 +65,15 @@ export function getRandomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+export function numberToBigEndianByteArray(num: number, byteSize: number): Uint8Array {
+    const byteArray = new Uint8Array(byteSize);
+    for (let i = 0; i < byteSize; i++) {
+        byteArray[byteSize - 1 - i] = num & 0xff;
+        num = num >> 8;
+    }
+    return byteArray;
+}
+
 export function stringToUint8Array(str: string): Uint8Array {
     return Uint8Array.from(Array.from(str).map(x => x.charCodeAt(0)));
 }

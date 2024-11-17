@@ -54,7 +54,7 @@ export class AigisImporter extends ImporterClass {
         const decKeyAlias = 'tmp-key';
         try {
             const masterKey = exported.masterKey;
-            await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, masterKey.secret, masterKey.params);
+            await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, undefined, masterKey.secret, masterKey.params);
             //
             const keyParms = exported.keyParams;
             const items: OTPItemInfo[] = JSON.parse(Uint8ArrayToString(
@@ -63,6 +63,14 @@ export class AigisImporter extends ImporterClass {
             const secrets: SecretSchema[] = JSON.parse(Uint8ArrayToString(
               (await HUKSAgent.applyAesGcmDecryption(decKeyAlias, keyParms, stringToUint8Array(exported.secrets)))!
             ))
+            // decrypt secrets
+            for (const secret of secrets) {
+                if (secret.encrypted) {
+                    const _secret = await HUKSAgent.applyAesGcmDecryption(decKeyAlias, secret.encrypted, stringToUint8Array(secret.secret));
+                    secret.secret = Uint8ArrayToString(_secret!);
+                    secret.encrypted = undefined;
+                }
+            }
             //
             const b64 = new util.Base64Helper();
             const settings = Uint8ArrayToString(await b64.decode(exported.settings));

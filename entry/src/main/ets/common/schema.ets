@@ -16,7 +16,7 @@ export interface OTPItemInfo {
 export interface SecretSchema {
     keyAlias: string,
     secret: string,
-    encrypted?: boolean,
+    encrypted?: AesGcmMaterial,
 }
 
 export interface AigisContentSchema {
@@ -56,7 +56,6 @@ export interface MasterKeyInfo {
     type: 'PBKDF2',
     version: 'v1',
     keyAlias: string,
-    decKeyAlias?: string,
     secret: PBKDF2Material,
     params: PBKDF2Material,
 }

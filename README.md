@@ -64,18 +64,15 @@ Dst2-->Dst3
 
 ### Roadmap
 
-**Release v0.3.0** (2024/11/15)
+**Release v0.3.0** (2024/11/18)
 
 - [ ] Access Control with Biometric Authentication
-  
-  - Encrypt secrets with `enc_master_key`, Decrypt with `dec_master_key`
-  
   - ATL3: need auth to access `dec_master_key`
   - ATL3: Request Password to disable ATL3, then re-import `dec_master_key` with no auth
-- [ ] Password Challenge Page Design
-
-  - Periodic Notification in the Local Non-Working Hours
-  - Also allow to skip
+- [ ] Change Password Procedure Design
+  - Change password dialog
+  - Decrypt and then re-encrypt the secrets
+  - Re-import the `enc_master_key` and `dec_master_key`
 
 **Release v0.5.0** (2024/11/22)
 
@@ -87,10 +84,9 @@ Dst2-->Dst3
   - "Move-to-Top" --> "Favorite Items"
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)
-- [ ] Change Password Procedure Design
-  - Change password dialog
-  - Decrypt and then re-encrypt the secrets
-  - Re-import the `enc_master_key` and `dec_master_key`
+- [ ] Password Challenge Page Design
+  - Periodic Notification in the Local Non-Working Hours
+  - Also allow to skip the challenge
 
 **Release v1.0.0** (2024/11/29)
 

@@ -7,11 +7,13 @@ import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
-import { TextInputDialog } from '../components/dialog';
+import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { acquireAtl1Auth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtl1Auth } from '../crypto/authUtils';
 import { Atl1AuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
+    EVENT_UPDATE_PASSWORD,
+    PasswordUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
 import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
@@ -52,7 +54,8 @@ class EditState {
 @Entry(storage)
 @Component
 struct Index {
-    @StorageLink('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
+    @Watch('onDecKeyRequired') @StorageLink('StatusDecKeyRequired') StatusDecKeyRequired: boolean = false;
+    @StorageProp('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsAuthTypePriority') AuthTypePriority: AuthTypePriority = 'face';
     @Watch('onItemListChanged') @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Provide navStack: NavPathStack = new NavPathStack();
@@ -66,6 +69,8 @@ struct Index {
     @State addSheetShow: boolean = false;
 
     @State settingPageTranslateX: string = '0%';
+
+    private inputDialogId: number = -1;
 
     build() {
         RelativeContainer() {
@@ -195,6 +200,54 @@ struct Index {
             this.atl1Auth = { authToken: new Uint8Array(), timestamp: 0 };
         }
         this.selected = '';
+    }
+
+    aboutToAppear() {
+        this.onDecKeyRequired();
+    }
+
+    private showCustomDialog(builder: () => CustomBuilder) {
+        if (this.inputDialogId > 0) {
+            promptAction.closeCustomDialog(this.inputDialogId);
+            this.inputDialogId = -1;
+        }
+        //
+        promptAction.openCustomDialog({
+            builder,
+            onWillDismiss: (dismissDialogAction: DismissDialogAction) => {
+                if (dismissDialogAction.reason == DismissReason.PRESS_BACK) {
+                    dismissDialogAction.dismiss()
+                }
+                if (dismissDialogAction.reason == DismissReason.TOUCH_OUTSIDE) {
+                    dismissDialogAction.dismiss()
+                }
+            }
+        }).then((dialogId) => {
+            this.inputDialogId = dialogId;
+        });
+    }
+
+    @Builder passwordInputDialogBuilder(title: ResourceStr, usage: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
+        PasswordInputDialog({ title, usage, confirm, cancel })
+    }
+
+    private onDecKeyRequired() {
+        if (!this.StatusDecKeyRequired) { return; }
+        // password prompt for dec key update
+        this.showCustomDialog(() => {
+            this.passwordInputDialogBuilder(
+                $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_generate_dec_key'),
+                (password) => {
+                    getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password} as PasswordUpdateRequestSchema);
+                    this.StatusDecKeyRequired = false;
+                    //
+                    this.inputDialogId = -1;
+                    promptAction.closeCustomDialog(this.inputDialogId);
+                }, () => {
+                    this.StatusDecKeyRequired = false;
+                    promptAction.closeCustomDialog(this.inputDialogId);
+                });
+        });
     }
 
     private onItemListChanged() {
@@ -391,7 +444,7 @@ struct OTPItem {
                 .width('100%')
                 .zIndex(1)
                 // show progress bar for time-based OTP
-                if (this.selected===this.keyAlias && (this.schema as TimedOTPSchema).period) {
+                if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE && (this.schema as TimedOTPSchema).period) {
                     Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
                         .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
                         .color($r('app.color.color_ribbon'))
@@ -411,6 +464,9 @@ struct OTPItem {
                     if (this.EnableDoubleClickCopy && !this.codeCopied) {
                         this.copyCodeToPateBoard();
                         this.codeCopied = true;
+                    } else if (this.code.code===FAKE_OTP_CODE) {
+                        this.codeRequested = false;
+                        this.requestCodeUpdate();
                     } else {
                         this.selected = '';
                     }
@@ -516,10 +572,10 @@ struct OTPItem {
         // test time-based OTP if refresh needed
         if (_period) {
             const _now = Date.now()
-            const passed_time = _now - this.code.timestamp;
+            const passed_iter = Math.floor(_now/_period) - Math.floor(this.code.timestamp/_period);
             const remain_time = _now % _period;
             this.passed_time = remain_time;
-            if (remain_time > REFRESH_INTERVAL && passed_time < _period) {
+            if (remain_time > REFRESH_INTERVAL && passed_iter < 1) {
                 return;
             }
             if (remain_time < REFRESH_INTERVAL) {
