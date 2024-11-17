@@ -66,9 +66,6 @@ Dst2-->Dst3
 
 **Release v0.3.0** (2024/11/18)
 
-- [ ] Access Control with Biometric Authentication
-  - ATL3: need auth to access `dec_master_key`
-  - ATL3: Request Password to disable ATL3, then re-import `dec_master_key` with no auth
 - [ ] Change Password Procedure Design
   - Change password dialog
   - Decrypt and then re-encrypt the secrets

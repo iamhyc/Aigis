@@ -182,7 +182,7 @@
     },
     {
       "name": "setting_biometric_unlock_hint",
-      "value": "Use to restrict application access only."
+      "value": "Used to restrict application access only."
     },
     {
       "name": "setting_auth_priority",
@@ -211,6 +211,10 @@
     {
       "name": "setting_setup_password",
       "value": "Setup Master Password"
+    },
+    {
+      "name": "setting_enter_master_password",
+      "value": "Enter Master Password"
     },
     {
       "name": "setting_password_confirmed",
@@ -243,6 +247,10 @@
     {
       "name": "setting_setup_password_not_match",
       "value": "Passwords do not match."
+    },
+    {
+      "name": "setting_input_wrong_password",
+      "value": "Wrong Password"
     },
 
     {

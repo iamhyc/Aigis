@@ -1,8 +1,10 @@
+import { AuthLevelSupport } from "../crypto/authUtils";
 import { ValueType } from "./settings";
 
 export const EVENT_CODE_REQUEST: string = 'code-request';
 export interface CodeRequestSchema {
     keyAlias: string,
+    authToken?: Uint8Array,
 }
 
 
@@ -36,6 +38,8 @@ export interface SettingUpdateRequestSchema {
 export const EVENT_UPDATE_PASSWORD: string = 'update-password';
 export interface PasswordUpdateRequestSchema {
     password: string,
+    authLevel?: AuthLevelSupport,
+    newPassword?: boolean,
 }
 
 export const EVENT_EXPORT_REQUEST: string = 'export-request';
