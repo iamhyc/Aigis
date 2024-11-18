@@ -5,7 +5,9 @@ import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
     NoInternetHyperLink,
     SettingListIconItem} from "../components/settings";
 import { AppLanguage, AuthTypePriority, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
-import { CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
+import {
+    ChangePasswordInputDialog,
+    CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
 import {
     EVENT_EXPORT_REQUEST,
     EVENT_ICON_PACK_APPLY_REQUEST,
@@ -450,6 +452,9 @@ export struct SettingsPage {
     @Builder newPasswordInputDialogBuilder(title: ResourceStr, warning: ResourceStr, confirm?: (password: string) => void, cancel?: () => void) {
         NewPasswordInputDialog({ title, warning, confirm, cancel });
     }
+    @Builder changePasswordInputDialogBuilder(title: ResourceStr, warning: ResourceStr, confirm?: (oldPass: string, newPass: string) => void, cancel?: () => void) {
+        ChangePasswordInputDialog({ title, warning, confirm, cancel });
+    }
     private handleSetupPassword() {
         if (!this.MasterKeyAvailable) {
             this.showCustomDialog(() => {
@@ -466,7 +471,24 @@ export struct SettingsPage {
                 );
             });
         } else {
-            promptAction.showToast({ message: 'Password cannot change for now.' });
+            this.showCustomDialog(() => {
+                this.changePasswordInputDialogBuilder(
+                  $r('app.string.setting_change_password_title'),
+                    $r('app.string.setting_setup_password_warning'),
+                    async (oldPassword, newPassword) => {
+                        if (!(await validatePassword(this.EncMasterKey, oldPassword))) {
+                            promptAction.showToast({message: $r('app.string.setting_input_wrong_password')});
+                        } else {
+                            getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password: newPassword, newPassword: true} as PasswordUpdateRequestSchema);
+                            promptAction.showToast({message:$r('app.string.setting_password_changed')})
+                        }
+                        //
+                        promptAction.closeCustomDialog(this.inputDialogId);
+                        this.inputDialogId = -1;
+                    },
+                    () => { promptAction.closeCustomDialog(this.inputDialogId); }
+                );
+            });
         }
     }
 

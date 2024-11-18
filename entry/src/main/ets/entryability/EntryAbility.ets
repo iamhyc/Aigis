@@ -149,7 +149,13 @@ class PreferencesManager {
         // decrypt secret
         if (secret.encrypted) {
             encodedSecret = await this.decryptSecret(encodedSecret, secret.encrypted!, authToken);
-            if (encodedSecret==='') { return new Uint8Array(); }
+            if (encodedSecret==='') {
+                AppStorage.set('StatusDecKeyRequired', true);
+                return new Uint8Array();
+            }
+        } else if (this.MasterKeyAvailable && this.decMasterKeyInfo?.keyAlias===undefined) {
+            AppStorage.set('StatusDecKeyRequired', true);
+            return new Uint8Array();
         }
         // return decoded raw secret
         const b64Encoded: boolean = (otpType==='steam' && !isValidBase32String(encodedSecret));
@@ -181,19 +187,24 @@ class PreferencesManager {
             }
         }
         // fail to decrypt the secrets
-        AppStorage.set('StatusDecKeyRequired', true);
         return '';
     }
 
-    private async decryptAllSecrets() {
-        if (!this.MasterKeyAvailable) { return; }
+    private async decryptAllSecrets(authToken?: Uint8Array): Promise<boolean> {
+        if (!this.MasterKeyAvailable) { return false; }
         for (const secret of this._secrets) {
             if (secret.encrypted) {
-                const result = await this.decryptSecret(secret.secret, secret.encrypted);
-                secret.secret = result;
-                secret.encrypted = undefined;
+                const result = await this.decryptSecret(secret.secret, secret.encrypted, authToken);
+                if (result) {
+                    secret.secret = result;
+                    secret.encrypted = undefined;
+                } else {
+                    AppStorage.set('StatusDecKeyRequired', true);
+                    return false;
+                }
             }
         }
+        return true;
     }
 
     async encryptAllSecrets() {
@@ -207,20 +218,31 @@ class PreferencesManager {
         }
     }
 
-    async updateMasterKeyInfo(password: string, newPassword?: boolean, authLevel?: AuthLevelSupport) {
+    async updateMasterKeyInfo(password: string, newPassword?: boolean, authLevel?: AuthLevelSupport, authToken?: Uint8Array) {
         // update encryption master key
         const encKeyAlias = PREF_MASTER_KEY;
         if (this._encMasterKeyInfo?.keyAlias===undefined) {
             const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
             this._encMasterKeyInfo = encMasterKeyInfo;
-        } else if (newPassword) {
-            //TODO: change password procedure
+        } else if (newPassword) { // change password procedure
+            if (this._decMasterKeyInfo?.keyAlias===undefined) {
+                AppStorage.set('StatusDecKeyRequired', true);
+                return;
+            }
+            //
+            if (await this.decryptAllSecrets(authToken)) {
+                if (this._decMasterKeyInfo?.keyAlias) {
+                    await HUKSAgent.deleteKeyItem(this._decMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
+                }
+                const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
+                this._encMasterKeyInfo = encMasterKeyInfo;
+            } else {
+                AppStorage.set('StatusDecKeyRequired', true);
+                return;
+            }
         }
         // update decryption master key
         const decKeyAlias = PREF_DEC_MASTER_KEY;
-        if (this._decMasterKeyInfo?.keyAlias) {
-            await HUKSAgent.deleteKeyItem(this._decMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
-        }
         const encMasterKeyInfo = this._encMasterKeyInfo!;
         const decMasterKeyInfo = await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, authLevel, encMasterKeyInfo.secret, encMasterKeyInfo.params);
         this._decMasterKeyInfo = decMasterKeyInfo;
@@ -424,6 +446,9 @@ class PreferencesManager {
         dataPreferences!.putSync(PREF_KEY_ITEMS, this._items);
         dataPreferences!.putSync(PREF_KEY_SECRETS, this._secrets);
         dataPreferences!.putSync(PREF_ICON_PACKS, this.icons);
+        dataPreferences?.putSync(PREF_MASTER_KEY, this._encMasterKeyInfo);
+        dataPreferences.putSync(PREF_DEC_MASTER_KEY, this._decMasterKeyInfo);
+        //
         dataPreferences!.flush();
     }
 }
@@ -476,7 +501,6 @@ export default class EntryAbility extends UIAbility {
                 AppStorage.setAndProp('IconPacks', this.instPreferences.icons);
                 // setup global user settings
                 this.initUserPreferences(pref);
-                await this.instPreferences.encryptAllSecrets();
                 // register event handler
                 this.registerEventHubHandlers();
                 // init index page
@@ -526,7 +550,7 @@ export default class EntryAbility extends UIAbility {
         }
         // update local auth preference
         if (key==='EnableBiometricAuth' && this.instPreferences) {
-            const authLevel = value===true? 'ATL3' : 'ATL1';
+            const authLevel = value===true? 'ATL3' : undefined;
             this.instPreferences.authLevel = authLevel;
         }
         if (key==='EnableBiometricUnlock' && this.instPreferences) {
@@ -614,10 +638,9 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD, async (data: PasswordUpdateRequestSchema) => {
             if (this.dataPreferences && this.instPreferences) {
                 await this.instPreferences.updateMasterKeyInfo(data.password, data.newPassword, data.authLevel);
-                this.dataPreferences?.putSync(PREF_MASTER_KEY, this.instPreferences.encMasterKeyInfo);
-                this.dataPreferences.putSync(PREF_DEC_MASTER_KEY, this.instPreferences.decMasterKeyInfo);
-                this.dataPreferences?.flush();
+                this.instPreferences.persists(this.dataPreferences);
                 // propagate
+                AppStorage.set('EncMasterKey', this.instPreferences.encMasterKeyInfo);
                 AppStorage.set('MasterKeyAvailable', true);
                 AppStorage.set('StatusDecKeyRequired', false);
             }

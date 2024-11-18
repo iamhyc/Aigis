@@ -9,8 +9,9 @@ import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
-import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth } from '../crypto/authUtils';
-import { AtlAuthResult, CodeResponseSchema, OTPItemInfo } from '../common/schema';
+import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth,
+    validatePassword } from '../crypto/authUtils';
+import { AtlAuthResult, CodeResponseSchema, MasterKeyInfo, OTPItemInfo } from '../common/schema';
 import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
     EVENT_UPDATE_PASSWORD,
     PasswordUpdateRequestSchema,
@@ -54,6 +55,7 @@ class EditState {
 @Entry(storage)
 @Component
 struct Index {
+    @StorageProp('EncMasterKey') EncMasterKey: MasterKeyInfo = {} as MasterKeyInfo;
     @Watch('onDecKeyRequired') @StorageLink('StatusDecKeyRequired') StatusDecKeyRequired: boolean = false;
     @Watch('onAuthLevelChanged') @StorageProp('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
     @Watch('onAuthLevelChanged') @StorageProp('settingsEnableBiometricAuth') EnableBiometricAuth: boolean = false;
@@ -239,8 +241,12 @@ struct Index {
         this.showCustomDialog(() => {
             this.passwordInputDialogBuilder(
                 $r('app.string.setting_enter_master_password'), $r('app.string.password_usage_generate_dec_key'),
-                (password) => {
-                    getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password} as PasswordUpdateRequestSchema);
+                async (password) => {
+                    if (!(await validatePassword(this.EncMasterKey, password))) {
+                        promptAction.showToast({message:$r('app.string.setting_input_wrong_password')});
+                    } else {
+                        getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password} as PasswordUpdateRequestSchema);
+                    }
                     this.StatusDecKeyRequired = false;
                     //
                     this.inputDialogId = -1;
