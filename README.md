@@ -64,13 +64,6 @@ Dst2-->Dst3
 
 ### Roadmap
 
-**Release v0.3.0** (2024/11/18)
-
-- [ ] Change Password Procedure Design
-  - Change password dialog
-  - Decrypt and then re-encrypt the secrets
-  - Re-import the `enc_master_key` and `dec_master_key`
-
 **Release v0.5.0** (2024/11/22)
 
 - [ ] Some UX Improvement

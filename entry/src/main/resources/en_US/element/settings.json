@@ -229,6 +229,10 @@
       "value": "Enter Password"
     },
     {
+      "name": "setting_change_password_title",
+      "value": "Change Password"
+    },
+    {
       "name": "setting_setup_password_warning",
       "value": "WARNING: The master password cannot be recovered in any way. The exported data cannot be decrypted if you forget the password."
     },
@@ -241,6 +245,18 @@
       "value": "Confirm password"
     },
     {
+      "name": "setting_change_password_old_placeholder",
+      "value": "Old Password"
+    },
+    {
+      "name": "setting_change_password_new_placeholder",
+      "value": "New Password"
+    },
+    {
+      "name": "setting_change_password_new_re_placeholder",
+      "value": "Confirm New Password"
+    },
+    {
       "name": "setting_setup_password_security_hint",
       "value": "Password must be 8-32 characters long."
     },
@@ -249,8 +265,16 @@
       "value": "Passwords do not match."
     },
     {
+      "name": "setting_input_same_password",
+      "value": "Cannot be the same as old password."
+    },
+    {
       "name": "setting_input_wrong_password",
       "value": "Wrong Password"
+    },
+    {
+      "name": "setting_password_changed",
+      "value": "Password has been changed"
     },
 
     {

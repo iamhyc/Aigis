@@ -205,6 +205,90 @@ export struct NewPasswordInputDialog {
 }
 
 @Component
+export struct ChangePasswordInputDialog {
+    @Require @Prop title: ResourceStr
+    @Prop warning: ResourceStr
+    @State oldPassword: string = ''
+    @State newPassword: string = ''
+    @State newPasswordRe: string = ''
+
+    cancel?: () => void
+    confirm?: (oldPassword: string, newPassword: string) => void
+
+    build() {
+        Scroll() {
+            Column({space:16}) {
+                Column({space:6}) {
+                    Text(this.title)
+                        .fontWeight(FontWeight.Medium)
+                        .fontSize(20)
+                    Text(this.warning)
+                        .fontColor($r('sys.color.warning'))
+                        .fontSize(14)
+                }
+                .width('90%')
+                //
+                Column({space:6}) {
+                    TextInput({ placeholder: $r('app.string.setting_change_password_old_placeholder'), text: $$this.oldPassword })
+                        .type(InputType.Password)
+                        .contentType(ContentType.PASSWORD)
+                        .width('90%')
+                }
+                //
+                Column({space:6}) {
+                    TextInput({ placeholder: $r('app.string.setting_change_password_new_placeholder'), text: $$this.newPassword })
+                        .type(InputType.NEW_PASSWORD)
+                        .contentType(ContentType.NEW_PASSWORD)
+                        .width('90%')
+                    if (this.newPassword!=='' && !this.checkPasswordStrength()) {
+                        Text($r('app.string.setting_setup_password_security_hint'))
+                            .fontColor($r('sys.color.warning'))
+                            .fontSize(12)
+                    } else if (this.oldPassword!=='' && this.oldPassword===this.newPassword) {
+                        Text($r('app.string.setting_input_same_password'))
+                            .fontColor($r('sys.color.warning'))
+                            .fontSize(12)
+                    }
+                }
+                //
+                Column({space:6}) {
+                    TextInput({ placeholder: $r('app.string.setting_change_password_new_re_placeholder'), text: $$this.newPasswordRe })
+                        .type(InputType.Password)
+                        .contentType(ContentType.PASSWORD)
+                        .width('90%')
+                    if (this.newPassword!=='' && this.newPassword!==this.newPasswordRe) {
+                        Text($r('app.string.setting_setup_password_not_match'))
+                            .fontColor($r('sys.color.warning'))
+                            .fontSize(12)
+                    }
+                }
+                //
+                OkCancelButtonGroup({
+                    okBtnEnabled: this.oldPassword!==this.newPassword && this.newPassword===this.newPasswordRe && this.checkPasswordStrength(),
+                    cancel: () => { this.cancel && this.cancel(); },
+                    confirm: () => {
+                        if (this.checkPasswordStrength() && this.newPassword===this.newPasswordRe) {
+                            this.confirm && this.confirm(this.oldPassword, this.newPassword);
+                        }
+                    }
+                })
+            }
+            .padding({top:16, bottom:16})
+            .borderRadius(10)
+        }
+        .scrollBar(BarState.Off)
+    }
+
+    private checkPasswordStrength(): boolean {
+        // check password length
+        if (this.newPassword.length < 8 || this.newPassword.length > 32 ) {
+            return false;
+        }
+        return true;
+    }
+}
+
+@Component
 struct OkCancelButtonGroup {
     @Prop okBtnEnabled: boolean = true
 

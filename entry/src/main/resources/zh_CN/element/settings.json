@@ -229,6 +229,10 @@
       "value": "输入密码"
     },
     {
+      "name": "setting_change_password_title",
+      "value": "更改密码"
+    },
+    {
       "name": "setting_setup_password_warning",
       "value": "警告：主密码无法以任何方式恢复。如果您忘记密码，则导出的数据将无法解密。"
     },
@@ -241,6 +245,18 @@
       "value": "确认密码"
     },
     {
+      "name": "setting_change_password_old_placeholder",
+      "value": "输入原密码"
+    },
+    {
+      "name": "setting_change_password_new_placeholder",
+      "value": "输入新密码"
+    },
+    {
+      "name": "setting_change_password_new_re_placeholder",
+      "value": "确认新密码"
+    },
+    {
       "name": "setting_setup_password_security_hint",
       "value": "密码至少需要8个字符"
     },
@@ -249,8 +265,16 @@
       "value": "密码不匹配"
     },
     {
+      "name": "setting_input_same_password",
+      "value": "不能与旧密码相同"
+    },
+    {
       "name": "setting_input_wrong_password",
       "value": "密码错误"
+    },
+    {
+      "name": "setting_password_changed",
+      "value": "密码已更改"
     },
 
     {
