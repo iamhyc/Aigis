@@ -16,12 +16,13 @@ export struct TextInputDialog {
                 .fontSize(20)
             //
             TextArea({ placeholder: this.placeholder, text: $$this.text })
-                .height(72)
+                .height(96)
                 .width('90%')
             //
             OkCancelButtonGroup({
                 cancel: () => { this.cancel && this.cancel(); },
-                confirm: () => { this.confirm && this.confirm(this.text); }
+                confirm: () => { this.confirm && this.confirm(this.text); },
+                okBtnEnabled: this.text!=='',
             })
         }
         .padding({top: 10, bottom: 10})

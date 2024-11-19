@@ -38,12 +38,16 @@
       "value": "Parse from URI"
     },
     {
+      "name": "add_sheet_item_manual_input",
+      "value": "Manual Input"
+    },
+    {
       "name": "input_parse_uri_title",
       "value": "Parse URI"
     },
     {
       "name": "input_parse_uri_placeholder",
-      "value": "Please input a single line \"otpauth://\" link"
+      "value": "Please input \"otpauth://\" links (one per line)"
     },
 
     {

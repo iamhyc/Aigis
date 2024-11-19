@@ -12,7 +12,10 @@ import { SettingsPage } from './SettingsPage';
 import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth,
     validatePassword } from '../crypto/authUtils';
 import { AtlAuthResult, CodeResponseSchema, MasterKeyInfo, OTPItemInfo } from '../common/schema';
-import { CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
+import {
+    BulkyUpdateRequestSchema,
+    CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
+    EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
     PasswordUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
@@ -719,7 +722,7 @@ struct QrScanButton {
 
     @Builder addSheet() {
         Column() {
-            //
+            // scan qr code
             Row({space:16}) {
                 Row() {
                     SymbolGlyph($r('sys.symbol.qrcode'))
@@ -740,9 +743,8 @@ struct QrScanButton {
                 this.uriToEditPage( async () => { return await this.scanQrCode(); } )
             })
             .clickEffect({level: ClickEffectLevel.HEAVY})
-            //
+            // parse from URI
             Divider().strokeWidth('1px')
-            //
             Row({space:16}) {
                 Row() {
                     SymbolGlyph($r('sys.symbol.staroflife_rectangle'))
@@ -761,6 +763,28 @@ struct QrScanButton {
             .alignItems(VerticalAlign.Center)
             .onClick(async () => {
                 this.uriToEditPage( async () => { return await this.getUserUriInput() } )
+            })
+            .clickEffect({level: ClickEffectLevel.HEAVY})
+            // manual input
+            Divider().strokeWidth('1px')
+            Row({space:16}) {
+                Row() {
+                    SymbolGlyph($r('sys.symbol.rename'))
+                        .fontColor([$r('sys.color.font_primary')])
+                        .fontSize(28)
+                }
+                .height('100%')
+                Row() {
+                    Text($r('app.string.add_sheet_item_manual_input'))
+                        .fontSize(18)
+                }
+                .height('100%')
+            }
+            .height(48)
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .onClick(async () => {
+                this.uriToEditPage( async () => { return 'otpauth://totp/?'; } )
             })
             .clickEffect({level: ClickEffectLevel.HEAVY})
         }
@@ -804,11 +828,13 @@ struct QrScanButton {
             promptAction.openCustomDialog({
                 builder: () => {
                     this.textInputDialogBuilder($r('app.string.input_parse_uri_title'), $r('app.string.input_parse_uri_placeholder'), (text) => {
-                        text = text.trim();
-                        if (text==='') {
-                            resolve('otpauth://totp/?')
+                        const uris = text.trim().split('\n').filter(x => x.startsWith('otpauth://'));
+                        if (uris.length===0) {
+                            return;
+                        } else if (uris.length===1) {
+                            resolve(uris[0]);
                         } else {
-                            resolve(text);
+                            getContext(this).eventHub.emit(EVENT_UPDATE_ITEMS, {uris} as BulkyUpdateRequestSchema);
                         }
                         promptAction.closeCustomDialog(this.inputDialogId);
                     }, () => {

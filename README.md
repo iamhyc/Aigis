@@ -67,8 +67,6 @@ Dst2-->Dst3
 **Release v0.5.0** (2024/11/22)
 
 - [ ] Some UX Improvement
-  - URI Parse Support Multi-line (`otpauth` only)
-  - URI & QR Code Display on Edit Page (Auth Required)
   - "Move-to-Top" --> "Favorite Items"
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)

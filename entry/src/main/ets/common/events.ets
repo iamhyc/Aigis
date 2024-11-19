@@ -14,9 +14,9 @@ export interface UpdateRequestSchema {
     keyAlias?: string,
     icon?: string,
 }
-export interface UpdateResponseSchema {
-    success: boolean,
-    message?: string,
+export const EVENT_UPDATE_ITEMS: string = 'update-items';
+export interface BulkyUpdateRequestSchema {
+    uris: string[],
 }
 
 export const EVENT_MOVE_TO_TOP: string = 'move-to-top';

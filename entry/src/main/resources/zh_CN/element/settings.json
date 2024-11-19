@@ -242,7 +242,7 @@
     },
     {
       "name": "setting_setup_password_warning",
-      "value": "警告：主密码无法以任何方式恢复。如果您忘记密码，则导出的数据将无法解密。"
+      "value": "警告：主密钥无法以任何方式恢复。如果您忘记密码，则导出的数据将无法解密。"
     },
     {
       "name": "setting_setup_password_placeholder",
