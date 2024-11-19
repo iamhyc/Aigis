@@ -67,7 +67,6 @@ Dst2-->Dst3
 **Release v0.5.0** (2024/11/22)
 
 - [ ] Some UX Improvement
-  - Better Setting Item Descriptions
   - URI Parse Support Multi-line (`otpauth` only)
   - Support Notes Add & Display on Edit Page
   - URI & QR Code Display on Edit Page (Auth Required)

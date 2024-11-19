@@ -11,11 +11,19 @@
     },
     {
       "name": "setting_enable_manual_input_title",
-      "value": "启用手动输入"
+      "value": "启用更多添加方式"
     },
     {
-      "name": "setting_enable_double_click_copy",
-      "value": "启用双击复制令牌"
+      "name": "setting_enable_manual_input_desc",
+      "value": "启用后，主页面右下角的图标会变为 “+”，增加扫码以外的其他令牌添加方法。"
+    },
+    {
+      "name": "setting_enable_double_click_copy_title",
+      "value": "启用点击复制令牌"
+    },
+    {
+      "name": "setting_enable_double_click_copy_desc",
+      "value": "启用后，点击已显示的令牌会将其复制到剪贴板。"
     },
     {
       "name": "setting_enable_add_token_no_confirmation",
@@ -23,7 +31,7 @@
     },
     {
       "name": "setting_enable_add_token_no_confirmation_desc",
-      "value": "仅在存在重复时需要确认。"
+      "value": "在主页面添加令牌时，不再弹出编辑页面确认保存。"
     },
 
     {
@@ -109,7 +117,7 @@
     },
     {
       "name": "setting_icon_pack_desc",
-      "value": "管理和导入图标包"
+      "value": "管理和导入 Aegis 格式图标包"
     },
     {
       "name": "setting_icon_pack_preview",

@@ -11,19 +11,27 @@
     },
     {
       "name": "setting_enable_manual_input_title",
-      "value": "Enable Manual Input"
+      "value": "Enable More Add Methods"
     },
     {
-      "name": "setting_enable_double_click_copy",
-      "value": "Double-click to copy the token"
+      "name": "setting_enable_manual_input_desc",
+      "value": "When enabled, the icon in the lower right corner of the main page changes to \"+\", providing more token adding methods other than QR scan."
+    },
+    {
+      "name": "setting_enable_double_click_copy_title",
+      "value": "Enable Click-to-copy the Token"
+    },
+    {
+      "name": "setting_enable_double_click_copy_desc",
+      "value": "When enabled, clicking on a displayed token will copy it to the clipboard."
     },
     {
       "name": "setting_enable_add_token_no_confirmation",
-      "value": "Add tokens without confirmation"
+      "value": "Add Tokens without Confirmation"
     },
     {
       "name": "setting_enable_add_token_no_confirmation_desc",
-      "value": "Confirmation required only when duplicates present."
+      "value": "When adding a token on the main page, the edit page no longer pops up to confirm saving."
     },
 
     {
@@ -109,7 +117,7 @@
     },
     {
       "name": "setting_icon_pack_desc",
-      "value": "Manage and import icon packs"
+      "value": "Manage and import Aegis format icon packs"
     },
     {
       "name": "setting_icon_pack_preview",
