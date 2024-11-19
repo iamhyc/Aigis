@@ -68,7 +68,6 @@ Dst2-->Dst3
 
 - [ ] Some UX Improvement
   - URI Parse Support Multi-line (`otpauth` only)
-  - Support Notes Add & Display on Edit Page
   - URI & QR Code Display on Edit Page (Auth Required)
   - "Move-to-Top" --> "Favorite Items"
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"

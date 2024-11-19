@@ -143,7 +143,8 @@ struct ItemEditComponent {
         const counter = Number.parseInt(this.counter).toString();
         const digits = Number.parseInt(this.digits).toString();
         const period = Number.parseInt(this.period).toString();
-        const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}`;
+        const note = encodeURIComponent(this.note.trim());
+        const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}&note=${note}`;
         //
         const allow_overwrite = this.editNewItem; //overwrite when adding new ones
         if (this.exKeys.includes(issuer_name)) {
@@ -185,7 +186,7 @@ struct ItemEditComponent {
                 })
                 LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
                 LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})
-                // LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
+                LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
                 LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
                     type: InputType.Password, inputEnabled: this.secretInputEnabled})
             }

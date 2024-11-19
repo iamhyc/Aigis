@@ -196,6 +196,7 @@ export class HOTP extends OTP {
                 algorithm: args.get('algorithm') as AlgorithmModern,
                 digits: Number(args.get('digits') || 0),
                 counter:Number(args.get('counter') || 0),
+                note: args.get('note') || undefined,
             }
             return new HOTP(hotpSchema);
         } else {
@@ -235,9 +236,9 @@ export class TOTP extends OTP {
             period: Number(args.get('period') ?? 30),
             digits: Number(args.get('digits') ?? 6),
             counter: 0,
+            note: args.get('note') || undefined,
         };
         return new TOTP(totpSchema);
-        // throw Error('Fail to parse TOTP schema from URI.');
     }
 
     get uri(): string {
@@ -274,6 +275,7 @@ export class SteamOTP extends OTP {
             name: args.get('name') || '',
             secret: args.get('secret') || '',
             counter: 0,
+            note: args.get('note') || undefined,
         };
         return new SteamOTP(steamSchema);
     }
