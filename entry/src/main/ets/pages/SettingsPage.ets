@@ -189,10 +189,12 @@ export struct SettingsPage {
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
                             SettingListItemToggle({
                                 title: $r('app.string.setting_enable_manual_input_title'),
+                                description: $r('app.string.setting_enable_manual_input_desc'),
                                 selected: this.EnableManualInput,
                             })
                             SettingListItemToggle({
-                                title: $r('app.string.setting_enable_double_click_copy'),
+                                title: $r('app.string.setting_enable_double_click_copy_title'),
+                                description: $r('app.string.setting_enable_double_click_copy_desc'),
                                 selected: this.EnableDoubleClickCopy,
                             })
                             SettingListItemToggle({
