@@ -92,11 +92,11 @@
     },
     {
       "name": "setting_show_account_name_option_always",
-      "value": "Always show        "
+      "value": "Always Show        "
     },
     {
       "name": "setting_show_account_name_option_smart",
-      "value": "Necessary      "
+      "value": "Necessary Only          "
     },
     {
       "name": "setting_show_account_name_option_off",

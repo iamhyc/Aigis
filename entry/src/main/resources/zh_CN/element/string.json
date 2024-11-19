@@ -38,12 +38,16 @@
       "value": "解析 URI"
     },
     {
+      "name": "add_sheet_item_manual_input",
+      "value": "手动输入"
+    },
+    {
       "name": "input_parse_uri_title",
       "value": "解析 URI"
     },
     {
       "name": "input_parse_uri_placeholder",
-      "value": "请输入单行 \"otpauth://\" 链接"
+      "value": "请输入 \"otpauth://\" 链接（每行一个）"
     },
 
     {

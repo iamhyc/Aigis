@@ -22,7 +22,9 @@ import { PREF_KEY_ITEMS } from '../common/conts';
 import { AppLanguage, AuthTypePriority, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { AuthLevelSupport, generateMasterKeyInHUKS, genUserAuthType } from '../crypto/authUtils';
 import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_AES_DECRYPT } from '../crypto/huksUtils';
-import { CodeRequestSchema, EVENT_CODE_REQUEST,
+import {
+    BulkyUpdateRequestSchema,
+    CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
     EVENT_ICON_PACK_APPLY_REQUEST,
     EVENT_ICON_PACK_IMPORT_REQUEST,
@@ -31,6 +33,7 @@ import { CodeRequestSchema, EVENT_CODE_REQUEST,
     EVENT_MOVE_TO_TOP,
     EVENT_REMOVE_ITEM,
     EVENT_UPDATE_ITEM,
+    EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
     EVENT_UPDATE_SETTING,
     FileExportRequestSchema,
@@ -598,6 +601,18 @@ export default class EntryAbility extends UIAbility {
             if (this.instPreferences) {
                 // update local preferences
                 await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.icon);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+            }
+        });
+        this.context.eventHub.on(EVENT_UPDATE_ITEMS, async (data: BulkyUpdateRequestSchema) => {
+            if (this.instPreferences) {
+                // update local preferences
+                for (const uri of data.uris) {
+                    await this.instPreferences.updatePreferenceItem(uri);
+                }
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items
