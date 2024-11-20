@@ -12,6 +12,7 @@ export interface OTPItemInfo {
     icon: string,
     code: CodeResponseSchema,
     schema: OTPSchema,
+    favorite?: boolean,
 }
 
 export interface SecretSchema {

@@ -1,4 +1,4 @@
-import { LengthUnit, Offset, promptAction } from '@kit.ArkUI';
+import { LengthUnit, Offset, promptAction, RectShape } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
@@ -292,6 +292,7 @@ struct OTPList {
     @State filterItemVisibility: Visibility = Visibility.None;
     @State hasHiddenItems: boolean = false;
 
+    private _sortedItems: OTPItemInfo[] = [];
     private searchInputHeight = 40;//vp
     private searchInputTopMargin = 6;//vp
     private searchInputBottomMargin = 10;//vp
@@ -317,6 +318,22 @@ struct OTPList {
         }
     }
 
+    private sortedItems(): OTPItemInfo[] {
+        const favorites: OTPItemInfo[] = [];
+        const normals: OTPItemInfo[] = [];
+        // filter favorite items
+        for (const item of this.items) {
+            if (item.favorite) {
+                favorites.push(item);
+            } else {
+                normals.push(item);
+            }
+        }
+        // return
+        this._sortedItems = favorites.concat(normals);
+        return this._sortedItems;
+    }
+
     build() {
         List({scroller: this.listScroller}) {
             // filter entries
@@ -331,19 +348,20 @@ struct OTPList {
             .margin({top:this.searchInputTopMargin, bottom:this.searchInputBottomMargin})
             .visibility(this.filterItemVisibility)
             //
-            ForEach(this.items,
+            ForEach(this.sortedItems(),
                 (item: OTPItemInfo) => {
                     OTPItem({
                         icon: item.icon,
                         code: item.code,
                         schema: item.schema,
+                        favorite: item.favorite,
                         keyAlias: item.keyAlias,
                         filterText: this.filterText,
                         listScroller: this.listScroller,
                     })
                 },
                 (item: OTPItemInfo) => {
-                    return [item.keyAlias, item.code.code, item.icon, JSON.stringify(item.schema)].join('_');
+                    return [item.keyAlias, item.code.code, item.icon, item.favorite, JSON.stringify(item.schema)].join('_');
                 }
             )
         }
@@ -398,6 +416,7 @@ struct OTPItem {
     @Prop code: CodeResponseSchema;
     @Prop keyAlias: string;
     @Prop schema: OTPSchema;
+    @Prop favorite: boolean | undefined;
     @State validatedIcon: string = IconManager.validateUri(this.icon);
     @State passed_time: number = 0;
     @State isVisible: Visibility = Visibility.Visible;
@@ -413,6 +432,14 @@ struct OTPItem {
             Stack({ alignContent: Alignment.Bottom }) {
                 // Main Content
                 Row({ space: '16vp' }) {
+                    // Favorite Bar
+                    if (this.favorite) {
+                        Rect({height:'80%', width:10})
+                            .radius(6)
+                            .offset({left:-6})
+                            .fill($r('app.color.color_ribbon'))
+                            .margin({right:-26})
+                    }
                     // display issuer icon
                     if (this.ShowIssuerIcons) {
                         if (this.validatedIcon) {
@@ -446,6 +473,9 @@ struct OTPItem {
                                     .fontColor($r('sys.color.font_secondary'))
                             }
                         }
+                        .maxLines(1)
+                        .textOverflow({overflow: TextOverflow.Ellipsis})
+                        .wordBreak(WordBreak.BREAK_ALL)
 
                         if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
                             Text(this.codeDigits())
@@ -457,6 +487,7 @@ struct OTPItem {
                                 .letterSpacing(5)
                         }
                     }
+                    .width(`calc(100% - ${this.ShowIssuerIcons?'80vp':'16vp'})`)
                     .alignItems(HorizontalAlign.Start)
                     .margin(this.ShowIssuerIcons? {} : {left: $r('app.float.visual_space')})
                 }
@@ -464,6 +495,7 @@ struct OTPItem {
                 .height('100%')
                 .width('100%')
                 .zIndex(1)
+                .clip(true)
                 // show progress bar for time-based OTP
                 if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE && (this.schema as TimedOTPSchema).period) {
                     Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
@@ -530,12 +562,12 @@ struct OTPItem {
                 if (!this.showEditItemOnly) {
                     // Move-To-Top button
                     Button({ type: ButtonType.Circle }) {
-                        SymbolGlyph($r('sys.symbol.arrowshape_up_to_line_fill'))
+                        SymbolGlyph(this.favorite? $r('sys.symbol.heart_slash') : $r('sys.symbol.heart'))
                             .fontColor([Color.White])
                             .fontSize(24)
                     }
                     .height(40).width(40)
-                    .backgroundColor($r('sys.color.confirm'))
+                    .backgroundColor($r('app.color.color_ribbon'))
                     .onClick((() => { this.requestMoveToTop(); }))
                 }
                 //

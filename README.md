@@ -66,13 +66,13 @@ Dst2-->Dst3
 
 **Release v0.5.0** (2024/11/22)
 
-- [ ] Some UX Improvement
-  - "Move-to-Top" --> "Favorite Items"
 - [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)
 - [ ] Password Challenge Page Design
   - Periodic Notification in the Local Non-Working Hours
   - Also allow to skip the challenge
+- [ ] Preview Next Token for TOTP-based Schema
+  - Toggle in Settings Page
 
 **Release v1.0.0** (2024/11/29)
 
