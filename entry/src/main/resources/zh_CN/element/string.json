@@ -26,6 +26,27 @@
     },
 
     {
+      "name": "item_sort_custom",
+      "value": "自定义排序"
+    },
+    {
+      "name": "item_sort_issuer_name_ascending",
+      "value": "服务商名称升序"
+    },
+    {
+      "name": "item_sort_issuer_name_descending",
+      "value": "服务商名称降序"
+    },
+    {
+      "name": "item_sort_account_name_ascending",
+      "value": "账户名称升序"
+    },
+    {
+      "name": "item_sort_account_name_descending",
+      "value": "账户名称降序"
+    },
+
+    {
       "name": "add_sheet_title",
       "value": "添加新条目"
     },

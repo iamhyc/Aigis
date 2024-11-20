@@ -26,6 +26,27 @@
     },
 
     {
+      "name": "item_sort_custom",
+      "value": "Custom Sort"
+    },
+    {
+      "name": "item_sort_issuer_name_ascending",
+      "value": "Issuer Name Ascending"
+    },
+    {
+      "name": "item_sort_issuer_name_descending",
+      "value": "Issuer Name Descending"
+    },
+    {
+      "name": "item_sort_account_name_ascending",
+      "value": "Account Name Ascending"
+    },
+    {
+      "name": "item_sort_account_name_descending",
+      "value": "Account Name Descending"
+    },
+
+    {
       "name": "add_sheet_title",
       "value": "Add New Entry"
     },

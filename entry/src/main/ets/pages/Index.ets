@@ -1,4 +1,4 @@
-import { LengthUnit, Offset, promptAction, RectShape } from '@kit.ArkUI';
+import { LengthUnit, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
@@ -17,12 +17,14 @@ import {
     CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
     EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
+    EVENT_UPDATE_SETTING,
     PasswordUpdateRequestSchema,
+    SettingUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
 import { AppLockPage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { AuthTypePriority, DigitGroup, ShowAccountName } from '../common/settings';
+import { AuthTypePriority, DigitGroup, ItemSortOrder, ShowAccountName } from '../common/settings';
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
 
@@ -285,6 +287,8 @@ struct Index {
 
 @Component
 struct OTPList {
+    @StorageProp('settingsItemSortOrder')
+    @Watch('onItChanged') ItemSortOrder: ItemSortOrder = 'custom';
     @Consume btnVisibility: Visibility;
     @Consume selected: string;
     @Prop items: OTPItemInfo[];
@@ -295,7 +299,6 @@ struct OTPList {
     private _sortedItems: OTPItemInfo[] = [];
     private searchInputHeight = 40;//vp
     private searchInputTopMargin = 6;//vp
-    private searchInputBottomMargin = 10;//vp
     private visibleHeight = 40;//vp
 
     private listScroller: ListScroller = new ListScroller();
@@ -318,10 +321,17 @@ struct OTPList {
         }
     }
 
+    private onItChanged(key: string) {
+        if (key==='ItemSortOrder') {
+            const value = this.ItemSortOrder;
+            getContext(this).eventHub.emit(EVENT_UPDATE_SETTING, {key, value} as SettingUpdateRequestSchema);
+        }
+    }
+
     private sortedItems(): OTPItemInfo[] {
         const favorites: OTPItemInfo[] = [];
         const normals: OTPItemInfo[] = [];
-        // filter favorite items
+        // filter favorite/normal items
         for (const item of this.items) {
             if (item.favorite) {
                 favorites.push(item);
@@ -329,25 +339,90 @@ struct OTPList {
                 normals.push(item);
             }
         }
+        // sort normal items
+        switch (this.ItemSortOrder) {
+            case 'issuer_asc':
+                normals.sort((x, y) => x.schema.issuer > y.schema.issuer ? 1 : -1);
+                break;
+            case 'issuer_dsc':
+                normals.sort((x, y) => x.schema.issuer < y.schema.issuer ? 1 : -1);
+                break;
+            case 'account_asc':
+                normals.sort((x, y) => x.schema.name > y.schema.name ? 1 : -1);
+                break;
+            case 'account_dsc':
+                normals.sort((x, y) => x.schema.name < y.schema.name ? 1 : -1);
+                break;
+            case 'custom':
+            default:
+                break;
+        }
         // return
         this._sortedItems = favorites.concat(normals);
         return this._sortedItems;
     }
 
+    @LocalBuilder sortMenu() {
+        Menu() {
+            ForEach(['custom', 'issuer_asc', 'issuer_dsc', 'account_asc', 'account_dsc'] as ItemSortOrder[],
+                (option: ItemSortOrder) => {
+                    MenuItem({
+                        content: (() => {
+                            switch (option) {
+                                case 'issuer_asc': return $r('app.string.item_sort_issuer_name_ascending');
+                                case 'issuer_dsc': return $r('app.string.item_sort_issuer_name_descending');
+                                case 'account_asc': return $r('app.string.item_sort_account_name_ascending');
+                                case 'account_dsc': return $r('app.string.item_sort_account_name_descending');
+                                case 'custom': return $r('app.string.item_sort_custom');
+                                default: return option;
+                            }
+                        })(),
+                        symbolEndIcon: option===this.ItemSortOrder?
+                            new SymbolGlyphModifier($r('sys.symbol.checkmark')).fontSize(20) :
+                            new SymbolGlyphModifier($r('sys.symbol.checkmark')).fontSize(20).visibility(Visibility.Hidden),
+                    })
+                    .backgroundColor(option===this.ItemSortOrder? $r('sys.color.comp_background_emphasize') : undefined)
+                    .onChange((selected) => {
+                        if (selected) {
+                            this.ItemSortOrder = option;
+                        }
+                    })
+                },
+                (option: ItemSortOrder) => {
+                    return option + '_' + this.ItemSortOrder;
+                }
+            )
+        }
+        .menuItemDivider({strokeWidth:{value:1,unit:0}, color:$r('sys.color.comp_divider')})
+}
+
     build() {
         List({scroller: this.listScroller}) {
             // filter entries
             ListItem() {
-                Column() {
+                Row({space:6}) {
                     Search({value: $$this.filterText, placeholder: $r('app.string.search_hint')})
                         .id('search_input')
+                        .height(this.searchInputHeight)
+                        .width('calc(100% - 32vp - 40vp - 6vp)')
+                    //
+                    Button({type: ButtonType.Circle}) {
+                        SymbolGlyph($r('sys.symbol.sort'))
+                            .fontColor([$r('sys.color.font_secondary')])
+                            .fontSize(22)
+                    }
+                    .height(this.searchInputHeight).width(this.searchInputHeight)
+                    .backgroundColor($r('sys.color.comp_background_secondary'))
+                    .bindMenu(this.sortMenu)
                 }
+                .width('100%')
+                .margin({left:16,right:16})
+                .alignItems(VerticalAlign.Center)
             }
             .height(this.searchInputHeight)
-            .width('90%')
-            .margin({top:this.searchInputTopMargin, bottom:this.searchInputBottomMargin})
+            .margin({top:this.searchInputTopMargin})
             .visibility(this.filterItemVisibility)
-            //
+            // main content
             ForEach(this.sortedItems(),
                 (item: OTPItemInfo) => {
                     OTPItem({

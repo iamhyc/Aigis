@@ -7,6 +7,7 @@ export type DarkMode = 'default' | 'light' | 'dark';
 export type DigitGroup = '2' | '3' | '4' | 'even' | 'none';
 export type ShowAccountName = 'always' | 'smart' | 'off';
 export type AuthTypePriority = 'face' | 'touch' | 'pin';
+export type ItemSortOrder = 'custom' | 'issuer_asc' | 'issuer_dsc' | 'account_asc' | 'account_dsc' | 'count';
 
 export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType>([
     // general
@@ -18,6 +19,8 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     ['DarkMode',        'default' as DarkMode],
     ['DigitGroup',      '3' as DigitGroup],
     ['ShowAccountName', 'always' as ShowAccountName],
+    ['ItemSortOrder',   'custom' as ItemSortOrder],
+    // icons
     ['ShowIssuerIcons', true],
     // security
     ['EnableBiometricUnlock', false],
