@@ -194,8 +194,6 @@ struct ItemEditComponent {
                 LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
                 LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})
                 LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
-                LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
-                    type: InputType.Password, inputEnabled: this.secretInputEnabled})
             }
             // advance fields
             if (!this.editNewItem) {
@@ -216,6 +214,10 @@ struct ItemEditComponent {
                 })
             }
             if (!this.advanceCollapsed) {
+                Column({space: COLUMN_ITEM_GAP}) {
+                    LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
+                        type: InputType.Password, inputEnabled: this.secretInputEnabled})
+                }
                 Grid() {
                     GridItem() {
                         LabeledSelect({label: $r('app.string.edit_label_type'), entries: typeEntries, selected: this.typeIndex})

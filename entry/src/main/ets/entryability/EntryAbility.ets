@@ -339,6 +339,13 @@ class PreferencesManager {
         arrayRearrange(this._secrets, keySecret1, keySecret2);
     }
 
+    toggleFavoritePreferenceItem(keyAlias: string) {
+        const keyItem = this._items.find(x => x.keyAlias===keyAlias);
+        if (keyItem) {
+            keyItem.favorite = keyItem?.favorite? false : true;
+        }
+    }
+
     //--------------- Icon Pack Manager ---------------//
 
     async importIconPack(uri: string) {
@@ -622,7 +629,8 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_MOVE_TO_TOP, (data: MoveToTopRequestSchema) => {
             if (this.instPreferences) {
                 // swap in local preferences
-                this.instPreferences.insertPreferenceItem(data.keyAlias);
+                this.instPreferences.toggleFavoritePreferenceItem(data.keyAlias);
+                // this.instPreferences.insertPreferenceItem(data.keyAlias);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items
