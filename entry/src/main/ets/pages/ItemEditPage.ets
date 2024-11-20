@@ -58,6 +58,7 @@ struct ItemEditComponent {
     @State validatedIcon: string = IconManager.validateUri(this.icon);
     @State secretInputEnabled: boolean = this.editNewItem;
     @State saveBtnEnabled: boolean = this.editNewItem;
+    @State advanceCollapsed: boolean = !this.editNewItem;
 
     iconManager: IconManager = new IconManager(this.IconPacks);
     IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
@@ -136,16 +137,9 @@ struct ItemEditComponent {
             return;
         }
         //
+        const uri = this.fieldsToUri();
         const icon = this.icon;
-        const type = typeEntries[this.typeIndex].toLowerCase();
         const issuer_name = encodeURIComponent(`${this.issuer}:${this.name}`);
-        const algorithm = hashEntries[this.hashIndex];
-        const counter = Number.parseInt(this.counter).toString();
-        const digits = Number.parseInt(this.digits).toString();
-        const period = Number.parseInt(this.period).toString();
-        const note = encodeURIComponent(this.note.trim());
-        const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}&note=${note}`;
-        //
         const allow_overwrite = this.editNewItem; //overwrite when adding new ones
         if (this.exKeys.includes(issuer_name)) {
             const keyAlias = this.keyAlias;
@@ -157,6 +151,19 @@ struct ItemEditComponent {
             getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
         }
         // this.saveBtnEnabled = false;
+    }
+
+    private fieldsToUri(): string {
+        const secret = this.secret===FAKE_SECRET? '' : encodeURIComponent(this.secret);
+        const type = typeEntries[this.typeIndex].toLowerCase();
+        const issuer_name = encodeURIComponent(`${this.issuer}:${this.name}`);
+        const algorithm = hashEntries[this.hashIndex];
+        const counter = Number.parseInt(this.counter).toString();
+        const digits = Number.parseInt(this.digits).toString();
+        const period = Number.parseInt(this.period).toString();
+        const note = encodeURIComponent(this.note.trim());
+        const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}&note=${note}`;
+        return uri;
     }
 
     build() {
@@ -176,7 +183,7 @@ struct ItemEditComponent {
                     .margin({bottom:COLUMN_ITEM_GAP})
             }
             Divider().strokeWidth('1px').width('90%')
-            //
+            // information fields
             Column({space: COLUMN_ITEM_GAP}) {
                 LabeledSelect({
                     label: $r('app.string.edit_label_icon'),
@@ -190,35 +197,54 @@ struct ItemEditComponent {
                 LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
                     type: InputType.Password, inputEnabled: this.secretInputEnabled})
             }
-            //
-            Grid() {
-                GridItem() {
-                    LabeledSelect({label: $r('app.string.edit_label_type'), entries: typeEntries, selected: this.typeIndex})
+            // advance fields
+            if (!this.editNewItem) {
+                Text() {
+                    SymbolSpan(this.advanceCollapsed? $r('sys.symbol.chevron_right') : $r('sys.symbol.chevron_down'))
+                        .fontColor([$r('sys.color.font_primary')])
+                        .fontSize(16)
+                    Span(this.advanceCollapsed? '  ' : ' ')
+                    Span($r('app.string.edit_advanced_title'))
                 }
-                GridItem() {
-                    LabeledSelect({label: $r('app.string.edit_label_hash_function'), entries: hashEntries, selected: this.hashIndex})
-                }
-                if (['TOTP', 'STEAM'].includes(typeEntries[this.typeIndex])) {
-                    GridItem() {
-                        LabeledTextInput({label: $r('app.string.edit_label_period'), text: this.period, type:InputType.Number})
-                    }
-                }
-                if (typeEntries[this.typeIndex]==='HOTP') {
-                    GridItem() {
-                        LabeledTextInput({label: $r('app.string.edit_label_counter'), text: this.counter, type:InputType.Number})
-                    }
-                }
-                GridItem() {
-                    LabeledTextInput({label: $r('app.string.edit_label_digits'), text: this.digits, type:InputType.Number})
-                }
-                // GridItem() {
-                //     LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
-                // }
+                .width('100%')
+                .height(24)
+                .fontSize(16)
+                .onClick(() => {
+                    animateTo({duration: 200}, () => {
+                        this.advanceCollapsed = !this.advanceCollapsed;
+                    });
+                })
             }
-            .layoutDirection(GridDirection.Row)
-            .columnsTemplate('1fr 1fr')
-            .rowsGap(10).columnsGap(COLUMN_ITEM_GAP)
-            .maxCount(2)
+            if (!this.advanceCollapsed) {
+                Grid() {
+                    GridItem() {
+                        LabeledSelect({label: $r('app.string.edit_label_type'), entries: typeEntries, selected: this.typeIndex})
+                    }
+                    GridItem() {
+                        LabeledSelect({label: $r('app.string.edit_label_hash_function'), entries: hashEntries, selected: this.hashIndex})
+                    }
+                    if (['TOTP', 'STEAM'].includes(typeEntries[this.typeIndex])) {
+                        GridItem() {
+                            LabeledTextInput({label: $r('app.string.edit_label_period'), text: this.period, type:InputType.Number})
+                        }
+                    }
+                    if (typeEntries[this.typeIndex]==='HOTP') {
+                        GridItem() {
+                            LabeledTextInput({label: $r('app.string.edit_label_counter'), text: this.counter, type:InputType.Number})
+                        }
+                    }
+                    GridItem() {
+                        LabeledTextInput({label: $r('app.string.edit_label_digits'), text: this.digits, type:InputType.Number})
+                    }
+                    // GridItem() {
+                    //     LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
+                    // }
+                }
+                .layoutDirection(GridDirection.Row)
+                .columnsTemplate('1fr 1fr')
+                .rowsGap(10).columnsGap(COLUMN_ITEM_GAP)
+                .maxCount(2)
+            }
             //
             Button($r('app.string.button_text_save'))
                 .height('36vp')

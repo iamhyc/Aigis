@@ -129,6 +129,10 @@
       "value": "默认图标"
     },
     {
+      "name": "edit_advanced_title",
+      "value": "高级设置"
+    },
+    {
       "name": "edit_label_hash_function",
       "value": "哈希函数"
     },
