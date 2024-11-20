@@ -129,6 +129,10 @@
       "value": "Default Icon"
     },
     {
+      "name": "edit_advanced_title",
+      "value": "Advanced"
+    },
+    {
       "name": "edit_label_hash_function",
       "value": "Hash Function"
     },
