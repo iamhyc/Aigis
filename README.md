@@ -18,7 +18,7 @@ flowchart LR
 
 Dst1[["OTP Tokens"]]
 Dst2[("Items & Settings")]
-Dst3[("Aigis Exports")]
+Dst4[["APP Pages"]]
 
 Src0(["Biometric/PIN (ATL1)"])
 
@@ -45,38 +45,34 @@ Via2
 Dst2
 end
 
-subgraph "Output"
+subgraph "Frontend"
 Dst1
-Dst3
+Dst4
 end
 
 Src1--Authenticate-->Src2a
-Src2--PBKDF2/AES256-->Src2a--decrypt-->Via2-->Dst1
+Src2--PBKDF2/AES256-->Src2a--decrypt-->Via2--compute-->Dst1
 Src2--PBKDF2/AES256-->Src2b--encrypt-->Via2
 
-Src0--"Authenticate"-->Dst2
-
-Via2-->Dst3
-Dst2-->Dst3
+Src0--"Authenticate"-->Dst2--display-->Dst4
 ```
 
 **Fallback Security Design**: If ATL3 is invalidated for any reason, the password will be prompted to decrypt the "Encrypted Secrets", and then re-import `dec_master_key` with no auth. If ATL1 is invalidated for any reason, the APP will be inaccessible until reinstalled.
 
 ### Roadmap
 
-**Release v0.5.0** (2024/11/22)
+**Release v0.5.0** (2024/11/25)
 
-- [ ] Item Sorting "Custom / Alphabetic / Usage Count"
 - [ ] Support Drag Item to Sort (#16)
 - [ ] Password Challenge Page Design
   - Periodic Notification in the Local Non-Working Hours
   - Also allow to skip the challenge
 - [ ] Preview Next Token for TOTP-based Schema
   - Toggle in Settings Page
-
-**Release v1.0.0** (2024/11/29)
-
 - [ ] Support started with `otpauth://` link Want Param
+
+**Release v1.0.0** (2024/12/02)
+
 - [ ] Support `otpauth-migration://` link
   - via Handwritten ProtoBuf Decode
 - [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
