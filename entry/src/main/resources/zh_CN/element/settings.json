@@ -15,7 +15,7 @@
     },
     {
       "name": "setting_enable_manual_input_desc",
-      "value": "启用后，主页面右下角的图标会变为 “+”，增加扫码以外的其他令牌添加方式。"
+      "value": "启用后，主页面右下角的图标会变为 “+”，提供更多令牌添加方式。"
     },
     {
       "name": "setting_enable_double_click_copy_title",

@@ -15,7 +15,7 @@
     },
     {
       "name": "setting_enable_manual_input_desc",
-      "value": "When enabled, the icon in the lower right corner of the main page changes to \"+\", providing more token adding methods other than QR scan."
+      "value": "When enabled, the icon in the lower right corner of the main page will change to a \"+\", providing more token adding methods."
     },
     {
       "name": "setting_enable_double_click_copy_title",
@@ -96,7 +96,7 @@
     },
     {
       "name": "setting_show_account_name_option_smart",
-      "value": "Necessary Only          "
+      "value": "Only Necessary          "
     },
     {
       "name": "setting_show_account_name_option_off",
