@@ -8,6 +8,7 @@ export type DigitGroup = '2' | '3' | '4' | 'even' | 'none';
 export type ShowAccountName = 'always' | 'smart' | 'off';
 export type AuthTypePriority = 'face' | 'touch' | 'pin';
 export type ItemSortOrder = 'custom' | 'issuer_asc' | 'issuer_dsc' | 'account_asc' | 'account_dsc' | 'count';
+export type PasswordReminderPeriod = 'never' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
 
 export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType>([
     // general
@@ -23,6 +24,7 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     // icons
     ['ShowIssuerIcons', true],
     // security
+    ['PasswordReminderPeriod', 'biweekly' as PasswordReminderPeriod],
     ['EnableBiometricUnlock', false],
     ['AuthTypePriority',      'face' as AuthTypePriority],
     ['EnableBiometricAuth',   false],

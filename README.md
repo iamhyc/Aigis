@@ -63,12 +63,8 @@ Src0--"Authenticate"-->Dst2--display-->Dst4
 
 **Release v0.5.0** (2024/11/25)
 
-- [ ] Password Challenge Page Design
-  - Periodic Notification in the Local Non-Working Hours
-  - Also allow to skip the challenge
 - [ ] Preview Next Token for TOTP-based Schema
   - Toggle in Settings Page
-- [ ] Support started with `otpauth://` link Want Param
 
 **Release v1.0.0** (2024/12/02)
 

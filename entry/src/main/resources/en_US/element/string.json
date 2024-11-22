@@ -88,6 +88,10 @@
       "value": "OK"
     },
     {
+      "name": "button_text_confirm",
+      "value": "Confirm"
+    },
+    {
       "name": "button_text_save",
       "value": "Save"
     },
@@ -193,6 +197,23 @@
     {
       "name": "lock_page_hint",
       "value": "Tap on the screen for authentication."
+    },
+
+    {
+      "name": "password_challenge_page_title",
+      "value": "Mater Password Verification"
+    },
+    {
+      "name": "password_challenge_page_hint",
+      "value": "We occasionally ask you to enter the master password so that you don't forget it."
+    },
+    {
+      "name": "password_challenge_page_bypass_title",
+      "value": "%sSkip Verification"
+    },
+    {
+      "name": "password_challenge_page_bypass_hint",
+      "value": "This master key verification has been skipped and we will continue tomorrow.\nWe will continue to remind you to validate your master key tomorrow in case you forget it and cannot access your encrypted data. The reminder cycle will be reset after successfully verifying the Master Key once."
     },
 
     {

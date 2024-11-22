@@ -88,6 +88,10 @@
       "value": "确定"
     },
     {
+      "name": "button_text_confirm",
+      "value": "确认"
+    },
+    {
       "name": "button_text_save",
       "value": "保存"
     },
@@ -193,6 +197,23 @@
     {
       "name": "lock_page_hint",
       "value": "轻点屏幕进行身份验证。"
+    },
+
+    {
+      "name": "password_challenge_page_title",
+      "value": "验证主密钥"
+    },
+    {
+      "name": "password_challenge_page_hint",
+      "value": "我们会定期要求您输入主密钥，以免您忘记而无法访问加密数据。"
+    },
+    {
+      "name": "password_challenge_page_bypass_title",
+      "value": "%s跳过验证"
+    },
+    {
+      "name": "password_challenge_page_bypass_hint",
+      "value": "本次主密钥验证已跳过，我们将在 明天 继续提示您验证主密钥，以免您忘记它而无法访问加密数据。\n成功验证主密钥一次后，提醒周期将会重置。"
     },
 
     {

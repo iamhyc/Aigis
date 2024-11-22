@@ -4,7 +4,9 @@ import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
     SettingListCollapsableItem,
     NoInternetHyperLink,
     SettingListIconItem} from "../components/settings";
-import { AppLanguage, AuthTypePriority, DarkMode, DigitGroup, ShowAccountName, ValueType } from "../common/settings";
+import { AppLanguage, AuthTypePriority, DarkMode, DigitGroup,
+    PasswordReminderPeriod,
+    ShowAccountName, ValueType } from "../common/settings";
 import {
     ChangePasswordInputDialog,
     CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
@@ -55,6 +57,14 @@ const AccountNameSelection: Map<ResourceStr, ShowAccountName> = new Map([
     [$r('app.string.setting_show_account_name_option_off'), 'off'],
 ]);
 
+const PasswordReminderSelection: Map<ResourceStr, PasswordReminderPeriod> = new Map([
+    [$r('app.string.setting_password_reminder_period_never'),     'never'],
+    [$r('app.string.setting_password_reminder_period_weekly'),    'weekly'],
+    [$r('app.string.setting_password_reminder_period_biweekly'),  'biweekly'],
+    [$r('app.string.setting_password_reminder_period_monthly'),   'monthly'],
+    // [$r('app.string.setting_password_reminder_period_quarterly'), 'quarterly'],
+]);
+
 const ATL1AuthTypePrioritySelection: Map<ResourceStr, AuthTypePriority> = new Map([
     [$r('app.string.setting_auth_priority_face_first'),  'face'],
     [$r('app.string.setting_auth_priority_touch_first'), 'touch'],
@@ -98,6 +108,8 @@ export struct SettingsPage {
     @StorageProp('settingsShowIssuerIcons')
     @Watch('onItChanged') ShowIssuerIcons: boolean = true;
     // security
+    @StorageProp('settingsPasswordReminderPeriod')
+    @Watch('onItChanged') PasswordReminderPeriod: PasswordReminderPeriod = 'biweekly';
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsAuthTypePriority')
@@ -262,6 +274,14 @@ export struct SettingsPage {
                                 description: $r('app.string.setting_setup_password_hint'),
                                 preview: this.MasterKeyAvailable ?$r('app.string.setting_password_confirmed') : undefined,
                             }).onClick(() => { this.handleSetupPassword() })
+                            if (this.MasterKeyAvailable) {
+                                SettingListItemSelect({
+                                    title: $r('app.string.setting_password_reminder_title'),
+                                    description: $r('app.string.setting_password_reminder_desc'),
+                                    selected: this.PasswordReminderPeriod,
+                                    entries: PasswordReminderSelection,
+                                })
+                            }
                             if (true) {
                             // if (!this.EnableBiometricAuth) { //FIXME: Not Support Cause of "External Error"
                                 SettingListItemToggle({
@@ -414,6 +434,9 @@ export struct SettingsPage {
                 value = this.ShowIssuerIcons;
                 break;
             // security
+            case            'PasswordReminderPeriod':
+                value = this.PasswordReminderPeriod;
+                break;
             case            'EnableBiometricUnlock':
                 value = this.EnableBiometricUnlock;
                 break;

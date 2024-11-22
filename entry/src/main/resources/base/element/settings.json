@@ -284,6 +284,34 @@
       "name": "setting_password_changed",
       "value": "Password has been changed"
     },
+    {
+      "name": "setting_password_reminder_title",
+      "value": "Password Reminder Period"
+    },
+    {
+      "name": "setting_password_reminder_desc",
+      "value": "You will be prompted to enter your password at regular intervals to prevent you from forgetting it."
+    },
+    {
+      "name": "setting_password_reminder_period_never",
+      "value": "Never"
+    },
+    {
+      "name": "setting_password_reminder_period_weekly",
+      "value": "Weekly"
+    },
+    {
+      "name": "setting_password_reminder_period_biweekly",
+      "value": "Biweekly"
+    },
+    {
+      "name": "setting_password_reminder_period_monthly",
+      "value": "Monthly"
+    },
+    {
+      "name": "setting_password_reminder_period_quarterly",
+      "value": "Quarterly"
+    },
 
     {
       "name": "section_title_import_export",

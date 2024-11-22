@@ -2,7 +2,7 @@ import { LengthUnit, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkU
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
-import { FAKE_OTP_CODE, PREF_KEY_ITEMS } from '../common/conts';
+import { FAKE_OTP_CODE, ONE_DAY_IN_MS, PREF_KEY_ITEMS, PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
 import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
@@ -24,10 +24,12 @@ import {
     PasswordUpdateRequestSchema,
     SettingUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
-import { AppLockPage } from '../components/pages';
+import { AppLockPage, PasswordChallengePage } from '../components/pages';
 import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { AuthTypePriority, DigitGroup, ItemSortOrder, ShowAccountName } from '../common/settings';
+import { AuthTypePriority, DigitGroup, ItemSortOrder,
+    PasswordReminderPeriod,
+    ShowAccountName } from '../common/settings';
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
 
@@ -107,6 +109,8 @@ class DragState<T> {
 @Entry(storage)
 @Component
 struct Index {
+    @StorageProp(PREF_PASSWORD_CHALLENGE_TIME) PasswordChallengeTime: number = Date.now();
+    @StorageProp('settingsPasswordReminderPeriod') PasswordReminderPeriod: PasswordReminderPeriod = 'biweekly';
     @StorageProp('EncMasterKey') EncMasterKey: MasterKeyInfo = {} as MasterKeyInfo;
     @Watch('onDecKeyRequired') @StorageLink('StatusDecKeyRequired') StatusDecKeyRequired: boolean = false;
     @Watch('onAuthLevelChanged') @StorageProp('settingsEnableBiometricUnlock') EnableBiometricUnlock: boolean = false;
@@ -134,6 +138,8 @@ struct Index {
                     // main content
                     if (this.EnableBiometricUnlock && !validateAtlAuth(this.atlAuth)) {
                         AppLockPage({atlAuth: this.atlAuth, authLevel:this.EnableBiometricAuth?'ATL3':'ATL1', priority: this.AuthTypePriority})
+                    } else if (this.shouldShowPasswordChallenge()) {
+                        PasswordChallengePage()
                     } else {
                         if (this.items.length===0) {
                             EmptyPage()
@@ -321,6 +327,28 @@ struct Index {
 
     private onItemListChanged() {
         this.editState.hide();
+    }
+
+    private shouldShowPasswordChallenge(): boolean {
+        if (this.EncMasterKey.keyAlias===undefined) {
+            return false;
+        }
+        //
+        const delta_time = Date.now() - this.PasswordChallengeTime;
+        switch (this.PasswordReminderPeriod) {
+            case 'never':
+                return false;
+            case 'weekly':
+                return delta_time > 7*ONE_DAY_IN_MS;
+            case 'biweekly':
+                return delta_time > 14*ONE_DAY_IN_MS;
+            case 'monthly':
+                return delta_time > 30*ONE_DAY_IN_MS;
+            case 'quarterly':
+                return delta_time > 90*ONE_DAY_IN_MS;
+            default:
+                return false;
+        }
     }
 
     private getExKeys(): string[] {
@@ -746,7 +774,7 @@ struct OTPItem {
                             .fontSize(24)
                     }
                     .height(40).width(40)
-                    .backgroundColor($r('app.color.color_ribbon'))
+                    .backgroundColor($r('sys.color.warning'))
                     .onClick((() => { this.requestMoveToTop(); }))
                 }
                 //
