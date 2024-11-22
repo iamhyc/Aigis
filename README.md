@@ -63,7 +63,6 @@ Src0--"Authenticate"-->Dst2--display-->Dst4
 
 **Release v0.5.0** (2024/11/25)
 
-- [ ] Support Drag Item to Sort (#16)
 - [ ] Password Challenge Page Design
   - Periodic Notification in the Local Non-Working Hours
   - Also allow to skip the challenge
