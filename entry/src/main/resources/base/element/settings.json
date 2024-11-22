@@ -33,6 +33,14 @@
       "name": "setting_enable_add_token_no_confirmation_desc",
       "value": "When adding a token on the main page, the edit page no longer pops up to confirm saving."
     },
+    {
+      "name": "setting_preview_next_token_title",
+      "value": "Preview Next Token"
+    },
+    {
+      "name": "setting_preview_next_token_desc",
+      "value": "For time-based tokens, the next token is also displayed when the remaining time is less than 5 seconds."
+    },
 
     {
       "name": "section_title_outlook",

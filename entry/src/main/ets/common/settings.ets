@@ -15,6 +15,7 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     ['EnableManualInput',     false],
     ['EnableDoubleClickCopy', false],
     ['DisableAddConfirm',     false],
+    ['PreviewNextToken',      false],
     // outlook
     ['AppLanguage',     'default' as AppLanguage],
     ['DarkMode',        'default' as DarkMode],

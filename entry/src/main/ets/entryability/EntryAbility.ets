@@ -134,7 +134,7 @@ class PreferencesManager {
         return otp;
     }
 
-    async requestCodeUpdate(keyAlias: string, authToken?: Uint8Array): Promise<boolean> {
+    async requestCodeUpdate(keyAlias: string, includeNext?: boolean, authToken?: Uint8Array): Promise<boolean> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
         const secret = this._secrets.find(x => x.keyAlias===keyAlias);
         if (item && secret) {
@@ -143,6 +143,7 @@ class PreferencesManager {
             item.code = {
                 timestamp: rawSecret.byteLength? Date.now() : 0,
                 code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
+                next: rawSecret.byteLength && includeNext? await otp.generateOTP(rawSecret, true): undefined,
             }
             return true;
         } else {
@@ -612,7 +613,7 @@ export default class EntryAbility extends UIAbility {
     private registerEventHubHandlers() {
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {
-                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.authToken);
+                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.includeNext, data.authToken);
                 if (res) {
                     this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 }

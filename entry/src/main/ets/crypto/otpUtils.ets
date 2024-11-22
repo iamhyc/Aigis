@@ -124,7 +124,7 @@ export abstract class OTP {
     }
 
     abstract get uri(): string;
-    abstract generateOTP(secret: Uint8Array): Promise<string>;
+    abstract generateOTP(secret: Uint8Array, next?: boolean): Promise<string>;
 
     get schema() {
         const _leak_schema = shallowCopy(this._schema) as OTPSchema;
@@ -246,9 +246,9 @@ export class TOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(secret: Uint8Array): Promise<string> {
+    async generateOTP(secret: Uint8Array, next?: boolean): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
-        const realCounter = Math.floor(Date.now() / 1000 / period);
+        const realCounter = Math.floor(Date.now() / 1000 / period) + (next?1:0);
         //
         const hash = await this.generateHash(secret, realCounter);
         const otp = rfc4226Sec5_4Impl(hash);
@@ -285,9 +285,9 @@ export class SteamOTP extends OTP {
         return encodeURI(`otpauth://${s.type}/${s.issuer}:${s.name}?algorithm=${s.algorithm}&period=${s.period}&digits=${s.digits}&issuer=${s.issuer}&secret=${s.secret}`);
     }
 
-    async generateOTP(secret: Uint8Array): Promise<string> {
+    async generateOTP(secret: Uint8Array, next?: boolean): Promise<string> {
         const period = (this._schema as TOTPSchema).period;
-        const realCounter = Math.floor(Date.now() / 1000 / period);
+        const realCounter = Math.floor(Date.now() / 1000 / period) + (next?1:0);
         //
         const hash = await this.generateHash(secret, realCounter);
         const otp = rfc4226Sec5_4Impl(hash);

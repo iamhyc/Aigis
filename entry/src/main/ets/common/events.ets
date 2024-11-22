@@ -4,6 +4,7 @@ import { ValueType } from "./settings";
 export const EVENT_CODE_REQUEST: string = 'code-request';
 export interface CodeRequestSchema {
     keyAlias: string,
+    includeNext?: boolean,
     authToken?: Uint8Array,
 }
 

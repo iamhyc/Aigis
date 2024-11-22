@@ -33,6 +33,14 @@
       "name": "setting_enable_add_token_no_confirmation_desc",
       "value": "在主页面添加令牌时，不再弹出编辑页面确认保存。"
     },
+    {
+      "name": "setting_preview_next_token_title",
+      "value": "预览下一个令牌"
+    },
+    {
+      "name": "setting_preview_next_token_desc",
+      "value": "对于基于时间的令牌，当剩余时间小于 5 秒时，同时展示下一个令牌。"
+    },
 
     {
       "name": "section_title_outlook",

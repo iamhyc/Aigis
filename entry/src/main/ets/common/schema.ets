@@ -4,6 +4,7 @@ import { OTPSchema } from "../crypto/otpUtils";
 export interface CodeResponseSchema {
     timestamp: number,
     code: string,
+    next?: string,
 }
 
 export interface OTPItemInfo {

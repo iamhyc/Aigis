@@ -95,6 +95,9 @@ export struct SettingsPage {
     @Watch('onItChanged') EnableDoubleClickCopy: boolean = false;
     @StorageProp('settingsDisableAddConfirm')
     @Watch('onItChanged') DisableAddConfirm: boolean = false;
+    @StorageProp('settingsPreviewNextToken')
+    @Watch('onItChanged') PreviewNextToken: boolean = false;
+
     // outlook
     @StorageProp('settingsAppLanguage')
     @Watch('onItChanged') AppLanguage: AppLanguage = 'default';
@@ -213,6 +216,11 @@ export struct SettingsPage {
                                 title: $r('app.string.setting_enable_add_token_no_confirmation'),
                                 description: $r('app.string.setting_enable_add_token_no_confirmation_desc'),
                                 selected: this.DisableAddConfirm,
+                            })
+                            SettingListItemToggle({
+                                title: $r('app.string.setting_preview_next_token_title'),
+                                description: $r('app.string.setting_preview_next_token_desc'),
+                                selected: this.PreviewNextToken,
                             })
                         }
                         .divider(divider_style)
@@ -408,14 +416,17 @@ export struct SettingsPage {
 
         switch(key) {
             // general
-            case 'EnableManualInput':
+            case            'EnableManualInput':
                 value = this.EnableManualInput;
                 break;
-            case 'EnableDoubleClickCopy':
+            case            'EnableDoubleClickCopy':
                 value = this.EnableDoubleClickCopy;
                 break;
-            case 'DisableAddConfirm':
+            case            'DisableAddConfirm':
                 value = this.DisableAddConfirm;
+                break;
+            case            'PreviewNextToken':
+                value = this.PreviewNextToken;
                 break;
             // outlook
             case            'AppLanguage':
