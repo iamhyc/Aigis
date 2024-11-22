@@ -564,6 +564,7 @@ struct OTPList {
 
 @Component
 struct OTPItem {
+    @StorageProp('settingsPreviewNextToken') PreviewNextToken: boolean = false;
     @StorageProp('settingsItemSortOrder') ItemSortOrder: ItemSortOrder = 'custom';
     @StorageProp('settingsEnableDoubleClickCopy') EnableDoubleClickCopy: boolean = false;
     @StorageProp('settingsDigitGroup') DigitGroup: DigitGroup = '3';
@@ -582,7 +583,8 @@ struct OTPItem {
     @Prop schema: OTPSchema;
     @Prop favorite: boolean | undefined;
     @State validatedIcon: string = IconManager.validateUri(this.icon);
-    @State passed_time: number = 0;
+    @Watch('onTimePassed') @State passed_time: number = 0;
+    @State showPreviewToken: boolean = false;
     @State isVisible: Visibility = Visibility.Visible;
     @State showEditItemOnly: boolean = false;
     @State swipeBackgroundColor: Resource = $r('sys.color.comp_background_secondary');
@@ -710,8 +712,14 @@ struct OTPItem {
                     .wordBreak(WordBreak.BREAK_ALL)
 
                     if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
-                        Text(this.codeDigits())
-                            .fontSize(26)
+                        Text() {
+                            Span(this.codeDigits()).fontSize(this.showPreviewToken? 16 : 26)
+                            if ((this.schema as TimedOTPSchema).period && this.showPreviewToken) {
+                                Span(' ◂ ').fontSize(16)
+                                Span(this.nextDigits()).fontSize(26)
+                            }
+                        }
+                        .lineHeight(this.showPreviewToken? 26 : undefined)
                     } else {
                         Text(this.hiddenDigits())
                             .fontWeight(FontWeight.Medium)
@@ -815,6 +823,25 @@ struct OTPItem {
         }
     }
 
+    private onTimePassed() {
+        if (!this.PreviewNextToken) { return; }
+
+        const period = (this.schema as TimedOTPSchema).period * 1000;
+        const inLimitedTime = (period - this.passed_time < 5000);
+
+        if (!this.showPreviewToken && inLimitedTime) {
+            animateTo({duration:500}, () => {
+                this.showPreviewToken = true;
+            });
+        }
+        if (this.showPreviewToken && !inLimitedTime)
+        {
+            animateTo({duration:300}, () => {
+                this.showPreviewToken = true;
+            });
+        }
+    }
+
     private onPeriodicCodeUpdated() {
         if (this.selected===this.keyAlias) {
             this.requestCodeUpdate();
@@ -842,6 +869,7 @@ struct OTPItem {
         if (!this.codeRequested) {
             getContext(this).eventHub.emit(EVENT_CODE_REQUEST, {
                 keyAlias: this.keyAlias,
+                includeNext: this.PreviewNextToken,
                 authToken: this.atlAuth.authToken,
         } as CodeRequestSchema);
             this.codeRequested = true;
@@ -901,6 +929,14 @@ struct OTPItem {
         if (taskId>0) { clearInterval(taskId-1); }
         //
         return this.splitDigits(this.code.code);
+    }
+
+    private nextDigits(): string {
+        if (this.PreviewNextToken && this.code.next) {
+            return this.splitDigits(this.code.next);
+        } else {
+            return '';
+        }
     }
 
     private hiddenDigits(): string {

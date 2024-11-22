@@ -61,12 +61,7 @@ Src0--"Authenticate"-->Dst2--display-->Dst4
 
 ### Roadmap
 
-**Release v0.5.0** (2024/11/25)
-
-- [ ] Preview Next Token for TOTP-based Schema
-  - Toggle in Settings Page
-
-**Release v1.0.0** (2024/12/02)
+**Release v1.0.0** (2024/12/29)
 
 - [ ] Support `otpauth-migration://` link
   - via Handwritten ProtoBuf Decode
