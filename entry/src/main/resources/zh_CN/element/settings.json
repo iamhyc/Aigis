@@ -284,6 +284,34 @@
       "name": "setting_password_changed",
       "value": "密码已更改"
     },
+    {
+      "name": "setting_password_reminder_title",
+      "value": "密码提醒周期"
+    },
+    {
+      "name": "setting_password_reminder_desc",
+      "value": "定期提示您输入密码，以防忘记。"
+    },
+    {
+      "name": "setting_password_reminder_period_never",
+      "value": "从不  "
+    },
+    {
+      "name": "setting_password_reminder_period_weekly",
+      "value": "每周  "
+    },
+    {
+      "name": "setting_password_reminder_period_biweekly",
+      "value": "每两周   "
+    },
+    {
+      "name": "setting_password_reminder_period_monthly",
+      "value": "每月  "
+    },
+    {
+      "name": "setting_password_reminder_period_quarterly",
+      "value": "每季度   "
+    },
 
     {
       "name": "section_title_import_export",

@@ -48,6 +48,11 @@ export interface PasswordUpdateRequestSchema {
     newPassword?: boolean,
 }
 
+export const EVENT_UPDATE_PASSWORD_CHALLENGE_TIME: string = 'password-challenge';
+export interface UpdatePasswordChallengeTimeSchema {
+    timestamp: number,
+}
+
 export const EVENT_EXPORT_REQUEST: string = 'export-request';
 export interface FileExportRequestSchema {
     format: string,

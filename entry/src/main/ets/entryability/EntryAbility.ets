@@ -15,9 +15,11 @@ import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
     Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
+    ONE_DAY_IN_MS,
     PREF_DEC_MASTER_KEY,
     PREF_ICON_PACKS,
-    PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY } from '../common/conts';
+    PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY,
+    PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { AppLanguage, AuthTypePriority, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
 import { AuthLevelSupport, generateMasterKeyInHUKS, genUserAuthType } from '../crypto/authUtils';
@@ -36,6 +38,7 @@ import {
     EVENT_UPDATE_ITEM,
     EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
+    EVENT_UPDATE_PASSWORD_CHALLENGE_TIME,
     EVENT_UPDATE_SETTING,
     FileExportRequestSchema,
     FileImportRequestSchema,
@@ -47,6 +50,7 @@ import {
     PasswordUpdateRequestSchema,
     RemovalRequestSchema,
     SettingUpdateRequestSchema,
+    UpdatePasswordChallengeTimeSchema,
     UpdateRequestSchema } from '../common/events';
 import { AigisImporter } from '../importers/aigis';
 import { i18n } from '@kit.LocalizationKit';
@@ -502,6 +506,13 @@ export default class EntryAbility extends UIAbility {
                 AppStorage.setAndProp('EncMasterKey', encMasterKeyInfo);
                 AppStorage.setAndProp('MasterKeyAvailable', encMasterKeyInfo.keyAlias!==undefined);
                 AppStorage.setAndLink('StatusDecKeyRequired', encMasterKeyInfo.keyAlias!==undefined && decMasterKeyInfo.keyAlias===undefined);
+                // load last success password challenge time
+                let passwordChallengeTimestamp = pref.getSync(PREF_PASSWORD_CHALLENGE_TIME, 0) as number;
+                if (passwordChallengeTimestamp===0 || passwordChallengeTimestamp>Date.now()) {
+                    passwordChallengeTimestamp = Date.now();
+                    pref.putSync(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
+                }
+                AppStorage.setAndProp(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
                 // init controller
                 this.instPreferences = new PreferencesManager(
                     pref.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
@@ -673,11 +684,20 @@ export default class EntryAbility extends UIAbility {
             if (this.dataPreferences && this.instPreferences) {
                 await this.instPreferences.updateMasterKeyInfo(data.password, data.newPassword, data.authLevel);
                 this.instPreferences.persists(this.dataPreferences);
+                // reset password challenge time
+                const _now = Date.now()
+                this.dataPreferences.putSync(PREF_PASSWORD_CHALLENGE_TIME, _now);
+                AppStorage.set(PREF_PASSWORD_CHALLENGE_TIME, _now);
                 // propagate
                 AppStorage.set('EncMasterKey', this.instPreferences.encMasterKeyInfo);
                 AppStorage.set('MasterKeyAvailable', true);
                 AppStorage.set('StatusDecKeyRequired', false);
             }
+        });
+        this.context.eventHub.on(EVENT_UPDATE_PASSWORD_CHALLENGE_TIME, (data: UpdatePasswordChallengeTimeSchema) => {
+            const timestamp = data.timestamp;
+            this.dataPreferences?.putSync(PREF_PASSWORD_CHALLENGE_TIME, timestamp);
+            AppStorage.set(PREF_PASSWORD_CHALLENGE_TIME, timestamp);
         });
         this.context.eventHub.on(EVENT_EXPORT_REQUEST, async (data: FileExportRequestSchema) => {
             if (!this.instPreferences!.MasterKeyAvailable || this.instPreferences===undefined) {
