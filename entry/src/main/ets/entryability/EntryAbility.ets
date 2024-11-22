@@ -15,7 +15,6 @@ import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
     Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
-    ONE_DAY_IN_MS,
     PREF_DEC_MASTER_KEY,
     PREF_ICON_PACKS,
     PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY,
@@ -475,8 +474,10 @@ export default class EntryAbility extends UIAbility {
     private instPreferences?: PreferencesManager;
     private localSettings?: UserPreferences;
 
-    onCreate(_want: Want, _launchParam: AbilityConstant.LaunchParam): void {
-        hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
+    onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+        if (want.uri) {
+            AppStorage.setAndLink('LaunchURI', want.uri);
+        }
     }
 
     onDestroy(): void {

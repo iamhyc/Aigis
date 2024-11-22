@@ -911,6 +911,7 @@ struct OTPItem {
 
 @Component
 struct QrScanButton {
+    @StorageLink('LaunchURI') LaunchURI: string = '';
     @StorageProp('bottomRectHeight')
     @Watch('onBottomRectHeightChanged') bottomRectHeight: number = 0;
     @StorageProp('settingsEnableManualInput') EnableManualInput: boolean = false;
@@ -1038,6 +1039,13 @@ struct QrScanButton {
 
     aboutToAppear(): void {
         this.onBottomRectHeightChanged();
+        if (this.LaunchURI.startsWith('otpauth://')) {
+            this.uriToEditPage(async () => {
+                const uri = this.LaunchURI;
+                this.LaunchURI = '';
+                return uri;
+            });
+        }
     }
 
     private onBottomRectHeightChanged() {
