@@ -14,10 +14,13 @@ import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth,
 import { AtlAuthResult, CodeResponseSchema, MasterKeyInfo, OTPItemInfo } from '../common/schema';
 import {
     BulkyUpdateRequestSchema,
-    CodeRequestSchema, EVENT_CODE_REQUEST, EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
+    CodeRequestSchema, EVENT_CODE_REQUEST,
+    EVENT_INSERT_ITEM_BEFORE,
+    EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
     EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
     EVENT_UPDATE_SETTING,
+    InsertItemBeforeRequestSchema,
     PasswordUpdateRequestSchema,
     SettingUpdateRequestSchema,
     UpdateRequestSchema } from '../common/events';
@@ -54,6 +57,50 @@ class EditState {
         this.editSchema = undefined;
         this.editIcon = '';
         this.editNewItem = false;
+    }
+}
+
+class DragState<T> {
+    private equalEl: (el1:T, el2:T) => boolean;
+    @Track list: T[] = [];
+    @Track startIndex: number = -1;
+    private insertIndex: number = -1;
+    private startEl: T | undefined;
+    private insertEl: T | undefined;
+
+    constructor(list: T[], equalEl: (el1:T, el2:T) => boolean) {
+        this.list = list;
+        this.equalEl = equalEl;
+    }
+
+    onStart(el: T) {
+        this.startEl = el;
+        this.startIndex = this.list.findIndex(x => this.equalEl(x, el));
+        this.insertIndex = this.startIndex;
+    }
+
+    onMove(el:T) {
+        if (this.startIndex!==-1) {
+            const nextIndex = this.list.findIndex(x => this.equalEl(x, el))
+            const ele = this.list.splice(this.insertIndex, 1)[0];
+            this.list.splice(nextIndex, 0, ele);
+            //
+            this.insertEl = el;
+            this.insertIndex = nextIndex;
+        }
+    }
+
+    onEnd(callback?: (startEl:T, insertEl: T)=>void) {
+        if (callback && this.startEl && this.insertEl) {
+            // bypass wandering
+            if (this.startIndex!==this.insertIndex) {
+                callback(this.startEl, this.insertEl);
+            }
+        }
+        this.startIndex = -1;
+        this.insertIndex = -1;
+        this.startEl = undefined;
+        this.insertEl = undefined;
     }
 }
 
@@ -292,11 +339,15 @@ struct OTPList {
     @Consume btnVisibility: Visibility;
     @Consume selected: string;
     @Prop items: OTPItemInfo[];
+    @State _sortedItems: OTPItemInfo[] = [];
     @State filterText: string = '';
     @State filterItemVisibility: Visibility = Visibility.None;
     @State hasHiddenItems: boolean = false;
 
-    private _sortedItems: OTPItemInfo[] = [];
+    @State dragState: DragState<OTPItemInfo> = new DragState(this._sortedItems, (el1, el2) => {
+        return el1.keyAlias === el2.keyAlias;
+    });
+
     private searchInputHeight = 40;//vp
     private searchInputTopMargin = 6;//vp
     private visibleHeight = 40;//vp
@@ -329,37 +380,41 @@ struct OTPList {
     }
 
     private sortedItems(): OTPItemInfo[] {
-        const favorites: OTPItemInfo[] = [];
-        const normals: OTPItemInfo[] = [];
-        // filter favorite/normal items
-        for (const item of this.items) {
-            if (item.favorite) {
-                favorites.push(item);
-            } else {
-                normals.push(item);
+        if (this.dragState.startIndex!==-1) {
+            return this.dragState.list;
+        } else {
+            const favorites: OTPItemInfo[] = [];
+            const normals: OTPItemInfo[] = [];
+            // filter favorite/normal items
+            for (const item of this.items) {
+                if (item.favorite) {
+                    favorites.push(item);
+                } else {
+                    normals.push(item);
+                }
             }
+            // sort normal items
+            switch (this.ItemSortOrder) {
+                case 'issuer_asc':
+                    normals.sort((x, y) => x.schema.issuer > y.schema.issuer ? 1 : -1);
+                    break;
+                case 'issuer_dsc':
+                    normals.sort((x, y) => x.schema.issuer < y.schema.issuer ? 1 : -1);
+                    break;
+                case 'account_asc':
+                    normals.sort((x, y) => x.schema.name > y.schema.name ? 1 : -1);
+                    break;
+                case 'account_dsc':
+                    normals.sort((x, y) => x.schema.name < y.schema.name ? 1 : -1);
+                    break;
+                case 'custom':
+                default:
+                    break;
+            }
+            // return
+            this._sortedItems.splice(0, this._sortedItems.length, ...favorites.concat(normals));
+            return this._sortedItems;
         }
-        // sort normal items
-        switch (this.ItemSortOrder) {
-            case 'issuer_asc':
-                normals.sort((x, y) => x.schema.issuer > y.schema.issuer ? 1 : -1);
-                break;
-            case 'issuer_dsc':
-                normals.sort((x, y) => x.schema.issuer < y.schema.issuer ? 1 : -1);
-                break;
-            case 'account_asc':
-                normals.sort((x, y) => x.schema.name > y.schema.name ? 1 : -1);
-                break;
-            case 'account_dsc':
-                normals.sort((x, y) => x.schema.name < y.schema.name ? 1 : -1);
-                break;
-            case 'custom':
-            default:
-                break;
-        }
-        // return
-        this._sortedItems = favorites.concat(normals);
-        return this._sortedItems;
     }
 
     @LocalBuilder sortMenu() {
@@ -408,6 +463,7 @@ struct OTPList {
                     //
                     Button({type: ButtonType.Circle}) {
                         SymbolGlyph($r('sys.symbol.sort'))
+                            .fontWeight(FontWeight.Medium)
                             .fontColor([$r('sys.color.font_secondary')])
                             .fontSize(22)
                     }
@@ -426,6 +482,7 @@ struct OTPList {
             ForEach(this.sortedItems(),
                 (item: OTPItemInfo) => {
                     OTPItem({
+                        item,
                         icon: item.icon,
                         code: item.code,
                         schema: item.schema,
@@ -433,6 +490,7 @@ struct OTPList {
                         keyAlias: item.keyAlias,
                         filterText: this.filterText,
                         listScroller: this.listScroller,
+                        dragState: this.dragState,
                     })
                 },
                 (item: OTPItemInfo) => {
@@ -478,6 +536,7 @@ struct OTPList {
 
 @Component
 struct OTPItem {
+    @StorageProp('settingsItemSortOrder') ItemSortOrder: ItemSortOrder = 'custom';
     @StorageProp('settingsEnableDoubleClickCopy') EnableDoubleClickCopy: boolean = false;
     @StorageProp('settingsDigitGroup') DigitGroup: DigitGroup = '3';
     @StorageProp('settingsShowAccountName') ShowAccountName: ShowAccountName = 'always';
@@ -487,6 +546,8 @@ struct OTPItem {
     @Consume selected: string;
     @Consume atlAuth: AtlAuthResult;
     @Link @Watch('onFilterTextChanged') filterText: string;
+    @Link dragState: DragState<OTPItemInfo>;
+    @Prop item: OTPItemInfo;
     @Prop icon: string;
     @Prop code: CodeResponseSchema;
     @Prop keyAlias: string;
@@ -504,105 +565,7 @@ struct OTPItem {
 
     build() {
         ListItem() {
-            Stack({ alignContent: Alignment.Bottom }) {
-                // Main Content
-                Row({ space: '16vp' }) {
-                    // Favorite Bar
-                    if (this.favorite) {
-                        Rect({height:'80%', width:10})
-                            .radius(6)
-                            .offset({left:-6})
-                            .fill($r('app.color.color_ribbon'))
-                            .margin({right:-26})
-                    }
-                    // display issuer icon
-                    if (this.ShowIssuerIcons) {
-                        if (this.validatedIcon) {
-                            Image(this.validatedIcon)
-                                .margin({left: $r('app.float.visual_space')})
-                                .borderRadius($r('app.float.issuer_icon_radius'))
-                                .height($r('app.float.issuer_icon_size'))
-                                .width($r('app.float.issuer_icon_size'))
-                                .alt(this.schema.issuer)
-                        } else {
-                            IssuerIcon({
-                                issuer: this.schema.issuer,
-                                iconSize: $r('app.float.issuer_icon_size'),
-                                iconRadius: $r('app.float.issuer_icon_radius'),
-                                fontSize: 28,
-                            })
-                                .margin({left: $r('app.float.visual_space')})
-                        }
-                    }
-                    // display information area
-                    Column({ space: '4vp' }) {
-                        Text() {
-                            Span(this.schema.issuer)
-                                .fontSize($r('sys.float.Subtitle_S'))
-                                .fontWeight(FontWeight.Bold)
-                                .fontColor($r('sys.color.font_primary'))
-                            if (this.ShowAccountName==='always' || (this.ShowAccountName==='smart' && this.hasDuplicateIssuers())) {
-                                Span(` (${this.schema.name})`)
-                                    .fontSize($r('sys.float.Subtitle_S'))
-                                    .fontWeight(FontWeight.Normal)
-                                    .fontColor($r('sys.color.font_secondary'))
-                            }
-                        }
-                        .maxLines(1)
-                        .textOverflow({overflow: TextOverflow.Ellipsis})
-                        .wordBreak(WordBreak.BREAK_ALL)
-
-                        if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
-                            Text(this.codeDigits())
-                                .fontSize(26)
-                        } else {
-                            Text(this.hiddenDigits())
-                                .fontWeight(FontWeight.Medium)
-                                .fontSize($r('sys.float.Subtitle_L'))
-                                .letterSpacing(5)
-                        }
-                    }
-                    .width(`calc(100% - ${this.ShowIssuerIcons?'80vp':'16vp'})`)
-                    .alignItems(HorizontalAlign.Start)
-                    .margin(this.ShowIssuerIcons? {} : {left: $r('app.float.visual_space')})
-                }
-                .align(Alignment.Top)
-                .height('100%')
-                .width('100%')
-                .zIndex(1)
-                .clip(true)
-                // show progress bar for time-based OTP
-                if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE && (this.schema as TimedOTPSchema).period) {
-                    Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
-                        .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
-                        .color($r('app.color.color_ribbon'))
-                        .height('2vp')
-                        .width('100%')
-                        .zIndex((2))
-                        .style({enableSmoothEffect:true})
-                }
-                // divider bar at the end
-                Divider().strokeWidth('1px').zIndex(2)
-            }
-            .height('64vp')
-            .width('100%')
-            .visibility(this.isVisible)
-            .onClick(() => {
-                if (this.selected===this.keyAlias) {
-                    if (this.EnableDoubleClickCopy && !this.codeCopied) {
-                        this.copyCodeToPateBoard();
-                        this.codeCopied = true;
-                    } else if (this.code.code===FAKE_OTP_CODE) {
-                        this.codeRequested = false;
-                        this.requestCodeUpdate();
-                    } else {
-                        this.selected = '';
-                    }
-                } else {
-                    this.requestCodeUpdate();
-                    this.selected = this.keyAlias;
-                }
-            })
+            this.itemContent()
         }
         .clickEffect({level: ClickEffectLevel.MIDDLE})
         .swipeAction({
@@ -627,6 +590,147 @@ struct OTPItem {
                     this.listScroller!.closeAllSwipeActions();
                 },
             },
+        })
+        .visibility(this.isVisible)
+        .draggable(this._draggable())
+        .dragPreview(this.itemContent(true))
+        .dragPreviewOptions({
+            mode: [DragPreviewMode.DISABLE_SCALE, DragPreviewMode.ENABLE_DEFAULT_SHADOW, DragPreviewMode.ENABLE_DEFAULT_RADIUS],
+        })
+        .onDragStart(() => {
+            this.isVisible = Visibility.Hidden;
+            this.dragState.onStart(this.item);
+            return this.itemContent(true);
+        })
+        .onDragEnter(() => {
+            if (this.favorite!==true) {
+                this.dragState.onMove(this.item);
+            }
+        })
+        .onDrop(() => {})
+        .onDragEnd(() => {
+            this.dragState.onEnd((startEl, insertEl) => {
+                const startKeyAlias = startEl.keyAlias;
+                const insertKeyAlias = insertEl.keyAlias;
+                if (startKeyAlias!==insertKeyAlias) {
+                    getContext(this).eventHub.emit(EVENT_INSERT_ITEM_BEFORE, {startKeyAlias,insertKeyAlias} as InsertItemBeforeRequestSchema);
+                }
+            });
+            this.isVisible = Visibility.Visible;
+        })
+    }
+
+    @Builder itemContent(dragged: boolean = false) {
+        Stack({ alignContent: Alignment.Bottom }) {
+            // Main Content
+            Row({ space: '16vp' }) {
+                // Favorite Bar
+                if (this.favorite) {
+                    Rect({height:'80%', width:10})
+                        .radius(6)
+                        .offset({left:-6})
+                        .fill($r('app.color.color_ribbon'))
+                        .margin({right:-26})
+                }
+                // Drag Bar
+                else if (this.ItemSortOrder==='custom' && dragged) {
+                    Text() {
+                        SymbolSpan($r('sys.symbol.text_alignright'))
+                            .fontWeight(FontWeight.Medium)
+                            .fontColor([$r('sys.color.font_secondary')])
+                            .fontSize(28)
+                    }
+                    .height('80%')
+                    .backgroundColor($r('sys.color.ohos_id_list_background_color'))
+                    .offset({left:-20}).margin({right:-44})
+                }
+                // display issuer icon
+                if (this.ShowIssuerIcons) {
+                    if (this.validatedIcon) {
+                        Image(this.validatedIcon)
+                            .margin({left: $r('app.float.visual_space')})
+                            .borderRadius($r('app.float.issuer_icon_radius'))
+                            .height($r('app.float.issuer_icon_size'))
+                            .width($r('app.float.issuer_icon_size'))
+                            .alt(this.schema.issuer)
+                    } else {
+                        IssuerIcon({
+                            issuer: this.schema.issuer,
+                            iconSize: $r('app.float.issuer_icon_size'),
+                            iconRadius: $r('app.float.issuer_icon_radius'),
+                            fontSize: 28,
+                        })
+                            .margin({left: $r('app.float.visual_space')})
+                    }
+                }
+                // display information area
+                Column({ space: '4vp' }) {
+                    Text() {
+                        Span(this.schema.issuer)
+                            .fontSize($r('sys.float.Subtitle_S'))
+                            .fontWeight(FontWeight.Bold)
+                            .fontColor($r('sys.color.font_primary'))
+                        if (this.ShowAccountName==='always' || (this.ShowAccountName==='smart' && this.hasDuplicateIssuers())) {
+                            Span(` (${this.schema.name})`)
+                                .fontSize($r('sys.float.Subtitle_S'))
+                                .fontWeight(FontWeight.Normal)
+                                .fontColor($r('sys.color.font_secondary'))
+                        }
+                    }
+                    .maxLines(1)
+                    .textOverflow({overflow: TextOverflow.Ellipsis})
+                    .wordBreak(WordBreak.BREAK_ALL)
+
+                    if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
+                        Text(this.codeDigits())
+                            .fontSize(26)
+                    } else {
+                        Text(this.hiddenDigits())
+                            .fontWeight(FontWeight.Medium)
+                            .fontSize($r('sys.float.Subtitle_L'))
+                            .letterSpacing(5)
+                    }
+                }
+                .width(`calc(100% - ${this.ShowIssuerIcons?'80vp':'16vp'})`)
+                .alignItems(HorizontalAlign.Start)
+                .margin(this.ShowIssuerIcons? {} : {left: $r('app.float.visual_space')})
+            }
+            .align(Alignment.Top)
+            .height(dragged? '90%' : '100%')
+            .width(dragged? '90%' : '100%')
+            .zIndex(1)
+            .clip(true)
+            // show progress bar for time-based OTP
+            if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE && (this.schema as TimedOTPSchema).period) {
+                Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
+                    .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
+                    .color($r('app.color.color_ribbon'))
+                    .height('2vp')
+                    .width('100%')
+                    .zIndex((2))
+                    .style({enableSmoothEffect:true})
+            }
+            // divider bar at the end
+            Divider().strokeWidth('1px').zIndex(2)
+        }
+        .height('64vp')
+        .width('100%')
+        .backgroundColor($r('app.color.color_face'))
+        .onClick(() => {
+            if (this.selected===this.keyAlias) {
+                if (this.EnableDoubleClickCopy && !this.codeCopied) {
+                    this.copyCodeToPateBoard();
+                    this.codeCopied = true;
+                } else if (this.code.code===FAKE_OTP_CODE) {
+                    this.codeRequested = false;
+                    this.requestCodeUpdate();
+                } else {
+                    this.selected = '';
+                }
+            } else {
+                this.requestCodeUpdate();
+                this.selected = this.keyAlias;
+            }
         })
     }
 
@@ -665,6 +769,10 @@ struct OTPItem {
         .padding({left:16,right:16})
         .backgroundColor(this.swipeBackgroundColor)
         .alignItems(HorizontalAlign.Center)
+    }
+
+    private _draggable(): boolean {
+        return this.favorite!==true && this.selected!==this.keyAlias && this.ItemSortOrder==='custom' && this.filterText==='';
     }
 
     private onFilterTextChanged() {

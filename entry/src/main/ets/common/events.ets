@@ -24,6 +24,12 @@ export interface MoveToTopRequestSchema {
     keyAlias: string,
 }
 
+export const EVENT_INSERT_ITEM_BEFORE: string = 'insert-item';
+export interface InsertItemBeforeRequestSchema {
+    startKeyAlias: string,
+    insertKeyAlias: string,
+}
+
 export const EVENT_REMOVE_ITEM: string = 'remove-item';
 export interface RemovalRequestSchema {
     keyAlias: string,

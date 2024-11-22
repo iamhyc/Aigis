@@ -30,6 +30,7 @@ import {
     EVENT_ICON_PACK_IMPORT_REQUEST,
     EVENT_ICON_PACK_REMOVAL_REQUEST,
     EVENT_IMPORT_REQUEST,
+    EVENT_INSERT_ITEM_BEFORE,
     EVENT_MOVE_TO_TOP,
     EVENT_REMOVE_ITEM,
     EVENT_UPDATE_ITEM,
@@ -41,6 +42,7 @@ import {
     IconPackApplyRequest,
     IconPackImportRequest,
     IconPackRemovalRequest,
+    InsertItemBeforeRequestSchema,
     MoveToTopRequestSchema,
     PasswordUpdateRequestSchema,
     RemovalRequestSchema,
@@ -628,9 +630,18 @@ export default class EntryAbility extends UIAbility {
         });
         this.context.eventHub.on(EVENT_MOVE_TO_TOP, (data: MoveToTopRequestSchema) => {
             if (this.instPreferences) {
-                // swap in local preferences
+                // set favorite in local preferences
                 this.instPreferences.toggleFavoritePreferenceItem(data.keyAlias);
-                // this.instPreferences.insertPreferenceItem(data.keyAlias);
+                // update persist preferences
+                this.instPreferences.persists(this.dataPreferences!);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
+            }
+        });
+        this.context.eventHub.on(EVENT_INSERT_ITEM_BEFORE, (data: InsertItemBeforeRequestSchema) => {
+            if (this.instPreferences) {
+                // insert in local preferences
+                this.instPreferences.insertPreferenceItem(data.startKeyAlias, data.insertKeyAlias);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items
