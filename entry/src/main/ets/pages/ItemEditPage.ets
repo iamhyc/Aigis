@@ -4,7 +4,7 @@ import { IconManager } from "../common/icons";
 import { IconPackStore } from "../common/schema";
 import { IssuerIcon } from "../components/icons";
 import { LabeledSelect, LabeledTextInput } from "../components/labeled";
-import { OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
+import { name2keyAlias, OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
 
 const COLUMN_ITEM_GAP: number = 8;
 const FAKE_SECRET: string = '0'.repeat(16);
@@ -55,7 +55,6 @@ struct ItemEditComponent {
     @Watch('onValueChanged') @Prop period: string;
     @Watch('onValueChanged') @Prop counter: string;
     @Prop secret: string;
-    @State validatedIcon: string = IconManager.validateUri(this.icon);
     @State secretInputEnabled: boolean = this.editNewItem;
     @State saveBtnEnabled: boolean = this.editNewItem;
     @State advanceCollapsed: boolean = !this.editNewItem;
@@ -64,6 +63,7 @@ struct ItemEditComponent {
     IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
     IconCandidatesEntry: ResourceStr[] = Array.from(this.IconCandidates.keys());
     IconCandidatesValues: string[] = Array.from(this.IconCandidates.values());
+    @State validatedIcon: string = IconManager.validateUri(this.editNewItem? this.IconCandidatesValues[0] : this.icon);
     @Watch('onValueChanged') @State iconIndex: number = this.IconCandidatesValues.findIndex(x => x===this.icon);
 
     private onValueChanged(propName: string) {
@@ -78,7 +78,7 @@ struct ItemEditComponent {
         // popup for removal confirmation
         AlertDialog.show({
             title: $r('app.string.delete_title'),
-            message: $r('app.string.delete_hint', `${this.schema.issuer} (${this.schema.name})`),
+            message: $r('app.string.delete_hint', name2keyAlias({issuer:this.schema.issuer,name:this.schema.name})),
             autoCancel: true,
             primaryButton: {
                 value: $r('app.string.button_text_cancel'),
@@ -139,11 +139,10 @@ struct ItemEditComponent {
         //
         const uri = this.fieldsToUri();
         const icon = this.icon;
-        const issuer_name = encodeURIComponent(`${this.issuer}:${this.name}`);
         const allow_overwrite = this.editNewItem; //overwrite when adding new ones
-        if (this.exKeys.includes(issuer_name)) {
+        if (this.exKeys.includes(this.keyAlias)) {
             const keyAlias = this.keyAlias;
-            this.requestOverwriteConfirm(issuer_name, allow_overwrite, () => {
+            this.requestOverwriteConfirm(keyAlias, allow_overwrite, () => {
                 getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
             });
         } else {
@@ -156,7 +155,7 @@ struct ItemEditComponent {
     private fieldsToUri(): string {
         const secret = this.secret===FAKE_SECRET? '' : encodeURIComponent(this.secret);
         const type = typeEntries[this.typeIndex].toLowerCase();
-        const issuer_name = encodeURIComponent(`${this.issuer}:${this.name}`);
+        const issuer_name = encodeURIComponent(name2keyAlias({issuer:this.issuer,name:this.name}));
         const algorithm = hashEntries[this.hashIndex];
         const counter = Number.parseInt(this.counter).toString();
         const digits = Number.parseInt(this.digits).toString();

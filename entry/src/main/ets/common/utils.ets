@@ -74,6 +74,14 @@ export function numberToBigEndianByteArray(num: number, byteSize: number): Uint8
     return byteArray;
 }
 
+export function bigEndianByteArrayToNumber(arr: Uint8Array): number {
+    let result = 0;
+    for (let i = 0; i < arr.length; i++) {
+        result = (result << 8) | arr[i];
+    }
+    return result;
+}
+
 export function stringToUint8Array(str: string): Uint8Array {
     return Uint8Array.from(Array.from(str).map(x => x.charCodeAt(0)));
 }
@@ -82,10 +90,40 @@ export function Uint8ArrayToString(array: Uint8Array): string {
     return Array.from(array).map(x => String.fromCharCode(x)).join('');
 }
 
+const B32_RFC4648_DICT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+// Reference[RFC4648]: https://github.com/scttcper/ts-base32/blob/v4.0.0/src/index.ts#L7
+export function b32encode(input: Uint8Array): string {
+    const view = new Uint8Array(input);
+
+    let bits = 0;
+    let value = 0;
+    let output = '';
+
+    for (let i = 0; i < view.length; i++) {
+        value = (value << 8) | view[i]!;
+        bits += 8;
+
+        while (bits >= 5) {
+            output += B32_RFC4648_DICT.charAt( (value >>> (bits - 5)) & 31 );
+            bits -= 5;
+        }
+    }
+
+    if (bits > 0) {
+        output += B32_RFC4648_DICT.charAt( (value << (5 - bits)) & 31 );
+    }
+
+    while (output.length % 8 !== 0) {
+        output += '=';
+    }
+    return output;
+}
+
+// Reference[RFC4648]: https://github.com/scttcper/ts-base32/blob/v4.0.0/src/index.ts#L75
 export function b32decode(input: string): Uint8Array {
     input = input.toUpperCase().replace(/\s|=/g, '');
 
-    const dic = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const length = input.length;
     const output = new Uint8Array(length * 5 / 8);
 
@@ -94,7 +132,7 @@ export function b32decode(input: string): Uint8Array {
     let offset = 0;
 
     for (let i = 0; i < length; i++) {
-        value = (value << 5) | dic.indexOf(input[i]);
+        value = (value << 5) | B32_RFC4648_DICT.indexOf(input[i]);
         offset += 5;
 
         if (offset >= 8) {

@@ -738,7 +738,7 @@ export default class EntryAbility extends UIAbility {
                 promptAction.showToast({message: $r('app.string.setting_import_message_success', successNums)});
                 if (failedItems.length > 0) {
                     const failedMsg = failedItems.map(x => '• '+x.keyAlias).join('\n');
-                    const showDuration = Math.max(failedItems.length*500, 3000);
+                    const showDuration = Math.min(failedItems.length*250, 2500);
                     promptAction.showToast({message: $r('app.string.setting_import_message_bypass_items', failedMsg), duration: showDuration});
                 }
                 // refresh local storage

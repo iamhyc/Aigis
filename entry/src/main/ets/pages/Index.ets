@@ -32,6 +32,7 @@ import { AuthTypePriority, DigitGroup, ItemSortOrder,
     ShowAccountName } from '../common/settings';
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
+import { decodeOtpauthMigrationLink } from '../crypto/googleAuth';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -983,7 +984,7 @@ struct QrScanButton {
             if (this.EnableManualInput) {
                 this.addSheetShow = true;
             } else {
-                this.uriToEditPage( async () => { return await this.scanQrCode() } );
+                await this.scanQrCodeForUri();
             }
         })
         .bindSheet($$this.addSheetShow, this.addSheet(), {
@@ -1020,7 +1021,8 @@ struct QrScanButton {
             .width('100%')
             .alignItems(VerticalAlign.Center)
             .onClick(async () => {
-                this.uriToEditPage( async () => { return await this.scanQrCode(); } )
+                this.addSheetShow = false;
+                await this.scanQrCodeForUri();
             })
             .clickEffect({level: ClickEffectLevel.HEAVY})
             // parse from URI
@@ -1146,7 +1148,7 @@ struct QrScanButton {
         TextInputDialog({ title, placeholder, confirm, cancel })
     }
 
-    private async scanQrCode(): Promise<string> {
+    private async scanQrCodeForUri() {
         let options: scanBarcode.ScanOptions = {
             scanTypes: [scanCore.ScanType.ALL],
             enableMultiMode: true,
@@ -1155,10 +1157,18 @@ struct QrScanButton {
 
         try {
             const result = await scanBarcode.startScanForResult(getContext(this), options);
-            return result.originalValue
+            const uri = result.originalValue;
+            //
+            if (uri.startsWith('otpauth://')) {
+                this.uriToEditPage(async() => { return uri; });
+            } else if (uri.startsWith('otpauth-migration://')) {
+                const uris = decodeOtpauthMigrationLink(uri);
+                getContext(this).eventHub.emit(EVENT_UPDATE_ITEMS, {uris} as BulkyUpdateRequestSchema);
+            } else {
+                promptAction.showToast({message:$r('app.string.error_input_uri_parse')});
+            }
         } catch (err) {
             hilog.error(0x0001, '[Scan CPSample]', `Failed to get ScanResult by callback with options. Code: ${err.code}, message: ${err.message}`);
-            return '';
         }
     }
 }
