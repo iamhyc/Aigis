@@ -11,7 +11,7 @@ A lightweight alternative to [Aegis Authenticator](https://github.com/beemdevelo
   <img height="500px" alt="screenshot_dark" src="./docs/images/screenshot_dark.jpg" />
 </p>
 
-### Security Design (for version `>=1.0.0`)
+### Full Security Design (for version `>=2.0.0`)
 
 ```mermaid
 flowchart LR
@@ -63,11 +63,26 @@ Src0--"Authenticate"-->Dst2--display-->Dst4
 
 **Release v1.0.0** (2024/12/29)
 
-- [ ] Support `otpauth-migration://` link
-  - via Handwritten ProtoBuf Decode
 - [ ] [Aegis](https://github.com/beemdevelopment/Aegis) format vault import & export
   - `scrypt` Implementation based on PBKDF2
 
+**Release v2.0.0**
+- [ ] Dynamic Card Support
+  - on Item Swipe Action, on Title Bar
+  - Need Auth to Access on Desktop (?)
+  - Tap to Refresh
+- [ ] Backup
+  - Show Warning Prompt on Main Page when Changes Detected
+  - Backup using Download Mode
+- [ ] ATL3 Authentication Support
+- [ ] View Mode
+  - Dynamic / Compact / Normal / Wide
+- [ ] Group Management
+  - CRUD via `Chip`, or on Edit Page
+- [ ] Correct Usage Statistics
+  - Usage Count / Last Used Time / First Added Time
+- [ ] Audit Log
+  -  Rollout with 30 days or 10 MB limit 
 
 ### References
 

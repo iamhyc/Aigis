@@ -100,18 +100,18 @@ export class IconManager {
     }
 
     async match(issuer: string, uuid?: string): Promise<string> {
-        uuid = (uuid ?? this._icons.find(x => x.isDefault)?.uuid) as string;
-        if (!this.map.has(uuid)) {
+        uuid = uuid ?? this._icons.find(x => x.isDefault)?.uuid;
+        if (uuid && !this.map.has(uuid)) {
             const pack = this._icons.find(x => x.uuid===uuid);
             await this.load(pack!);
         }
 
-        const rootUri = this._icons.find(x => x.uuid===uuid)!.uri + '/';
-        const subMap = this.map.get(uuid)!;
+        const rootUri = this._icons.find(x => x.uuid===uuid)?.uri;
+        const subMap = uuid? this.map.get(uuid) : undefined;
         const key = issuer.toLowerCase().replace(/(\.org|\.com)$/, '');
         // 1. return exact match
-        if (subMap.has(key)) {
-            return rootUri+subMap.get(key)![0].filename;
+        if (rootUri && subMap?.has(key)) {
+            return rootUri+'/'+subMap.get(key)![0].filename;
         }
         // 2. return embedded match
         const resDir = getContext().resourceDir;
@@ -121,8 +121,8 @@ export class IconManager {
         }
         // 3. return generic keyword match
         for (const keyword of ConstKeywords) {
-            if (key.includes(keyword) && subMap.has(keyword)) {
-                return rootUri+subMap.get(keyword)![0].filename;
+            if (key.includes(keyword) && rootUri && subMap?.has(keyword)) {
+                return rootUri+'/'+subMap.get(keyword)![0].filename;
             }
         }
         // 4. return empty string
