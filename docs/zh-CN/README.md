@@ -1,10 +1,5 @@
-<p align="center">
-    <a href="./docs/en/README.md">English</a>
-    &nbsp;&nbsp;
-    <a href="./docs/zh-CN/README.md">简体中文</a>
-</p>
 
-# Aigis
+# Aigis 认证器
 
 > [!NOTE]
 > 本元服务已正式上架应用市场，请搜索“Aigis”使用！
@@ -12,13 +7,13 @@
 HarmonyOS NEXT 的 [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) 的轻量级替代品，采用纯 ArkTS 实现，无任何三方依赖。
 
 <p float="left">
-  	<img height="400px" alt="screenshot_main_page_light" src="./docs/zh-CN/images/screenshot_main_page_light.jpg" />
+  	<img height="400px" alt="screenshot_main_page_light" src="./images/screenshot_main_page_light.jpg" />
   	&nbsp;&nbsp;
-  	<img height="400px" alt="screenshot_edit_page_light" src="./docs/zh-CN/images/screenshot_edit_page_light.jpg" />
+  	<img height="400px" alt="screenshot_edit_page_light" src="./images/screenshot_edit_page_light.jpg" />
   	&nbsp;&nbsp;
-    <img height="400px" alt="screenshot_add_card" src="./docs/zh-CN/images/screenshot_add_card.jpg" />
+    <img height="400px" alt="screenshot_add_card" src="images/screenshot_add_card.jpg" />
   	&nbsp;&nbsp;
-  	<img height="400px" alt="screenshot_settings_page_light" src="./docs/zh-CN/images/screenshot_settings_page_light.jpg" />
+  	<img height="400px" alt="screenshot_settings_page_light" src="./images/screenshot_settings_page_light.jpg" />
 </p>
 
 
