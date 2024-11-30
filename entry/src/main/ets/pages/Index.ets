@@ -263,6 +263,7 @@ struct Index {
             this.atlAuth = { authLevel: 'ATL1', authToken: new Uint8Array(), timestamp: 0 };
         }
         this.selected = '';
+        this.btnVisibility = Visibility.Visible;
     }
 
     aboutToAppear() {
@@ -378,7 +379,8 @@ struct OTPList {
     });
 
     private searchInputHeight = 40;//vp
-    private searchInputTopMargin = 6;//vp
+    private searchInputTopMargin = 9;//vp
+    private searchInputBottomMargin = 3;//vp
     private visibleHeight = 40;//vp
 
     private listScroller: ListScroller = new ListScroller();
@@ -505,7 +507,7 @@ struct OTPList {
                 .alignItems(VerticalAlign.Center)
             }
             .height(this.searchInputHeight)
-            .margin({top:this.searchInputTopMargin})
+            .margin({top:this.searchInputTopMargin,bottom:this.searchInputBottomMargin})
             .visibility(this.filterItemVisibility)
             // main content
             ForEach(this.sortedItems(),
@@ -591,6 +593,7 @@ struct OTPItem {
     @State swipeBackgroundColor: Resource = $r('sys.color.comp_background_secondary');
     @State codeCopied: boolean = false;
 
+    private taskId = -1;
     private codeRequested: boolean = false;
     listScroller?: ListScroller;
 
@@ -846,6 +849,8 @@ struct OTPItem {
     private onPeriodicCodeUpdated() {
         if (this.selected===this.keyAlias) {
             this.requestCodeUpdate();
+        } else {
+            if (this.taskId > 0) { clearInterval(this.taskId); }
         }
     }
 
@@ -928,6 +933,7 @@ struct OTPItem {
             this.onPeriodicCodeUpdated();
         }, REFRESH_INTERVAL);
         if (taskId>0) { clearInterval(taskId-1); }
+        this.taskId = taskId;
         //
         return this.splitDigits(this.code.code);
     }

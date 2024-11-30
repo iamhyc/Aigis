@@ -153,3 +153,10 @@ export function isValidBase64String(str: string): boolean {
     const base64Regex = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
     return base64Regex.test(str);
 }
+
+export function formatDateString(timestamp?: number) {
+    const date = timestamp? new Date(timestamp) : new Date();
+    return date.toLocaleString('zh-CN', {hour12: false})
+        .replace(/\/|:/g, '')
+        .split(' ').join('-');
+}

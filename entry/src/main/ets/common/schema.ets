@@ -8,8 +8,8 @@ export interface CodeResponseSchema {
 }
 
 export interface OTPItemInfo {
+    uuid?: string,
     keyAlias: string,
-    hashKeyAlias?: string,
     icon: string,
     code: CodeResponseSchema,
     schema: OTPSchema,
@@ -73,3 +73,13 @@ export interface AtlAuthResult {
     authToken: Uint8Array,
     timestamp: number,
 };
+
+export interface ImporterSchema {
+    type: string,
+    name: ResourceStr,
+    description?: ResourceStr,
+    format: ('.json' | '.txt')[],
+    export_filename: string,
+    import_password_required: boolean,
+    export_password_required: boolean,
+}

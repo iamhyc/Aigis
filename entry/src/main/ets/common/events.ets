@@ -56,13 +56,14 @@ export interface UpdatePasswordChallengeTimeSchema {
 
 export const EVENT_EXPORT_REQUEST: string = 'export-request';
 export interface FileExportRequestSchema {
-    format: string,
+    type: string,
     uri: string,
+    password?: string,
 }
 
 export const EVENT_IMPORT_REQUEST: string = 'import-request';
 export interface FileImportRequestSchema {
-    format: string,
+    type: string,
     uri: string,
     password?: string,
     importPassword?: boolean,

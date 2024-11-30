@@ -150,13 +150,13 @@ export function validateAtlAuth(atlAuth: AtlAuthResult): boolean {
     }
 }
 
-async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySize: 256): Promise<Uint8Array> {
+export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material, keySizeBits: number): Promise<Uint8Array> {
     const pbkdf2 = cryptoFramework.createKdf('PBKDF2|SHA256');
     const spec: cryptoFramework.PBKDF2Spec = {
         algName: 'PBKDF2', password,
         salt: stringToUint8Array(material.salt),
         iterations: material.iteration,
-        keySize: Math.floor(keySize/8),
+        keySize: Math.floor(keySizeBits/8),
     };
     const secret = await pbkdf2.generateSecret(spec);
     return secret.data;

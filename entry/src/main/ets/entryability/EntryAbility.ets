@@ -51,10 +51,10 @@ import {
     SettingUpdateRequestSchema,
     UpdatePasswordChallengeTimeSchema,
     UpdateRequestSchema } from '../common/events';
-import { AigisImporter } from '../importers/aigis';
 import { i18n } from '@kit.LocalizationKit';
 import { buffer, util } from '@kit.ArkTS';
 import { IconManager } from '../common/icons';
+import { dispatchImporter } from '../importers';
 
 class PreferencesManager {
     private _instances: Map<string, OTP>;
@@ -717,7 +717,10 @@ export default class EntryAbility extends UIAbility {
                     secrets: this.instPreferences.encrypted_secrets!,
                     settings: settingString,
                 };
-                const result = await (new AigisImporter()).save(file.fd, masterKey.keyAlias, content);
+                //
+                const importer = dispatchImporter(data.type);
+                const key = importer?.schema.export_password_required? data.password : masterKey.keyAlias;
+                const result = await importer?.save(file.fd, key??'', content);
                 if (result) {
                     promptAction.showToast({message: $r('app.string.setting_export_message_success', data.uri)});
                 } else {
@@ -731,7 +734,8 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_IMPORT_REQUEST, async (data: FileImportRequestSchema) => {
             const file = await fs.open(data.uri, fs.OpenMode.READ_ONLY);
             try {
-                const content = await (new AigisImporter()).load(file.fd, data.password!);
+                const content = await dispatchImporter(data.type)?.load(file.fd, data.password ?? '');
+                if (content===undefined) { throw new Error('load failed'); }
                 // import from file;
                 const failedItems = this.instPreferences!.importPreferenceItems(this.dataPreferences!, content.items, content.secrets);
                 const successNums = content.items.length - failedItems.length;

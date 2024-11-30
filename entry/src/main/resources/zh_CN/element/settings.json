@@ -257,6 +257,10 @@
       "value": "输入密码"
     },
     {
+      "name": "setting_setup_password_opt_placeholder",
+      "value": "输入密码（可选）"
+    },
+    {
       "name": "setting_setup_password_re_placeholder",
       "value": "确认密码"
     },

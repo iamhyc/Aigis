@@ -35,10 +35,12 @@ export struct CustomSelectDialog {
     @Prop selected: number = 0;
     @Require @Prop title: ResourceStr
     @Prop subtitle: ResourceStr
-    @Require @Prop entries: ResourceStr[]
+    @Require @Prop entries: string[]
+    @Prop descriptions: (ResourceStr|undefined)[]
 
+    confirm?: (value: string) => void
     cancel?: () => void
-    confirm?: (value: ResourceStr) => void
+    toName: (entry: string) => ResourceStr = (x) => x;
 
     build() {
         Scroll() {
@@ -57,15 +59,27 @@ export struct CustomSelectDialog {
                 }
                 .width('90%')
                 //
-                Select(this.entries.map(x => {return {value:x} as SelectOption}))
+                Select(this.entries.map(x => {
+                    return { value: this.toName(x) } as SelectOption
+                }))
                     .width('90%')
                     .optionWidth(OptionWidthMode.FIT_TRIGGER)
                     .selected($$this.selected)
-                    .value(this.entries[this.selected])
+                    .value(this.toName(this.entries[this.selected]))
+                //
+                if (this.descriptions && this.descriptions[this.selected]) {
+                    Text(this.descriptions[this.selected])
+                        .width('90%')
+                        .textAlign(TextAlign.Start)
+                        .fontSize(12)
+                        .fontColor($r('sys.color.font_secondary'))
+                }
                 //
                 OkCancelButtonGroup({
                     cancel: () => { this.cancel && this.cancel() },
-                    confirm: () => { this.confirm && this.confirm( this.entries[this.selected] ) },
+                    confirm: () => {
+                        this.confirm && this.confirm( this.entries[this.selected] )
+                    },
                 })
             }
             .padding({top:16, bottom:16})
@@ -79,6 +93,7 @@ export struct CustomSelectDialog {
 export struct PasswordInputDialog {
     @Require @Prop title: ResourceStr
     @Require @Prop usage: ResourceStr
+    @Prop optional: boolean | undefined
     @Prop optionText: ResourceStr
     @State password: string = ''
     @State checked: boolean = true
@@ -101,7 +116,9 @@ export struct PasswordInputDialog {
                 .width('90%')
                 //
                 Column({space:6}) {
-                    TextInput({ placeholder: $r('app.string.setting_setup_password_placeholder'), text: $$this.password })
+                    TextInput({
+                        placeholder: this.optional? $r('app.string.setting_setup_password_opt_placeholder') : $r('app.string.setting_setup_password_placeholder'),
+                        text: $$this.password })
                         .type(InputType.Password)
                         .contentType(ContentType.PASSWORD)
                         .width('100%')
@@ -118,7 +135,7 @@ export struct PasswordInputDialog {
                 .width('90%')
                 //
                 OkCancelButtonGroup({
-                    okBtnEnabled: this.password.length >= 8,
+                    okBtnEnabled: this.optional || this.password.length >= 8,
                     cancel: () => { this.cancel && this.cancel(); },
                     confirm: () => {
                         if (this.password.length >= 8) {
