@@ -1,0 +1,21 @@
+{
+  "string": [
+    {
+      "name": "importer_aigis_name",
+      "value": "Aigis (.JSON)"
+    },
+    {
+      "name": "importer_aigis_desc",
+      "value": "Official database format in JSON file for the most complete data storage support available."
+    },
+
+    {
+      "name": "importer_aegis_name",
+      "value": "Aegis Authenticator"
+    },
+    {
+      "name": "importer_aegis_desc",
+      "value": "Encrypted or plaintext Aegis Authenticator database format (JSON file), currently with support for TOTP tokens only."
+    }
+  ]
+}

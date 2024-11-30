@@ -18,7 +18,7 @@ export interface OTPSchema {
     algorithm: AlgorithmSupport,
     digits: number,
     counter: number,
-    group?: string,
+    groups?: string[],
     note?: string,
 }
 

@@ -257,6 +257,10 @@
       "value": "Password"
     },
     {
+      "name": "setting_setup_password_opt_placeholder",
+      "value": "Password (Optional)"
+    },
+    {
       "name": "setting_setup_password_re_placeholder",
       "value": "Confirm password"
     },

@@ -237,6 +237,10 @@
       "value": "Decrypt Backup File"
     },
     {
+      "name": "password_usage_encrypt_export",
+      "value": "Encrypt Backup File"
+    },
+    {
       "name": "password_usage_generate_dec_key",
       "value": "Generate Decryption Key"
     },

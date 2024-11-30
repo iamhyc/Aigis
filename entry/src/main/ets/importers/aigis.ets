@@ -1,11 +1,12 @@
 import { buffer, util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { ImporterClass } from ".";
+import { ImporterBehavior } from ".";
 import { AesGcmMaterial, AigisContentSchema,
+    ImporterSchema,
     MasterKeyInfo,
     OTPItemInfo,
     SecretSchema} from '../common/schema';
-import { stringToUint8Array, Uint8ArrayToString } from '../common/utils';
+import { formatDateString, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { generateMasterKeyInHUKS } from '../crypto/authUtils';
 import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from '../crypto/huksUtils';
 
@@ -17,9 +18,17 @@ interface AigisExportFormat {
     secrets: string, //SecretSchema[],
 }
 
-export class AigisImporter extends ImporterClass {
-    constructor() { super(); }
-    
+export class AigisImporter implements ImporterBehavior {
+    schema: ImporterSchema = {
+        type: 'aigis',
+        name: $r('app.string.importer_aigis_name'),
+        description: $r('app.string.importer_aigis_desc'),
+        format: ['.json'],
+        import_password_required: true,
+        export_password_required: false,
+        export_filename: `aigis-export-${formatDateString()}.json`,
+    };
+
     async save(fd: number, masterKeyAlias: string, content: AigisContentSchema): Promise<boolean> {
         try {
             const b64 = new util.Base64Helper();

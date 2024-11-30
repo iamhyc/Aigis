@@ -229,6 +229,10 @@
       "value": "解密备份文件"
     },
     {
+      "name": "password_usage_encrypt_export",
+      "value": "加密备份文件"
+    },
+    {
       "name": "password_usage_generate_dec_key",
       "value": "生成解密密钥"
     },

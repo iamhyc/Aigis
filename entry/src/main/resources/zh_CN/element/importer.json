@@ -1,0 +1,21 @@
+{
+  "string": [
+    {
+      "name": "importer_aigis_name",
+      "value": "Aigis (.JSON)"
+    },
+    {
+      "name": "importer_aigis_desc",
+      "value": "官方数据库格式（JSON文件），提供最完整的数据存储支持。"
+    },
+
+    {
+      "name": "importer_aegis_name",
+      "value": "Aegis 身份验证器"
+    },
+    {
+      "name": "importer_aegis_desc",
+      "value": "加密或明文 Aegis Authenticator 数据库格式（JSON文件），当前仅支持 TOTP 令牌。"
+    }
+  ]
+}

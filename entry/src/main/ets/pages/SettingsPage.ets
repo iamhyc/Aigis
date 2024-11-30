@@ -27,6 +27,7 @@ import { AtlAuthResult, IconPackStore, MasterKeyInfo } from "../common/schema";
 import { AppLockPage } from "../components/pages";
 import { validateAtlAuth, validatePassword } from "../crypto/authUtils";
 import { FEEDBACK_WEBSITE, MAX_ICON_PACK_NUM, OFFICIAL_WEBSITE } from "../common/conts";
+import { ImporterSelections } from "../importers";
 
 interface DividerStyle {strokeWidth: Length; color?: ResourceColor; startMargin?: Length; endMargin?: Length;};
 const divider_style: DividerStyle = {strokeWidth:'1px', color:$r('sys.color.comp_divider'), startMargin:6, endMargin:6};
@@ -313,7 +314,7 @@ export struct SettingsPage {
                                             const usage = this.EnableBiometricAuth ? $r('app.string.password_usage_generate_dec_key') : $r('app.string.password_usage_generate_dec_key_atl3');
                                             this.showCustomDialog(() => {
                                                 this.passwordInputDialogBuilder(
-                                                    $r('app.string.setting_enter_master_password'), usage, undefined,
+                                                    $r('app.string.setting_enter_master_password'), usage, false, undefined,
                                                     (password) => {
                                                         validatePassword(this.EncMasterKey, password)
                                                             .then(validated => {
@@ -528,39 +529,38 @@ export struct SettingsPage {
         }
     }
 
-    @Builder passwordInputDialogBuilder(title: ResourceStr, usage: ResourceStr, optionText?: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
-        PasswordInputDialog({ title, usage, optionText, confirm, cancel })
+    @Builder passwordInputDialogBuilder(title: ResourceStr, usage: ResourceStr, optional?: boolean, optionText?: ResourceStr, confirm?: (password: string, checked?: boolean) => void, cancel?: () => void) {
+        PasswordInputDialog({ title, usage, optional, optionText, confirm, cancel })
     }
-    @Builder customSelectDialogBuilder(title: ResourceStr, subtitle: ResourceStr | undefined, entries: ResourceStr[], confirm?: (value: ResourceStr) => void, cancel?: () => void) {
-        CustomSelectDialog({ title, subtitle, entries, confirm, cancel })
+    @Builder customSelectDialogBuilder(title: ResourceStr, subtitle: ResourceStr | undefined, entries: string[], descriptions?: (ResourceStr|undefined)[], confirm?: (value: string) => void, cancel?: () => void, toName?: (entry: string) => ResourceStr) {
+        CustomSelectDialog({ title, subtitle, entries, descriptions, confirm, cancel, toName })
     }
     private handleImportFromFile() {
-        const entries = ['Aigis (.json)'];
         this.showCustomDialog(() => {
-            this.customSelectDialogBuilder($r('app.string.setting_import_file_title'), undefined, entries, (value) => {
-                let format: string = '';
-                switch(value) {
-                    case 'Aigis (.json)':
-                        format = 'aigis';
-                        break;
-                    default:
-                        return;
-                }
+            this.customSelectDialogBuilder(
+                $r('app.string.setting_import_file_title'), undefined,
+                Array.from(ImporterSelections.keys()),
+                Array.from(ImporterSelections.values()).map(x => x.description),
+                (key) => {
+                const schema = ImporterSelections.get(key)!;
+                const type   = schema.type;
                 //
                 const context = getContext(this) as common.Context;
                 const documentViewPicker = new picker.DocumentViewPicker(context);
                 const documentSelectOptions = new picker.DocumentSelectOptions();
                 documentSelectOptions.maxSelectNumber = 1;
-                documentSelectOptions.fileSuffixFilters = ['.json'];
+                documentSelectOptions.fileSuffixFilters = schema.format;
                 documentViewPicker.select(documentSelectOptions).then((uris) => {
                     if (uris[0]!==undefined) {
                         const uri = uris[0];
                         this.showCustomDialog(() => {
                             this.passwordInputDialogBuilder(
-                                $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_decrypt_import'),
+                                $r('app.string.setting_setup_password_title'),
+                                $r('app.string.password_usage_decrypt_import'),
+                                !schema.import_password_required,
                                 this.MasterKeyAvailable? undefined : $r('app.string.setting_import_enter_password_option_as_master_key'),
                                 (password, importPassword) => {
-                                    context.eventHub.emit(EVENT_IMPORT_REQUEST, {format, uri, password, importPassword} as FileImportRequestSchema);
+                                    context.eventHub.emit(EVENT_IMPORT_REQUEST, {type, uri, password, importPassword} as FileImportRequestSchema);
                                     //
                                     this.inputDialogId = -1;
                                     promptAction.closeCustomDialog(this.inputDialogId);
@@ -571,40 +571,51 @@ export struct SettingsPage {
                 //
                 this.inputDialogId = -1;
                 promptAction.closeCustomDialog(this.inputDialogId);
-            }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+            },
+                () => { promptAction.closeCustomDialog(this.inputDialogId); },
+                (entry: string) => { return ImporterSelections.get(entry)?.name ?? entry; }
+            );
         });
     }
     private handleExportToFile() {
-        const entries = ['Aigis (.json)'];
         this.showCustomDialog(() => {
-            this.customSelectDialogBuilder($r('app.string.setting_export_file_title'), undefined, entries, (value) => {
-                let format: string = '';
-                const dateStr = new Date().toLocaleString('zh-CN', {hour12: false})
-                    .replace(/\/|:/g, '')
-                    .split(' ').join('-')
-                const documentSaveOptions = new picker.DocumentSaveOptions();
-                switch(value) {
-                    case 'Aigis (.json)':
-                        format = 'aigis';
-                        documentSaveOptions.newFileNames = [`aigis-${dateStr}.json`];
-                        documentSaveOptions.fileSuffixChoices = ['.json'];
-                        break;
-                    default:
-                        return;
-                }
-                //
-                const context = getContext(this) as common.Context;
-                const documentViewPicker = new picker.DocumentViewPicker(context);
-                documentViewPicker.save(documentSaveOptions).then((uris) => {
-                    if (uris[0]!==undefined) {
-                        const uri = uris[0];
-                        context.eventHub.emit(EVENT_EXPORT_REQUEST, {format, uri} as FileExportRequestSchema);
-                    }
-                });
-                //
-                promptAction.closeCustomDialog(this.inputDialogId);
-                this.inputDialogId = -1;
-            }, () => { promptAction.closeCustomDialog(this.inputDialogId); })
+            this.customSelectDialogBuilder(
+                $r('app.string.setting_export_file_title'), undefined,
+                Array.from(ImporterSelections.keys()),
+                Array.from(ImporterSelections.values()).map(x => x.description),
+                (key) => {
+                    const schema = ImporterSelections.get(key)!;
+                    const type   = schema.type;
+                    const documentSaveOptions = new picker.DocumentSaveOptions();
+                    documentSaveOptions.newFileNames = [schema.export_filename];
+                    documentSaveOptions.fileSuffixChoices = schema.format;
+                    //
+                    const context = getContext(this) as common.Context;
+                    const documentViewPicker = new picker.DocumentViewPicker(context);
+                    documentViewPicker.save(documentSaveOptions).then((uris) => {
+                        if (uris[0]!==undefined) {
+                            const uri = uris[0];
+                            if (schema.export_password_required) {
+                                this.passwordInputDialogBuilder(
+                                    $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_decrypt_import'), false, undefined,
+                                    (password) => {
+                                        context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri, password} as FileExportRequestSchema);
+                                        //
+                                        this.inputDialogId = -1;
+                                        promptAction.closeCustomDialog(this.inputDialogId);
+                                    }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                            } else {
+                                context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri} as FileExportRequestSchema);
+                            }
+                        }
+                    });
+                    //
+                    promptAction.closeCustomDialog(this.inputDialogId);
+                    this.inputDialogId = -1;
+                },
+                () => { promptAction.closeCustomDialog(this.inputDialogId); },
+                (entry: string) => { return ImporterSelections.get(entry)?.name ?? entry; },
+            );
         });
     }
 
