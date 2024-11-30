@@ -4,7 +4,7 @@ import { scanCore, scanBarcode } from '@kit.ScanKit';
 
 import { FAKE_OTP_CODE, ONE_DAY_IN_MS, PREF_KEY_ITEMS, PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
-import { OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
+import { IssuerName, OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
 import { ItemEditBuilder } from './ItemEditPage';
 import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
@@ -156,7 +156,7 @@ struct Index {
                 .bindSheet($$this.editState.editPageShow,
                     ItemEditBuilder(
                         getContext(this),
-                        this.getExKeys(),
+                        this.getExIssuerNames(),
                         this.editState.editKeyAlias,
                         this.editState.editSchema!,
                         this.editState.editIcon,
@@ -353,11 +353,11 @@ struct Index {
         }
     }
 
-    private getExKeys(): string[] {
+    private getExIssuerNames(): IssuerName[] {
         if (this.editState.editNewItem) {
-            return this.items.map(x => x.keyAlias);
+            return this.items.flatMap(x => [{issuer:x.schema.issuer, name:x.schema.name} as IssuerName]);
         } else {
-            return this.items.flatMap(x => x.keyAlias===this.editState.editKeyAlias ? [] : [x.keyAlias]);
+            return this.items.flatMap(x => x.keyAlias===this.editState.editKeyAlias ? [] : [{issuer:x.schema.issuer, name:x.schema.name} as IssuerName]);
         }
     }
 }
@@ -900,7 +900,7 @@ struct OTPItem {
 
     private hasDuplicateIssuers(): boolean {
         for (const item of this.items) {
-            if (item.schema.issuer===this.schema.issuer && item.keyAlias!==this.keyAlias) {
+            if (item.schema.issuer===this.schema.issuer && item.schema.name!==this.schema.name) {
                 return true;
             }
         }
@@ -1107,13 +1107,11 @@ struct QrScanButton {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         //
-        const keyAlias = otp.keyAlias;
-        const exKeys = this.items.map(x => x.keyAlias);
-        if (this.DisableAddConfirm && !exKeys.includes(keyAlias)) {
-            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias} as UpdateRequestSchema);
+        if (this.DisableAddConfirm) {
+            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri} as UpdateRequestSchema);
         } else {
             this.selected = '';
-            this.editState.show(otp.keyAlias, otp.secret_leaked_schema, '', true);
+            this.editState.show('', otp.secret_leaked_schema, '', true);
         }
     }
 

@@ -71,7 +71,7 @@ function rfc4226Sec5_4Impl(hash: Uint8Array): number {
     return otp;
 }
 
-export function name2keyAlias(props: IssuerName): string {
+export function issuerNameToString(props: IssuerName): string {
     return `${props.issuer}:${props.name}`;
 }
 
@@ -135,10 +135,6 @@ export abstract class OTP {
     get secret_leaked_schema() {
         const _leak_schema = shallowCopy(this._schema) as OTPSchema;
         return _leak_schema;
-    }
-
-    get keyAlias() {
-        return name2keyAlias({issuer:this._schema.issuer, name:this._schema.name});
     }
 
     async generateHash(secret: Uint8Array, realCounter?: number): Promise<Uint8Array> {
