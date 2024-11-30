@@ -4,7 +4,7 @@ import { promptAction, window } from '@kit.ArkUI';
 import { BusinessError, zlib } from '@kit.BasicServicesKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { OTP, OtpSchemaSupport, parseURI } from '../crypto/otpUtils'
+import { IssuerName, OTP, OtpSchemaSupport, parseURI } from '../crypto/otpUtils'
 import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     AigisContentSchema,
     MasterKeyInfo,
@@ -265,12 +265,20 @@ class PreferencesManager {
         const failed: OTPItemInfo[] = [];
         //
         for (let i=0; i<items.length; i++) {
-            const keyAlias = items[i].keyAlias;
-            if (this._items.find(x => x.keyAlias===keyAlias)) {
-                failed.push(items[i]);
+            const item = items[i];
+            const secret = secrets[i];
+            const keyAlias = item.keyAlias;
+            const existedItem = this._items.find(x => x.keyAlias===keyAlias);
+            const collidedItem = this._items.find(x => x.schema.issuer===item.schema.issuer && x.schema.name===item.schema.name);
+
+            if (existedItem) {
+                failed.push(item);
             } else {
-                this._items.push(items[i]);
-                this._secrets.push(secrets[i]);
+                if (collidedItem) {
+                    item.schema.name += '_' + i.toString().padStart(4, '0');
+                }
+                this._items.push(item);
+                this._secrets.push(secret);
                 this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
             }
         }
@@ -279,36 +287,48 @@ class PreferencesManager {
         return failed;
     }
 
-    async updatePreferenceItem(uri: string, oldKeyAlias?: string, icon?: string) {
+    async updatePreferenceItem(uri: string, keyAlias?: string, issuerName?: IssuerName, icon?: string) {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         const secret = args.get('secret');
 
-        const newKeyAlias = oldKeyAlias===undefined ? (otp as OTP).keyAlias : oldKeyAlias;
-        const oldItem = this._items.find(x => oldKeyAlias===x.keyAlias);
-        const oldSecret = this._secrets.find(x => oldKeyAlias===x.keyAlias);
-
-        if (oldItem!==undefined) {
-            const oldKeyAlias = oldItem.keyAlias;
-            oldItem.keyAlias = newKeyAlias;
-            oldItem.icon = icon ?? await this.iconManager.match( otp.schema.issuer );
-            //
-            oldItem.schema = otp.schema;
-            if (secret && oldSecret) {
-                const result = await this.encryptSecret(secret);
-                oldSecret.secret = result[0];
-                oldSecret.encrypted = result[1];
+        // self-update old item
+        if (keyAlias!==undefined || issuerName!==undefined) {
+            // identify collision
+            if (keyAlias===undefined) {
+                const collidedItem = this._items.find(x => x.schema.issuer===issuerName?.issuer && x.schema.name===issuerName?.name);
+                if (collidedItem) {
+                    keyAlias = collidedItem.keyAlias;
+                } else {
+                    return await this.appendPreferenceItem(otp, secret!, icon);
+                }
             }
-            // update new instances
-            this._instances.delete(oldKeyAlias);
-            this.requestCodeUpdate(newKeyAlias);
-        } else {
-            await this.appendPreferenceItem(otp, secret!, icon);
+            // find old items and associated secret
+            const oldItem = this._items.find(x => keyAlias===x.keyAlias);
+            const oldSecret = this._secrets.find(x => keyAlias===x.keyAlias);
+            // update old item
+            if (oldItem!==undefined) {
+                oldItem.schema = otp.schema;
+                oldItem.icon = icon ?? await this.iconManager.match( otp.schema.issuer );
+                // update secret
+                if (secret && oldSecret) {
+                    const result = await this.encryptSecret(secret);
+                    oldSecret.secret = result[0];
+                    oldSecret.encrypted = result[1];
+                }
+                // update instances
+                this._instances.delete(keyAlias);
+                this.requestCodeUpdate(keyAlias);
+            }
+        }
+        // create new item
+        else {
+            return await this.appendPreferenceItem(otp, secret!, icon);
         }
     }
 
     private async appendPreferenceItem(otp: OTP, _secret: string, icon?: string) {
-        const keyAlias = otp.keyAlias;
+        const keyAlias = util.generateRandomUUID();
         const schema = otp.schema;
 
         // encrypt secret
@@ -622,7 +642,7 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_UPDATE_ITEM, async (data: UpdateRequestSchema) => {
             if (this.instPreferences) {
                 // update local preferences
-                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.icon);
+                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.issuerName, data.icon);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items

@@ -4,7 +4,7 @@ import { IconManager } from "../common/icons";
 import { IconPackStore } from "../common/schema";
 import { IssuerIcon } from "../components/icons";
 import { LabeledSelect, LabeledTextInput } from "../components/labeled";
-import { name2keyAlias, OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
+import { IssuerName, issuerNameToString, OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
 
 const COLUMN_ITEM_GAP: number = 8;
 const FAKE_SECRET: string = '0'.repeat(16);
@@ -14,7 +14,7 @@ const hashEntries: string[] = ['SHA1', 'SHA256', 'SHA512'];
 @Builder
 export function ItemEditBuilder(
     context: Context,
-    exKeys: string[],
+    exIssuerNames: IssuerName[],
     keyAlias: string,
     schema: OTPSchema,
     icon: string,
@@ -22,7 +22,7 @@ export function ItemEditBuilder(
 ) {
     Column() {
         ItemEditComponent({
-            context, exKeys, keyAlias, schema, icon, editNewItem,
+            context, exIssuerNames, keyAlias, schema, icon, editNewItem,
             issuer: schema.issuer,
             name: schema.name,
             typeIndex: typeEntries.indexOf(schema.type.toUpperCase()),
@@ -41,7 +41,7 @@ struct ItemEditComponent {
     @StorageProp('bottomRectHeight') bottomRectHeight: number = 0;
     @StorageProp('IconPacks') IconPacks: IconPackStore[] = [];
     @Require @Prop context: Context;
-    @Require @Prop exKeys: string[];
+    @Require @Prop exIssuerNames: IssuerName[];
     @Require @Prop keyAlias: string;
     @Require @Prop schema: OTPSchema;
     @Require @Prop editNewItem: boolean;
@@ -78,7 +78,7 @@ struct ItemEditComponent {
         // popup for removal confirmation
         AlertDialog.show({
             title: $r('app.string.delete_title'),
-            message: $r('app.string.delete_hint', name2keyAlias({issuer:this.schema.issuer,name:this.schema.name})),
+            message: $r('app.string.delete_hint', issuerNameToString({issuer:this.schema.issuer,name:this.schema.name})),
             autoCancel: true,
             primaryButton: {
                 value: $r('app.string.button_text_cancel'),
@@ -113,9 +113,7 @@ struct ItemEditComponent {
                 value: $r('app.string.button_text_ok'),
                 fontColor: $r('sys.color.warning'),
                 style: DialogButtonStyle.DEFAULT,
-                action: () => {
-                    callback();
-                },
+                action: () => { callback(); },
             }
         })
     }
@@ -136,26 +134,27 @@ struct ItemEditComponent {
             });
             return;
         }
-        //
+
         const uri = this.fieldsToUri();
         const icon = this.icon;
-        const allow_overwrite = this.editNewItem; //overwrite when adding new ones
-        if (this.exKeys.includes(this.keyAlias)) {
-            const keyAlias = this.keyAlias;
-            this.requestOverwriteConfirm(keyAlias, allow_overwrite, () => {
-                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
+        const issuerNameCollided = this.exIssuerNames.find(x => x.issuer===this.issuer && x.name===this.name);
+        //
+        if (issuerNameCollided) {
+            const allow_overwrite = this.editNewItem; //overwrite when adding new ones
+            const issuerName = issuerNameCollided;
+            this.requestOverwriteConfirm(issuerNameToString(issuerName), allow_overwrite, () => {
+                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, issuerName, icon} as UpdateRequestSchema);
             });
         } else {
             const keyAlias = this.editNewItem? undefined : this.keyAlias;
             getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
         }
-        // this.saveBtnEnabled = false;
     }
 
     private fieldsToUri(): string {
         const secret = this.secret===FAKE_SECRET? '' : encodeURIComponent(this.secret);
         const type = typeEntries[this.typeIndex].toLowerCase();
-        const issuer_name = encodeURIComponent(name2keyAlias({issuer:this.issuer,name:this.name}));
+        const issuer_name = encodeURIComponent(issuerNameToString({issuer:this.issuer,name:this.name}));
         const algorithm = hashEntries[this.hashIndex];
         const counter = Number.parseInt(this.counter).toString();
         const digits = Number.parseInt(this.digits).toString();
