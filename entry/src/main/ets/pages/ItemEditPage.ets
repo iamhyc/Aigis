@@ -236,9 +236,9 @@ struct ItemEditComponent {
                     GridItem() {
                         LabeledTextInput({label: $r('app.string.edit_label_digits'), text: this.digits, type:InputType.Number})
                     }
-                    // GridItem() {
-                    //     LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
-                    // }
+                    GridItem() {
+                        LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
+                    }
                 }
                 .layoutDirection(GridDirection.Row)
                 .columnsTemplate('1fr 1fr')

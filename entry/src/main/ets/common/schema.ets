@@ -14,6 +14,7 @@ export interface OTPItemInfo {
     code: CodeResponseSchema,
     schema: OTPSchema,
     favorite?: boolean,
+    last_used_timestamp?: number,
 }
 
 export interface SecretSchema {

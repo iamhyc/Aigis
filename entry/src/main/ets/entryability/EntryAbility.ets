@@ -134,7 +134,7 @@ class PreferencesManager {
         return otp;
     }
 
-    async requestCodeUpdate(keyAlias: string, includeNext?: boolean, authToken?: Uint8Array): Promise<boolean> {
+    async requestCodeUpdate(keyAlias: string, authToken?: Uint8Array, includeNext?: boolean, dataPreferences?: preferences.Preferences): Promise<boolean> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
         const secret = this._secrets.find(x => x.keyAlias===keyAlias);
         if (item && secret) {
@@ -144,6 +144,11 @@ class PreferencesManager {
                 timestamp: rawSecret.byteLength? Date.now() : 0,
                 code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
                 next: rawSecret.byteLength && includeNext? await otp.generateOTP(rawSecret, true): undefined,
+            }
+            if (rawSecret.byteLength && dataPreferences) {
+                item.schema.counter += 1;
+                item.last_used_timestamp = Date.now();
+                this.persists(dataPreferences, ['items']);
             }
             return true;
         } else {
@@ -478,14 +483,22 @@ class PreferencesManager {
         }
     }
 
-    persists(dataPreferences: preferences.Preferences) {
-        dataPreferences!.putSync(PREF_KEY_ITEMS, this._items);
-        dataPreferences!.putSync(PREF_KEY_SECRETS, this._secrets);
-        dataPreferences!.putSync(PREF_ICON_PACKS, this.icons);
-        dataPreferences?.putSync(PREF_MASTER_KEY, this._encMasterKeyInfo);
-        dataPreferences.putSync(PREF_DEC_MASTER_KEY, this._decMasterKeyInfo);
+    persists(dataPreferences: preferences.Preferences, range?: ('items'|'secrets'|'icons'|'master-key')[]) {
+        if (range===undefined || range.includes('items')) {
+            dataPreferences.putSync(PREF_KEY_ITEMS, this._items);
+        }
+        if (range===undefined || range.includes('secrets')) {
+            dataPreferences.putSync(PREF_KEY_SECRETS, this._secrets);
+        }
+        if (range===undefined || range.includes('icons')) {
+            dataPreferences.putSync(PREF_ICON_PACKS, this.icons);
+        }
+        if (range===undefined || range.includes('master-key')) {
+            dataPreferences.putSync(PREF_MASTER_KEY, this._encMasterKeyInfo);
+            dataPreferences.putSync(PREF_DEC_MASTER_KEY, this._decMasterKeyInfo);
+        }
         //
-        dataPreferences!.flush();
+        dataPreferences.flush();
     }
 }
 
@@ -633,7 +646,7 @@ export default class EntryAbility extends UIAbility {
     private registerEventHubHandlers() {
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {
-                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.includeNext, data.authToken);
+                const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.authToken, data.includeNext, this.dataPreferences);
                 if (res) {
                     this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 }
