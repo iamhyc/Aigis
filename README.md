@@ -6,6 +6,9 @@
 
 # Aigis
 
+> [!NOTE]
+> 本元服务已正式上架应用市场，请搜索“Aigis”使用！
+
 HarmonyOS NEXT 的 [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) 的轻量级替代品，采用纯 ArkTS 实现，无任何三方依赖。
 
 <p float="left">
