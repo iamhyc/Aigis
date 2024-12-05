@@ -68,7 +68,9 @@ class PreferencesManager {
 
     constructor(items: OTPItemInfo[], secrets: SecretSchema[], icons: IconPackStore[], encMasterKeyInfo?: MasterKeyInfo, decMasterKeyInfo?: MasterKeyInfo, authLevel?: AuthLevelSupport, authPriority?: AuthTypePriority) {
         this._items = items;
-        items.forEach(item => item.code = {timestamp:0,code:FAKE_OTP_CODE});
+        items.forEach(item => {
+            item.code = {timestamp:0,code:FAKE_OTP_CODE};
+        });
         this._secrets = secrets;
         //
         this.iconManager = new IconManager(icons);
@@ -92,7 +94,15 @@ class PreferencesManager {
     }
 
     get items() {
-        return this._items;
+        const items = Array.from(this._items);
+        // NOTE: leak plaintext secret
+        items.forEach(item => {
+            const secret = this._secrets.find(x => x.keyAlias===item.keyAlias);
+            if (secret && secret.encrypted===undefined) {
+                item.schema.secret = secret.secret;
+            }
+        });
+        return items;
     }
 
     get icons() {
@@ -485,6 +495,10 @@ class PreferencesManager {
 
     persists(dataPreferences: preferences.Preferences, range?: ('items'|'secrets'|'icons'|'master-key')[]) {
         if (range===undefined || range.includes('items')) {
+            // NOTE: check plaintext secret leak
+            this._items.forEach(item => {
+                item.schema.secret = undefined;
+            });
             dataPreferences.putSync(PREF_KEY_ITEMS, this._items);
         }
         if (range===undefined || range.includes('secrets')) {
@@ -723,10 +737,12 @@ export default class EntryAbility extends UIAbility {
                 const _now = Date.now()
                 this.dataPreferences.putSync(PREF_PASSWORD_CHALLENGE_TIME, _now);
                 AppStorage.set(PREF_PASSWORD_CHALLENGE_TIME, _now);
-                // propagate
+                // propagate global storage
                 AppStorage.set('EncMasterKey', this.instPreferences.encMasterKeyInfo);
                 AppStorage.set('MasterKeyAvailable', true);
                 AppStorage.set('StatusDecKeyRequired', false);
+                // propagate updated items
+                this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
         });
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD_CHALLENGE_TIME, (data: UpdatePasswordChallengeTimeSchema) => {

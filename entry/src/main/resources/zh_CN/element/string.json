@@ -138,6 +138,26 @@
       "value": "备注"
     },
     {
+      "name": "edit_label_share",
+      "value": "分享链接"
+    },
+    {
+      "name": "edit_share_title",
+      "value": "分享条目"
+    },
+    {
+      "name": "edit_share_stepper",
+      "value": "%s 枚二维码"
+    },
+    {
+      "name": "edit_share_stepper_prev",
+      "value": "上一个"
+    },
+    {
+      "name": "edit_share_stepper_next",
+      "value": "下一个"
+    },
+    {
       "name": "edit_label_secret",
       "value": "密钥"
     },

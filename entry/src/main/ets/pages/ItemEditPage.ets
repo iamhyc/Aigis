@@ -3,7 +3,8 @@ import { EVENT_REMOVE_ITEM, EVENT_UPDATE_ITEM, RemovalRequestSchema, UpdateReque
 import { IconManager } from "../common/icons";
 import { IconPackStore } from "../common/schema";
 import { IssuerIcon } from "../components/icons";
-import { LabeledSelect, LabeledTextInput } from "../components/labeled";
+import { LabeledSelect, LabeledTextInput, LabeledUriHolder } from "../components/labeled";
+import { QrCodePage } from "../components/pages";
 import { IssuerName, issuerNameToString, OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
 
 const COLUMN_ITEM_GAP: number = 8;
@@ -55,6 +56,8 @@ struct ItemEditComponent {
     @Watch('onValueChanged') @Prop period: string;
     @Watch('onValueChanged') @Prop counter: string;
     @Prop secret: string;
+    @State navStack: NavPathStack = new NavPathStack();
+    @State shareLink: string = this.fieldsToUri();
     @State secretInputEnabled: boolean = this.editNewItem;
     @State saveBtnEnabled: boolean = this.editNewItem;
     @State advanceCollapsed: boolean = !this.editNewItem;
@@ -72,6 +75,7 @@ struct ItemEditComponent {
             this.icon = this.IconCandidatesValues[ this.iconIndex ];
             this.validatedIcon = IconManager.validateUri(this.icon);
         }
+        this.shareLink = this.fieldsToUri();
     }
 
     private requestDeleteItem() {
@@ -164,102 +168,133 @@ struct ItemEditComponent {
         return uri;
     }
 
-    build() {
-        Column({space: COLUMN_ITEM_GAP}) {
-            if (this.validatedIcon) {
-                Image(this.validatedIcon)
-                    .height(64).width(64)
-                    .borderRadius(32)
-                    .margin({bottom:COLUMN_ITEM_GAP})
-            } else {
-                IssuerIcon({
-                    issuer: this.issuer,
-                    iconSize: '64vp',
-                    iconRadius: '32vp',
-                    fontSize: 36,
+    @Builder pageJump(name: string, params: string[]) {
+        NavDestination() {
+            if (name==='qrcode') {
+                QrCodePage({
+                    title: $r('app.string.edit_share_title'),
+                    uris: params,
+                    label_main: [this.issuer],
+                    label_sub: [this.name],
                 })
-                    .margin({bottom:COLUMN_ITEM_GAP})
-            }
-            Divider().strokeWidth('1px').width('90%')
-            // information fields
-            Column({space: COLUMN_ITEM_GAP}) {
-                LabeledSelect({
-                    label: $r('app.string.edit_label_icon'),
-                    entries: Array.from( this.IconCandidates.keys() ),
-                    values: Array.from( this.IconCandidates.values() ),
-                    selected: this.iconIndex,
-                })
-                LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
-                LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})
-                LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
-            }
-            // advance fields
-            if (!this.editNewItem) {
-                Text() {
-                    SymbolSpan(this.advanceCollapsed? $r('sys.symbol.chevron_right') : $r('sys.symbol.chevron_down'))
-                        .fontColor([$r('sys.color.font_primary')])
-                        .fontSize(16)
-                    Span(this.advanceCollapsed? '  ' : ' ')
-                    Span($r('app.string.edit_advanced_title'))
-                }
-                .width('100%')
-                .height(24)
-                .fontSize(16)
-                .onClick(() => {
-                    animateTo({duration: 200}, () => {
-                        this.advanceCollapsed = !this.advanceCollapsed;
-                    });
-                })
-            }
-            if (!this.advanceCollapsed) {
-                Column({space: COLUMN_ITEM_GAP}) {
-                    LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
-                        type: InputType.Password, inputEnabled: this.secretInputEnabled})
-                }
-                Grid() {
-                    GridItem() {
-                        LabeledSelect({label: $r('app.string.edit_label_type'), entries: typeEntries, selected: this.typeIndex})
-                    }
-                    GridItem() {
-                        LabeledSelect({label: $r('app.string.edit_label_hash_function'), entries: hashEntries, selected: this.hashIndex})
-                    }
-                    if (['TOTP', 'STEAM'].includes(typeEntries[this.typeIndex])) {
-                        GridItem() {
-                            LabeledTextInput({label: $r('app.string.edit_label_period'), text: this.period, type:InputType.Number})
-                        }
-                    }
-                    if (typeEntries[this.typeIndex]==='HOTP') {
-                        GridItem() {
-                            LabeledTextInput({label: $r('app.string.edit_label_counter'), text: this.counter, type:InputType.Number})
-                        }
-                    }
-                    GridItem() {
-                        LabeledTextInput({label: $r('app.string.edit_label_digits'), text: this.digits, type:InputType.Number})
-                    }
-                    GridItem() {
-                        LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
-                    }
-                }
-                .layoutDirection(GridDirection.Row)
-                .columnsTemplate('1fr 1fr')
-                .rowsGap(10).columnsGap(COLUMN_ITEM_GAP)
-                .maxCount(2)
-            }
-            //
-            Button($r('app.string.button_text_save'))
-                .height('36vp')
-                .width('100%')
-                .enabled(this.saveBtnEnabled)
-                .onClick(() => { this.requestUpdateItem(); })
-            if (!this.secretInputEnabled) {
-                Button($r('app.string.button_text_delete'))
-                    .height('36vp')
-                    .width('100%')
-                    .backgroundColor($r('sys.color.warning'))
-                    .onClick(() => { this.requestDeleteItem(); })
             }
         }
+        .backgroundColor($r('app.color.color_face'))
+        .height('100%').width('100%')
+        .hideTitleBar(true)
+    }
+
+    build() {
+        Navigation(this.navStack) {
+            Column({space: COLUMN_ITEM_GAP}) {
+                if (this.validatedIcon) {
+                    Image(this.validatedIcon)
+                        .height(64).width(64)
+                        .borderRadius(32)
+                        .margin({bottom:COLUMN_ITEM_GAP})
+                } else {
+                    IssuerIcon({
+                        issuer: this.issuer,
+                        iconSize: '64vp',
+                        iconRadius: '32vp',
+                        fontSize: 36,
+                    })
+                        .margin({bottom:COLUMN_ITEM_GAP})
+                }
+                Divider().strokeWidth('1px').width('90%')
+                // information fields
+                Column({space: COLUMN_ITEM_GAP}) {
+                    LabeledSelect({
+                        label: $r('app.string.edit_label_icon'),
+                        entries: Array.from( this.IconCandidates.keys() ),
+                        values: Array.from( this.IconCandidates.values() ),
+                        selected: this.iconIndex,
+                    })
+                    LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
+                    LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})
+                    LabeledTextInput({label: $r('app.string.edit_label_note'), text: this.note, required: false})
+                    if (this.secret && this.secret!==FAKE_SECRET) {
+                        LabeledUriHolder({
+                            label: $r('app.string.edit_label_share'), uri: this.shareLink,
+                            qrCallback: (uri) => {
+                                this.navStack.pushPath({ name: 'qrcode',  param: [uri] });
+                            }
+                        })
+                    }
+                }
+                // advance fields
+                if (!this.editNewItem) {
+                    Text() {
+                        SymbolSpan(this.advanceCollapsed? $r('sys.symbol.chevron_right') : $r('sys.symbol.chevron_down'))
+                            .fontColor([$r('sys.color.font_primary')])
+                            .fontSize(16)
+                        Span(this.advanceCollapsed? '  ' : ' ')
+                        Span($r('app.string.edit_advanced_title'))
+                    }
+                    .width('100%')
+                    .height(24)
+                    .fontSize(16)
+                    .onClick(() => {
+                        animateTo({duration: 200}, () => {
+                            this.advanceCollapsed = !this.advanceCollapsed;
+                        });
+                    })
+                }
+                if (!this.advanceCollapsed) {
+                    Column({space: COLUMN_ITEM_GAP}) {
+                        LabeledTextInput({label: $r('app.string.edit_label_secret'), text: this.secret,
+                            type: InputType.Password, inputEnabled: this.secretInputEnabled})
+                    }
+                    Grid() {
+                        GridItem() {
+                            LabeledSelect({label: $r('app.string.edit_label_type'), entries: typeEntries, selected: this.typeIndex})
+                        }
+                        GridItem() {
+                            LabeledSelect({label: $r('app.string.edit_label_hash_function'), entries: hashEntries, selected: this.hashIndex})
+                        }
+                        if (['TOTP', 'STEAM'].includes(typeEntries[this.typeIndex])) {
+                            GridItem() {
+                                LabeledTextInput({label: $r('app.string.edit_label_period'), text: this.period, type:InputType.Number})
+                            }
+                        }
+                        if (typeEntries[this.typeIndex]==='HOTP') {
+                            GridItem() {
+                                LabeledTextInput({label: $r('app.string.edit_label_counter'), text: this.counter, type:InputType.Number})
+                            }
+                        }
+                        GridItem() {
+                            LabeledTextInput({label: $r('app.string.edit_label_digits'), text: this.digits, type:InputType.Number})
+                        }
+                        GridItem() {
+                            LabeledTextInput({label: $r('app.string.edit_label_usage_count'), text: this.counter, inputEnabled:false})
+                        }
+                    }
+                    .layoutDirection(GridDirection.Row)
+                    .columnsTemplate('1fr 1fr')
+                    .rowsGap(10).columnsGap(COLUMN_ITEM_GAP)
+                    .maxCount(2)
+                }
+                //
+                Button($r('app.string.button_text_save'))
+                    .height('36vp')
+                    .width('100%')
+                    .enabled(this.saveBtnEnabled)
+                    .onClick(() => { this.requestUpdateItem(); })
+                if (!this.secretInputEnabled) {
+                    Button($r('app.string.button_text_delete'))
+                        .height('36vp')
+                        .width('100%')
+                        .backgroundColor($r('sys.color.warning'))
+                        .onClick(() => { this.requestDeleteItem(); })
+                }
+            }
+            .width('100%')
+        }
+        .height('auto')
         .width('90%')
         .padding({ bottom: COLUMN_ITEM_GAP+px2vp(this.bottomRectHeight) })
+        .mode(NavigationMode.Stack)
+        .hideTitleBar(true)
+        .navDestination(this.pageJump)
     }
 }
