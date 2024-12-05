@@ -138,6 +138,26 @@
       "value": "Note"
     },
     {
+      "name": "edit_label_share",
+      "value": "Share Link"
+    },
+    {
+      "name": "edit_share_title",
+      "value": "Share Item"
+    },
+    {
+      "name": "edit_share_stepper",
+      "value": "%s QR Code"
+    },
+    {
+      "name": "edit_share_stepper_prev",
+      "value": "Previous"
+    },
+    {
+      "name": "edit_share_stepper_next",
+      "value": "Next"
+    },
+    {
       "name": "edit_label_secret",
       "value": "Secret"
     },

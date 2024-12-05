@@ -140,3 +140,81 @@ export struct PasswordChallengePage {
         })
     }
 }
+
+@Component
+export struct QrCodePage {
+    @Require @Prop title: ResourceStr;
+    @Require @Prop uris: string[];
+    @Prop label_main: string[] = [];
+    @Prop label_sub: string[] = [];
+    @State currentIndex: number = 0;
+
+    build() {
+        Stack({ alignContent: Alignment.Bottom }) {
+            Flex({
+                direction: FlexDirection.Column,
+                justifyContent: FlexAlign.Center,
+                alignItems: ItemAlign.Center,
+                space: { main:{value:12, unit:LengthUnit.VP} }
+            }) {
+                Text(this.title)
+                    .fontSize(24)
+                    .fontWeight(FontWeight.Medium)
+                //
+                QRCode(this.uris[this.currentIndex])
+                    .color($r('app.color.color_face'))
+                    .backgroundColor($r('app.color.color_face_back'))
+                    .border({width:'10vp', color:$r('app.color.color_face_back')})
+                //
+                if (this.label_main.length > 0) {
+                    Text(this.label_main[this.currentIndex])
+                        .fontSize(16)
+                        .fontColor($r('sys.color.font_primary'))
+                        .fontWeight(FontWeight.Medium)
+                    if (this.label_sub) {
+                        Text(this.label_sub[this.currentIndex])
+                            .fontSize(14)
+                            .fontColor($r('sys.color.font_secondary'))
+                            .margin({top:'-6vp'})
+                    }
+                }
+            }
+            .height('100%')
+            .width('80%')
+            //
+            RelativeContainer() {
+                if (this.currentIndex!==0) {
+                    Text($r('app.string.edit_share_stepper_prev'))
+                        .fontColor($r('sys.color.brand_font'))
+                        .fontSize(16)
+                        .onClick(() => { this.currentIndex -= 1; })
+                        .alignRules({
+                            'bottom': { 'anchor': '__container__', 'align': VerticalAlign.Bottom },
+                            'left': { 'anchor': '__container__', 'align': HorizontalAlign.Start },
+                        })
+                }
+                //
+                Text($r('app.string.edit_share_stepper', `${this.currentIndex+1}/${this.uris.length}`))
+                    .fontColor($r('sys.color.font_primary'))
+                    .fontSize(16)
+                    .alignRules({
+                        'bottom': { 'anchor': '__container__', 'align': VerticalAlign.Bottom },
+                        'middle': { 'anchor': '__container__', 'align': HorizontalAlign.Center },
+                    })
+                //
+                if (this.currentIndex!==this.uris.length-1) {
+                    Text($r('app.string.edit_share_stepper_next'))
+                        .fontColor($r('sys.color.brand_font'))
+                        .fontSize(16)
+                        .onClick(() => { this.currentIndex += 1; })
+                        .alignRules({
+                            'bottom': { 'anchor': '__container__', 'align': VerticalAlign.Bottom },
+                            'right': { 'anchor': '__container__', 'align': HorizontalAlign.End },
+                        })
+                }
+            }
+            .height('auto')
+            .width('100%')
+        }
+    }
+}
