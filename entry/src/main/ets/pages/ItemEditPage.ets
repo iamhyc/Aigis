@@ -63,15 +63,15 @@ struct ItemEditComponent {
     @State advanceCollapsed: boolean = !this.editNewItem;
 
     iconManager: IconManager = new IconManager(this.IconPacks);
-    IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
-    IconCandidatesEntry: ResourceStr[] = Array.from(this.IconCandidates.keys());
-    IconCandidatesValues: string[] = Array.from(this.IconCandidates.values());
+    @State IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
+    @State IconCandidatesEntries: ResourceStr[] = Array.from(this.IconCandidates.keys());
+    @State IconCandidatesValues: string[] = Array.from(this.IconCandidates.values());
     @State validatedIcon: string = IconManager.validateUri(this.editNewItem? this.IconCandidatesValues[0] : this.icon);
     @Watch('onValueChanged') @State iconIndex: number = this.IconCandidatesValues.findIndex(x => x===this.icon);
 
     private onValueChanged(propName: string) {
         this.saveBtnEnabled = true;
-        if (propName==='iconIndex') {
+        if (propName==='iconIndex' && this.iconIndex >= 0) {
             this.icon = this.IconCandidatesValues[ this.iconIndex ];
             this.validatedIcon = IconManager.validateUri(this.icon);
         }
@@ -193,12 +193,23 @@ struct ItemEditComponent {
                         .borderRadius(32)
                         .margin({bottom:COLUMN_ITEM_GAP})
                 } else {
-                    IssuerIcon({
-                        issuer: this.issuer,
-                        iconSize: '64vp',
-                        iconRadius: '32vp',
-                        fontSize: 36,
-                    })
+                    Stack({alignContent: Alignment.BottomEnd}) {
+                        IssuerIcon({
+                            issuer: this.issuer,
+                            iconSize: '64vp',
+                            iconRadius: '32vp',
+                            fontSize: 36,
+                        })
+                        Button() {
+                            SymbolGlyph($r('sys.symbol.plus_square_on_square_fill'))
+                                .fontColor([$r('sys.color.font_primary')])
+                                .fontSize(16)
+                        }
+                        .offset({right:-16})
+                        .backgroundColor($r('sys.color.ohos_id_color_component_activated_transparent'))
+                        .width(32).height(32)
+                    }
+                        .width(64).height(64)
                         .margin({bottom:COLUMN_ITEM_GAP})
                 }
                 Divider().strokeWidth('1px').width('90%')
@@ -206,9 +217,15 @@ struct ItemEditComponent {
                 Column({space: COLUMN_ITEM_GAP}) {
                     LabeledSelect({
                         label: $r('app.string.edit_label_icon'),
-                        entries: Array.from( this.IconCandidates.keys() ),
-                        values: Array.from( this.IconCandidates.values() ),
+                        entries: this.IconCandidatesEntries,
+                        values: this.IconCandidatesValues,
                         selected: this.iconIndex,
+                        onFocused: () => {
+                            this.IconCandidates = this.iconManager.matchAllSync(this.issuer);
+                            this.IconCandidatesEntries = Array.from(this.IconCandidates.keys());
+                            this.IconCandidatesValues = Array.from(this.IconCandidates.values());
+                            this.iconIndex = this.IconCandidatesValues.findIndex(x => x===this.icon);
+                        }
                     })
                     LabeledTextInput({label: $r('app.string.edit_label_issuer'), text: this.issuer})
                     LabeledTextInput({label: $r('app.string.edit_label_name'), text: this.name})

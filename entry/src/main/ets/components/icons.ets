@@ -21,11 +21,9 @@ export struct IssuerIcon {
     @Prop iconRadius: ResourceStr = '32vp';
     @Prop fontSize: number = 36;//fp
 
-    capital = this.issuer.charAt(0).toUpperCase();
-
     build() {
         Shape() {
-            Text(this.capital)
+            Text( this.issuer.charAt(0).toUpperCase() )
                 .fontWeight(FontWeight.Bold)
                 .fontSize(this.fontSize)
                 .fontColor(0xFFFFFF)

@@ -65,10 +65,6 @@ export class IconManager {
 
     private loadAllSync() { this.loadAll(true); }
 
-    private removeAll() {
-        this.map.clear();
-    }
-
     get icons() {
         return this._icons;
     }
@@ -166,9 +162,9 @@ export class IconManager {
         const isAbsPath = uri.startsWith('/data/storage');
 
         uri = uri.trim();
-        if (uri==='') { return ''; }
-
-        if (isAbsPath && fs.accessSync(uri)) {
+        if (uri==='') {
+            return '';
+        } else if (isAbsPath && fs.accessSync(uri)) {
             return 'file://'+uri;
         } else if (!isAbsPath && fs.accessSync(resDir+'/'+uri)) {
             return 'file://'+resDir+'/'+uri;
