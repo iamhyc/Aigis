@@ -111,6 +111,8 @@ export struct LabeledSelect {
     @Require @Prop entries: ResourceStr[];
     @Prop values: ResourceStr[] = this.entries;
 
+    onFocused?: () => void;
+
     build() {
         Column({space: COLUMN_LABEL_GAP}) {
             Row() {
@@ -126,6 +128,7 @@ export struct LabeledSelect {
                     .value(this.entries[this.selected])
                     .optionWidth(OptionWidthMode.FIT_TRIGGER)
                     .width('100%')
+                    .onClick(() => { this.onFocused && this.onFocused(); })
             }.width('100%')
         }
         .width('100%')
