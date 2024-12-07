@@ -1,5 +1,6 @@
 import { AuthLevelSupport } from "../crypto/authUtils";
 import { IssuerName } from "../crypto/otpUtils";
+import { ImageMimeType } from "./schema";
 import { ValueType } from "./settings";
 
 export const EVENT_CODE_REQUEST: string = 'code-request';
@@ -16,6 +17,7 @@ export interface UpdateRequestSchema {
     keyAlias?: string, // used for self-update
     issuerName?: IssuerName, // used for overwrite
     icon?: string,
+    icon_mime?: ImageMimeType,
 }
 export const EVENT_UPDATE_ITEMS: string = 'update-items';
 export interface BulkyUpdateRequestSchema {

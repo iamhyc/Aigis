@@ -178,6 +178,14 @@
       "value": "Default Icon"
     },
     {
+      "name": "edit_icon_file_too_large",
+      "value": "The size of the added image should be less than 5KB."
+    },
+    {
+      "name": "edit_icon_file_not_supported",
+      "value": "Unsupported image formats."
+    },
+    {
       "name": "edit_advanced_title",
       "value": "Advanced"
     },

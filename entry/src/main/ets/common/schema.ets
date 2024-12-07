@@ -7,7 +7,7 @@ export interface CodeResponseSchema {
     next?: string,
 }
 
-export type ImageMimeType = 'image/svg+xml';
+export type ImageMimeType = 'image/svg+xml'|'image/png'|'image/jpeg'|'image/webp';
 
 export interface OTPItemInfo {
     uuid?: string,

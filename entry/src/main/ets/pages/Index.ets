@@ -11,7 +11,7 @@ import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth,
     validatePassword } from '../crypto/authUtils';
-import { AtlAuthResult, CodeResponseSchema, MasterKeyInfo, OTPItemInfo } from '../common/schema';
+import { AtlAuthResult, CodeResponseSchema, ImageMimeType, MasterKeyInfo, OTPItemInfo } from '../common/schema';
 import {
     BulkyUpdateRequestSchema,
     CodeRequestSchema, EVENT_CODE_REQUEST,
@@ -42,15 +42,17 @@ class EditState {
     public editKeyAlias: string = '';
     public editSchema: OTPSchema | undefined = undefined;
     public editIcon: string = '';
+    public editIconMime: ImageMimeType | undefined = undefined;
     public editNewItem: boolean = false;
 
     constructor() {}
 
-    show(editKeyAlias: string, editSchema: OTPSchema, editIcon: string, editNewItem: boolean = false) {
+    show(editKeyAlias: string, editSchema: OTPSchema, editIcon: string, editIconMime: ImageMimeType | undefined, editNewItem: boolean = false) {
         this.editKeyAlias = editKeyAlias;
         this.editSchema = editSchema;
         this.editNewItem = editNewItem;
         this.editIcon = editIcon;
+        this.editIconMime = editIconMime;
         this.editPageShow = true;
     }
 
@@ -59,6 +61,7 @@ class EditState {
         this.editKeyAlias = '';
         this.editSchema = undefined;
         this.editIcon = '';
+        this.editIconMime = undefined;
         this.editNewItem = false;
     }
 }
@@ -160,6 +163,7 @@ struct Index {
                         this.editState.editKeyAlias,
                         this.editState.editSchema!,
                         this.editState.editIcon,
+                        this.editState.editIconMime,
                         this.editState.editNewItem,
                     ),
                     {
@@ -515,6 +519,7 @@ struct OTPList {
                     OTPItem({
                         item,
                         icon: item.icon,
+                        icon_mime: item.icon_mime,
                         code: item.code,
                         schema: item.schema,
                         favorite: item.favorite,
@@ -581,11 +586,12 @@ struct OTPItem {
     @Link dragState: DragState<OTPItemInfo>;
     @Prop item: OTPItemInfo;
     @Prop icon: string;
+    @Prop icon_mime: ImageMimeType | undefined;
     @Prop code: CodeResponseSchema;
     @Prop keyAlias: string;
     @Prop schema: OTPSchema;
     @Prop favorite: boolean | undefined;
-    @State validatedIcon: string = IconManager.validateUri(this.icon);
+    @State validatedIcon: string = IconManager.validateUri(this.icon, this.icon_mime);
     @Watch('onTimePassed') @State passed_time: number = 0;
     @State showPreviewToken: boolean = false;
     @State isVisible: Visibility = Visibility.Visible;
@@ -620,7 +626,7 @@ struct OTPItem {
                 },
                 onAction: () => {
                     this.selected = '';
-                    this.editState.show(this.keyAlias, this.schema, this.icon);
+                    this.editState.show(this.keyAlias, this.schema, this.icon, this.icon_mime);
                     this.listScroller!.closeAllSwipeActions();
                 },
             },
@@ -799,7 +805,7 @@ struct OTPItem {
                 .backgroundColor($r('sys.color.brand'))
                 .onClick(() => {
                     this.selected = '';
-                    this.editState.show(this.keyAlias, this.schema, this.icon);
+                    this.editState.show(this.keyAlias, this.schema, this.icon, this.icon_mime);
                     this.listScroller?.closeAllSwipeActions();
                 })
             }
@@ -1111,7 +1117,7 @@ struct QrScanButton {
             getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri} as UpdateRequestSchema);
         } else {
             this.selected = '';
-            this.editState.show('', otp.secret_leaked_schema, '', true);
+            this.editState.show('', otp.secret_leaked_schema, '', undefined, true);
         }
     }
 
