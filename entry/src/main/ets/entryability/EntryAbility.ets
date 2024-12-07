@@ -10,7 +10,8 @@ import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     MasterKeyInfo,
     IconPackStore,
     IconPackSchema,
-    AesGcmMaterial} from '../common/schema'
+    AesGcmMaterial,
+    ImageMimeType} from '../common/schema'
 import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
     Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
@@ -302,7 +303,7 @@ class PreferencesManager {
         return failed;
     }
 
-    async updatePreferenceItem(uri: string, keyAlias?: string, issuerName?: IssuerName, icon?: string) {
+    async updatePreferenceItem(uri: string, keyAlias?: string, issuerName?: IssuerName, icon?: string, icon_mime?: ImageMimeType) {
         const args = parseURI(uri);
         const otp = OTP.fromArguments(args);
         const secret = args.get('secret');
@@ -315,7 +316,7 @@ class PreferencesManager {
                 if (collidedItem) {
                     keyAlias = collidedItem.keyAlias;
                 } else {
-                    return await this.appendPreferenceItem(otp, secret!, icon);
+                    return await this.appendPreferenceItem(otp, secret!, icon, icon_mime);
                 }
             }
             // find old items and associated secret
@@ -325,6 +326,7 @@ class PreferencesManager {
             if (oldItem!==undefined) {
                 oldItem.schema = otp.schema;
                 oldItem.icon = icon ?? await this.iconManager.match( otp.schema.issuer );
+                oldItem.icon_mime = icon_mime
                 // update secret
                 if (secret && oldSecret) {
                     const result = await this.encryptSecret(secret);
@@ -338,11 +340,11 @@ class PreferencesManager {
         }
         // create new item
         else {
-            return await this.appendPreferenceItem(otp, secret!, icon);
+            return await this.appendPreferenceItem(otp, secret!, icon, icon_mime);
         }
     }
 
-    private async appendPreferenceItem(otp: OTP, _secret: string, icon?: string) {
+    private async appendPreferenceItem(otp: OTP, _secret: string, icon?: string, icon_mime?: ImageMimeType) {
         const keyAlias = util.generateRandomUUID();
         const schema = otp.schema;
 
@@ -353,7 +355,7 @@ class PreferencesManager {
         // find issuer icon
         icon = icon ?? await this.iconManager.match( otp.schema.issuer );
         const code: CodeResponseSchema = {timestamp:0, code:FAKE_OTP_CODE};
-        this._items.push({keyAlias, icon, code, schema});
+        this._items.push({keyAlias, icon, icon_mime, code, schema});
         this._secrets.push({keyAlias, secret, encrypted});
         this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
     }
@@ -669,7 +671,7 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_UPDATE_ITEM, async (data: UpdateRequestSchema) => {
             if (this.instPreferences) {
                 // update local preferences
-                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.issuerName, data.icon);
+                await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.issuerName, data.icon, data.icon_mime);
                 // update persist preferences
                 this.instPreferences.persists(this.dataPreferences!);
                 // propagate updated items

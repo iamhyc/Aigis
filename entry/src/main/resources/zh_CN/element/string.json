@@ -178,6 +178,14 @@
       "value": "默认图标"
     },
     {
+      "name": "edit_icon_file_too_large",
+      "value": "所添加的图像应小于5KB"
+    },
+    {
+      "name": "edit_icon_file_not_supported",
+      "value": "不支持的图片格式"
+    },
+    {
       "name": "edit_advanced_title",
       "value": "高级设置"
     },

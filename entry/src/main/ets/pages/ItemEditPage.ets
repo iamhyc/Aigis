@@ -1,11 +1,16 @@
 import { promptAction } from "@kit.ArkUI";
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { photoAccessHelper } from "@kit.MediaLibraryKit";
+
 import { EVENT_REMOVE_ITEM, EVENT_UPDATE_ITEM, RemovalRequestSchema, UpdateRequestSchema } from "../common/events";
 import { IconManager } from "../common/icons";
-import { IconPackStore } from "../common/schema";
+import { IconPackStore, ImageMimeType } from "../common/schema";
 import { IssuerIcon } from "../components/icons";
 import { LabeledSelect, LabeledTextInput, LabeledUriHolder } from "../components/labeled";
 import { QrCodePage } from "../components/pages";
 import { IssuerName, issuerNameToString, OTPSchema, TimedOTPSchema } from "../crypto/otpUtils";
+import { util } from "@kit.ArkTS";
+import { Uint8ArrayToString } from "../common/utils";
 
 const COLUMN_ITEM_GAP: number = 8;
 const FAKE_SECRET: string = '0'.repeat(16);
@@ -19,11 +24,13 @@ export function ItemEditBuilder(
     keyAlias: string,
     schema: OTPSchema,
     icon: string,
+    icon_mime: ImageMimeType | undefined,
     editNewItem: boolean,
 ) {
     Column() {
         ItemEditComponent({
-            context, exIssuerNames, keyAlias, schema, icon, editNewItem,
+            context, exIssuerNames, keyAlias, schema, editNewItem,
+            icon, icon_mime,
             issuer: schema.issuer,
             name: schema.name,
             typeIndex: typeEntries.indexOf(schema.type.toUpperCase()),
@@ -52,6 +59,7 @@ struct ItemEditComponent {
     @Watch('onValueChanged') @Require @Prop hashIndex: number;
     @Watch('onValueChanged') @Require @Prop digits: string;
     @Watch('onValueChanged') @Require @Prop icon: string;
+    @Prop icon_mime: ImageMimeType | undefined;
     @Watch('onValueChanged') @Prop note: string;
     @Watch('onValueChanged') @Prop period: string;
     @Watch('onValueChanged') @Prop counter: string;
@@ -66,13 +74,14 @@ struct ItemEditComponent {
     @State IconCandidates: Map<ResourceStr,string> = this.iconManager.matchAllSync(this.issuer);
     @State IconCandidatesEntries: ResourceStr[] = Array.from(this.IconCandidates.keys());
     @State IconCandidatesValues: string[] = Array.from(this.IconCandidates.values());
-    @State validatedIcon: string = IconManager.validateUri(this.editNewItem? this.IconCandidatesValues[0] : this.icon);
+    @State validatedIcon: string = IconManager.validateUri(this.editNewItem? this.IconCandidatesValues[0] : this.icon, this.icon_mime);
     @Watch('onValueChanged') @State iconIndex: number = this.IconCandidatesValues.findIndex(x => x===this.icon);
 
     private onValueChanged(propName: string) {
         this.saveBtnEnabled = true;
         if (propName==='iconIndex' && this.iconIndex >= 0) {
             this.icon = this.IconCandidatesValues[ this.iconIndex ];
+            this.icon_mime = undefined;
             this.validatedIcon = IconManager.validateUri(this.icon);
         }
         this.shareLink = this.fieldsToUri();
@@ -141,17 +150,18 @@ struct ItemEditComponent {
 
         const uri = this.fieldsToUri();
         const icon = this.icon;
+        const icon_mime = this.icon_mime;
         const issuerNameCollided = this.exIssuerNames.find(x => x.issuer===this.issuer && x.name===this.name);
         //
         if (issuerNameCollided) {
             const allow_overwrite = this.editNewItem; //overwrite when adding new ones
             const issuerName = issuerNameCollided;
             this.requestOverwriteConfirm(issuerNameToString(issuerName), allow_overwrite, () => {
-                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, issuerName, icon} as UpdateRequestSchema);
+                getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, issuerName, icon, icon_mime} as UpdateRequestSchema);
             });
         } else {
             const keyAlias = this.editNewItem? undefined : this.keyAlias;
-            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon} as UpdateRequestSchema);
+            getContext(this).eventHub.emit(EVENT_UPDATE_ITEM, {uri, keyAlias, icon, icon_mime} as UpdateRequestSchema);
         }
     }
 
@@ -166,6 +176,55 @@ struct ItemEditComponent {
         const note = encodeURIComponent(this.note.trim());
         const uri = `otpauth://${type}/${issuer_name}?algorithm=${algorithm}&digits=${digits}&counter=${counter}&period=${period}&secret=${secret}&issuer=${this.issuer}&note=${note}`;
         return uri;
+    }
+
+    private async uploadIcon() {
+        const photoViewPicker = new photoAccessHelper.PhotoViewPicker();
+        const photoSelectOptions = new photoAccessHelper.PhotoSelectOptions();
+        photoSelectOptions.isPhotoTakingSupported = false;
+        photoSelectOptions.isPreviewForSingleSelectionSupported = true;
+        photoSelectOptions.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE;
+        photoSelectOptions.maxSelectNumber = 1;
+        // open selected image file
+        const photoSelectResult = await photoViewPicker.select(photoSelectOptions);
+        const imageUri = photoSelectResult.photoUris[0];
+        const imageFile = await fs.open(imageUri);
+        // check file type
+        let icon_mime: ImageMimeType;
+        const lastDotIndex = imageUri.lastIndexOf('.');
+        const suffix = lastDotIndex !== -1 ? imageUri.substring(lastDotIndex) : '';
+        switch (suffix) {
+            // case '.svg': // FIXME: not supported in base64
+            //     icon_mime = 'image/svg+xml';
+            //     break;
+            case '.jpg':
+            case '.jpeg':
+                icon_mime = 'image/jpeg';
+                break;
+            case '.png':
+                icon_mime = 'image/png';
+                break;
+            case '.webp':
+                icon_mime = 'image/webp';
+                break;
+            default:
+                promptAction.showToast({message: $r('app.string.edit_icon_file_not_supported'), duration: 500});
+                return;
+        }
+        // check file size
+        const stat = await fs.stat(imageFile.fd);
+        if (stat.size >= 5*1024) { //5KB
+            promptAction.showToast({message:$r('app.string.edit_icon_file_too_large'), duration:500});
+            return;
+        }
+        //
+        const b64 = new util.Base64Helper();
+        const arrayBuffer = new ArrayBuffer(5*1024); //5KB
+        const readLen = await fs.read(imageFile.fd, arrayBuffer);
+        const content = Uint8ArrayToString(await b64.encode( new Uint8Array(arrayBuffer, 0, readLen) ));
+        this.icon_mime = icon_mime;
+        this.icon = content;
+        this.validatedIcon = IconManager.validateUri(content, this.icon_mime);
     }
 
     @Builder pageJump(name: string, params: string[]) {
@@ -193,24 +252,29 @@ struct ItemEditComponent {
                         .borderRadius(32)
                         .margin({bottom:COLUMN_ITEM_GAP})
                 } else {
-                    Stack({alignContent: Alignment.BottomEnd}) {
+                    Stack({alignContent: Alignment.Bottom}) {
                         IssuerIcon({
                             issuer: this.issuer,
                             iconSize: '64vp',
                             iconRadius: '32vp',
                             fontSize: 36,
                         })
-                        Button() {
-                            SymbolGlyph($r('sys.symbol.plus_square_on_square_fill'))
+                        Button({type:ButtonType.Normal}) {
+                            SymbolGlyph($r('sys.symbol.chevron_up_2'))
+                                .fontWeight(FontWeight.Bolder)
                                 .fontColor([$r('sys.color.font_primary')])
-                                .fontSize(16)
+                                .fontSize(12)
                         }
-                        .offset({right:-16})
-                        .backgroundColor($r('sys.color.ohos_id_color_component_activated_transparent'))
-                        .width(32).height(32)
+                        .backgroundColor($r('sys.color.ohos_id_color_component_normal_transparent'))
+                        .width(64).height(16)
+                        .onClick(async () => {
+                            await this.uploadIcon();
+                        })
                     }
-                        .width(64).height(64)
-                        .margin({bottom:COLUMN_ITEM_GAP})
+                    .width(64).height(64)
+                    .borderRadius(32)
+                    .clip(true)
+                    .margin({bottom:COLUMN_ITEM_GAP})
                 }
                 Divider().strokeWidth('1px').width('90%')
                 // information fields

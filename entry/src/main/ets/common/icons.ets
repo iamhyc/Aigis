@@ -1,5 +1,5 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { IconPackSchema, IconPackStore } from "./schema";
+import { IconPackSchema, IconPackStore, ImageMimeType } from "./schema";
 import { buffer } from '@kit.ArkTS';
 
 interface IconFile {
@@ -157,13 +157,19 @@ export class IconManager {
         return results;
     }
 
-    static validateUri(uri: string): string {
+    static validateUri(uri: string, mime?: ImageMimeType): string {
         const resDir = getContext().resourceDir;
         const isAbsPath = uri.startsWith('/data/storage');
 
         uri = uri.trim();
         if (uri==='') {
             return '';
+        } else if (mime) {
+            if (uri.startsWith('data:')) {
+                return uri;
+            } else {
+                return `data:${mime};base64,${uri}`;
+            }
         } else if (isAbsPath && fs.accessSync(uri)) {
             return 'file://'+uri;
         } else if (!isAbsPath && fs.accessSync(resDir+'/'+uri)) {
