@@ -59,12 +59,20 @@ export interface PBKDF2Material {
     salt: string,
     iteration: number,
 }
-export interface MasterKeyInfo {
+
+export type MasterKeyInfo = MasterKeyInfoV1 | MasterKeyInfoV2;
+export interface MasterKeyInfoV1 {
     type: 'PBKDF2',
     version: 'v1',
     keyAlias: string,
     secret: PBKDF2Material,
     params: PBKDF2Material,
+}
+export interface MasterKeyInfoV2 {
+    type: 'PBKDF2',
+    version: 'v2',
+    keyAlias: string,
+    secret: PBKDF2Material,
 }
 
 export interface AesGcmMaterial {
