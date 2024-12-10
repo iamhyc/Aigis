@@ -1,10 +1,10 @@
 import { userAuth } from '@kit.UserAuthenticationKit';
-import { AtlAuthResult, MasterKeyInfo, PBKDF2Material } from '../common/schema';
+import { AtlAuthResult, MasterKeyInfo, MasterKeyInfoV1, MasterKeyInfoV2, PBKDF2Material } from '../common/schema';
 import { getRandomInt, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
 import { AES_KEY_USAGE,
     generateAesGcmMaterial,
     generateRandomSalt24, HUKSAgent,
-    PARAMS_AES_DECRYPT,
+    PARAMS_AES_ENCRYPT, PARAMS_AES_DECRYPT,
     PARAMS_DERIVE_SRC_KEY } from './huksUtils';
 import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { ATL1_AUTH_TIMEOUT, ATL1_MAX_REUSE_DURATION,
@@ -38,6 +38,8 @@ export enum AuthTrustLevel {
 }
 
 export type AuthLevelSupport = 'ATL1' | 'ATL3';
+
+export const LATEST_KDF_VERSION: 'v1'|'v2' = 'v2';
 
 export function checkAuthEnvironment(): AuthTrustLevel {
     // NONE: even no pin available
@@ -162,7 +164,7 @@ export async function pbkdf2KeyDerive(password: string, material: PBKDF2Material
     return secret.data;
 }
 
-export async function generateMasterKeyInHUKS(keyAlias: string, password: string, purpose: AES_KEY_USAGE, authLevel?: AuthLevelSupport, secret?: PBKDF2Material, params?: PBKDF2Material): Promise<MasterKeyInfo> {
+export async function generateMasterKeyInHUKSV1(keyAlias: string, password: string, purpose: AES_KEY_USAGE, authLevel?: AuthLevelSupport, secret?: PBKDF2Material, params?: PBKDF2Material): Promise<MasterKeyInfoV1> {
     const type = 'PBKDF2';
     const version = 'v1';
     // derive AES256 key from password and import in HUKS
@@ -185,11 +187,38 @@ export async function generateMasterKeyInHUKS(keyAlias: string, password: string
     //
     return { type, version, keyAlias, secret, params };
 }
+export async function generateMasterKeyInHUKSV2(keyAlias: string, password: string, purpose: AES_KEY_USAGE,  authLevel?: AuthLevelSupport, secret?: PBKDF2Material): Promise<MasterKeyInfoV2> {
+    const type = 'PBKDF2';
+    const version = 'v2';
+    // derive AES256 key from password and import in HUKS
+    if (secret===undefined) {
+        secret = {
+            salt: Uint8ArrayToString(await generateRandomSalt24()),
+            // Ref: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+            iteration: 600000,
+        };
+    }
+    const secretKey = await pbkdf2KeyDerive(password, secret, 256);
+    const purposeParams = purpose===AES_KEY_USAGE.DECRYPT? PARAMS_AES_DECRYPT : PARAMS_AES_ENCRYPT;
+    await HUKSAgent.importKeyItem(keyAlias, purposeParams, secretKey, authLevel);
+    //
+    return { type, version, keyAlias, secret };
+}
 
 export async function validatePassword(encMasterKeyInfo: MasterKeyInfo, password: string): Promise<boolean> {
     // derive temporary master key
     const tmpKeyAlias = 'tmp-key';
-    const tmpMasterKeyInfo = await generateMasterKeyInHUKS(tmpKeyAlias, password, AES_KEY_USAGE.ENCRYPT, undefined, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+    let tmpMasterKeyInfo: MasterKeyInfo;
+    switch (encMasterKeyInfo.version) {
+        case 'v2':
+            tmpMasterKeyInfo = await generateMasterKeyInHUKSV2(tmpKeyAlias, password, AES_KEY_USAGE.ENCRYPT, undefined, encMasterKeyInfo.secret);
+            break;
+        case 'v1':
+            tmpMasterKeyInfo = await generateMasterKeyInHUKSV1(tmpKeyAlias, password, AES_KEY_USAGE.ENCRYPT, undefined, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+            break;
+        default:
+            return false;
+    }
     // test encryption result
     const material = await generateAesGcmMaterial();
     const nonce = await generateRandomSalt24();

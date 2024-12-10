@@ -309,7 +309,8 @@ struct Index {
                     if (!(await validatePassword(this.EncMasterKey, password))) {
                         promptAction.showToast({message:$r('app.string.setting_input_wrong_password')});
                     } else {
-                        getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password} as PasswordUpdateRequestSchema);
+                        const newPassword: boolean = this.EncMasterKey.keyAlias!==undefined;
+                        getContext(this).eventHub.emit(EVENT_UPDATE_PASSWORD, {password, newPassword} as PasswordUpdateRequestSchema);
                     }
                     this.StatusDecKeyRequired = false;
                     //

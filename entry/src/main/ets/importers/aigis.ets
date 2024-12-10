@@ -7,7 +7,7 @@ import { AesGcmMaterial, AigisContentSchema,
     OTPItemInfo,
     SecretSchema} from '../common/schema';
 import { formatDateString, stringToUint8Array, Uint8ArrayToString } from '../common/utils';
-import { generateMasterKeyInHUKS } from '../crypto/authUtils';
+import { generateMasterKeyInHUKSV1, generateMasterKeyInHUKSV2 } from '../crypto/authUtils';
 import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_DERIVE_SRC_KEY } from '../crypto/huksUtils';
 
 interface AigisExportFormat {
@@ -63,7 +63,16 @@ export class AigisImporter implements ImporterBehavior {
         const decKeyAlias = 'tmp-key';
         try {
             const masterKey = exported.masterKey;
-            await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, undefined, masterKey.secret, masterKey.params);
+            switch (masterKey.version) {
+                case 'v2':
+                    await generateMasterKeyInHUKSV2(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, undefined, masterKey.secret);
+                    break;
+                case 'v1':
+                    await generateMasterKeyInHUKSV1(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, undefined, masterKey.secret, masterKey.params);
+                    break;
+                default:
+                    throw Error('Not supported Master Key.')
+            }
             //
             const keyParms = exported.keyParams;
             const items: OTPItemInfo[] = JSON.parse(Uint8ArrayToString(

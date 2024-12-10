@@ -22,7 +22,8 @@ import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
 import { PREF_KEY_ITEMS } from '../common/conts';
 import { AppLanguage, AuthTypePriority, DefaultUserPreferences, UserPreferences, ValueType } from '../common/settings';
-import { AuthLevelSupport, generateMasterKeyInHUKS, genUserAuthType } from '../crypto/authUtils';
+import { AuthLevelSupport, generateMasterKeyInHUKSV2, genUserAuthType,
+    LATEST_KDF_VERSION } from '../crypto/authUtils';
 import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_AES_DECRYPT } from '../crypto/huksUtils';
 import {
     BulkyUpdateRequestSchema,
@@ -171,14 +172,23 @@ class PreferencesManager {
 
     private async requestSecret(otpType: OtpSchemaSupport, secret: SecretSchema, authToken?: Uint8Array): Promise<Uint8Array> {
         let encodedSecret = secret.secret;
-        // decrypt secret
+        // case 1: secret needs decryption
         if (secret.encrypted) {
+            // case 1.1: deprecated master key info
+            if (this._decMasterKeyInfo?.version!==LATEST_KDF_VERSION) {
+                AppStorage.set('StatusDecKeyRequired', true);
+                return new Uint8Array();
+            }
+            //
             encodedSecret = await this.decryptSecret(encodedSecret, secret.encrypted!, authToken);
+            // case 1.2: decryption failed
             if (encodedSecret==='') {
                 AppStorage.set('StatusDecKeyRequired', true);
                 return new Uint8Array();
             }
-        } else if (this.MasterKeyAvailable && this.decMasterKeyInfo?.keyAlias===undefined) {
+        }
+        // case 2: (compatible with < v0.3.0) dec key missing
+        else if (this.MasterKeyAvailable && this.decMasterKeyInfo?.keyAlias===undefined) {
             AppStorage.set('StatusDecKeyRequired', true);
             return new Uint8Array();
         }
@@ -247,7 +257,7 @@ class PreferencesManager {
         // update encryption master key
         const encKeyAlias = PREF_MASTER_KEY;
         if (this._encMasterKeyInfo?.keyAlias===undefined) {
-            const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
+            const encMasterKeyInfo = await generateMasterKeyInHUKSV2(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
             this._encMasterKeyInfo = encMasterKeyInfo;
         } else if (newPassword) { // change password procedure
             if (this._decMasterKeyInfo?.keyAlias===undefined) {
@@ -259,7 +269,7 @@ class PreferencesManager {
                 if (this._decMasterKeyInfo?.keyAlias) {
                     await HUKSAgent.deleteKeyItem(this._decMasterKeyInfo.keyAlias, PARAMS_AES_DECRYPT);
                 }
-                const encMasterKeyInfo = await generateMasterKeyInHUKS(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
+                const encMasterKeyInfo = await generateMasterKeyInHUKSV2(encKeyAlias, password, AES_KEY_USAGE.ENCRYPT);
                 this._encMasterKeyInfo = encMasterKeyInfo;
             } else {
                 AppStorage.set('StatusDecKeyRequired', true);
@@ -269,7 +279,7 @@ class PreferencesManager {
         // update decryption master key
         const decKeyAlias = PREF_DEC_MASTER_KEY;
         const encMasterKeyInfo = this._encMasterKeyInfo!;
-        const decMasterKeyInfo = await generateMasterKeyInHUKS(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, authLevel, encMasterKeyInfo.secret, encMasterKeyInfo.params);
+        const decMasterKeyInfo = await generateMasterKeyInHUKSV2(decKeyAlias, password, AES_KEY_USAGE.DECRYPT, authLevel, encMasterKeyInfo.secret);
         this._decMasterKeyInfo = decMasterKeyInfo;
         // check secrets encryption
         await this.encryptAllSecrets();
@@ -556,7 +566,7 @@ export default class EntryAbility extends UIAbility {
                 const decMasterKeyInfo = pref.getSync(PREF_DEC_MASTER_KEY, {}) as MasterKeyInfo;
                 AppStorage.setAndProp('EncMasterKey', encMasterKeyInfo);
                 AppStorage.setAndProp('MasterKeyAvailable', encMasterKeyInfo.keyAlias!==undefined);
-                AppStorage.setAndLink('StatusDecKeyRequired', encMasterKeyInfo.keyAlias!==undefined && decMasterKeyInfo.keyAlias===undefined);
+                AppStorage.setAndLink('StatusDecKeyRequired', encMasterKeyInfo.keyAlias!==undefined && (decMasterKeyInfo.keyAlias===undefined || encMasterKeyInfo.version!==LATEST_KDF_VERSION));
                 // load last success password challenge time
                 let passwordChallengeTimestamp = pref.getSync(PREF_PASSWORD_CHALLENGE_TIME, 0) as number;
                 if (passwordChallengeTimestamp===0 || passwordChallengeTimestamp>Date.now()) {
@@ -733,7 +743,8 @@ export default class EntryAbility extends UIAbility {
         });
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD, async (data: PasswordUpdateRequestSchema) => {
             if (this.dataPreferences && this.instPreferences) {
-                await this.instPreferences.updateMasterKeyInfo(data.password, data.newPassword, data.authLevel);
+                const newPassword = data.newPassword && (this.instPreferences.decMasterKeyInfo?.keyAlias!==undefined);
+                await this.instPreferences.updateMasterKeyInfo(data.password, newPassword, data.authLevel);
                 this.instPreferences.persists(this.dataPreferences);
                 // reset password challenge time
                 const _now = Date.now()
