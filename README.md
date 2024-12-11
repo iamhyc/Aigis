@@ -62,8 +62,8 @@ Dst4
 end
 
 Src1--认证-->Src2a
-Src2--PBKDF2/AES256-->Src2a--解密-->Via2--计算-->Dst1
-Src2--PBKDF2/AES256-->Src2b--加密-->Via2
+Src2--Scrypt-->Src2a--解密-->Via2--计算-->Dst1
+Src2--Scrypt-->Src2b--加密-->Via2
 
 Src0--认证-->Dst2--展示-->Dst4
 ```
