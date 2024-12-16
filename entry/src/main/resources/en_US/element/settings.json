@@ -330,6 +330,14 @@
       "value": "Import & Export"
     },
     {
+      "name": "setting_enable_backup_reminder_title",
+      "value": "Backup Reminder"
+    },
+    {
+      "name": "setting_enable_backup_reminder_desc",
+      "value": "Show a reminder to backup your vault in case you haven't backed up your latest changes."
+    },
+    {
       "name": "setting_import_from_file",
       "value": "Import from File"
     },

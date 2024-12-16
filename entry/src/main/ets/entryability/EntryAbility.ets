@@ -16,6 +16,7 @@ import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
     Uint8ArrayToString } from '../common/utils';
 import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
+    PREF_BACKUP_PROMPT,
     PREF_DEC_MASTER_KEY,
     PREF_ICON_PACKS,
     PREF_KEY_SECRETS, PREF_KEY_SETTINGS, PREF_MASTER_KEY,
@@ -308,7 +309,7 @@ class PreferencesManager {
                 this._instances.set(keyAlias, this.getOtpInstance(keyAlias));
             }
         }
-        this.persists(dataPreferences);
+        this.persists(dataPreferences, undefined, true);
         //
         return failed;
     }
@@ -505,7 +506,7 @@ class PreferencesManager {
         }
     }
 
-    persists(dataPreferences: preferences.Preferences, range?: ('items'|'secrets'|'icons'|'master-key')[]) {
+    persists(dataPreferences: preferences.Preferences, range?: ('items'|'secrets'|'icons'|'master-key')[], prompt?: boolean) {
         if (range===undefined || range.includes('items')) {
             // NOTE: check plaintext secret leak
             this._items.forEach(item => {
@@ -522,6 +523,11 @@ class PreferencesManager {
         if (range===undefined || range.includes('master-key')) {
             dataPreferences.putSync(PREF_MASTER_KEY, this._encMasterKeyInfo);
             dataPreferences.putSync(PREF_DEC_MASTER_KEY, this._decMasterKeyInfo);
+        }
+        // persist backup prompt
+        if (prompt) {
+            AppStorage.set(PREF_BACKUP_PROMPT, true);
+            dataPreferences.putSync(PREF_BACKUP_PROMPT, true);
         }
         //
         dataPreferences.flush();
@@ -574,6 +580,9 @@ export default class EntryAbility extends UIAbility {
                     pref.putSync(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
                 }
                 AppStorage.setAndProp(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
+                // load backup prompt
+                const backupPrompt = pref.getSync(PREF_BACKUP_PROMPT, false) as boolean;
+                AppStorage.setAndProp(PREF_BACKUP_PROMPT, backupPrompt);
                 // init controller
                 this.instPreferences = new PreferencesManager(
                     pref.getSync(PREF_KEY_ITEMS, []) as OTPItemInfo[],
@@ -683,7 +692,7 @@ export default class EntryAbility extends UIAbility {
                 // update local preferences
                 await this.instPreferences.updatePreferenceItem(data.uri, data.keyAlias, data.issuerName, data.icon, data.icon_mime);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, undefined, true);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
@@ -695,7 +704,7 @@ export default class EntryAbility extends UIAbility {
                     await this.instPreferences.updatePreferenceItem(uri);
                 }
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, undefined, true);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
@@ -705,7 +714,7 @@ export default class EntryAbility extends UIAbility {
                 // set favorite in local preferences
                 this.instPreferences.toggleFavoritePreferenceItem(data.keyAlias);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, undefined, false);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
@@ -715,7 +724,7 @@ export default class EntryAbility extends UIAbility {
                 // insert in local preferences
                 this.instPreferences.insertPreferenceItem(data.startKeyAlias, data.insertKeyAlias);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, undefined, false);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
@@ -725,7 +734,7 @@ export default class EntryAbility extends UIAbility {
                 // removal in local preferences
                 this.instPreferences.removePreferenceItem(data.keyAlias);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, undefined, true);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
             }
@@ -745,7 +754,7 @@ export default class EntryAbility extends UIAbility {
             if (this.dataPreferences && this.instPreferences) {
                 const newPassword = data.newPassword && (this.instPreferences.decMasterKeyInfo?.keyAlias!==undefined);
                 await this.instPreferences.updateMasterKeyInfo(data.password, newPassword, data.authLevel);
-                this.instPreferences.persists(this.dataPreferences);
+                this.instPreferences.persists(this.dataPreferences, undefined, true);
                 // reset password challenge time
                 const _now = Date.now()
                 this.dataPreferences.putSync(PREF_PASSWORD_CHALLENGE_TIME, _now);
@@ -783,8 +792,11 @@ export default class EntryAbility extends UIAbility {
                 const importer = dispatchImporter(data.type);
                 const key = importer?.schema.export_password_required? data.password : masterKey.keyAlias;
                 const result = await importer?.save(file.fd, key??'', content);
-                if (result) {
+                if (result && this.dataPreferences) {
                     promptAction.showToast({message: $r('app.string.setting_export_message_success', data.uri)});
+                    AppStorage.set(PREF_BACKUP_PROMPT, false);
+                    this.dataPreferences.putSync(PREF_BACKUP_PROMPT, false);
+                    this.dataPreferences.flush();
                 } else {
                     promptAction.showToast({message: $r('app.string.setting_export_message_failed')});
                     throw Error('Export failed.');
@@ -823,7 +835,7 @@ export default class EntryAbility extends UIAbility {
                 // update local preferences
                 await this.instPreferences.importIconPack(data.uri);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, ['icons']);
                 // propagate updated icon packs
                 AppStorage.set('IconPacks', this.instPreferences.icons);
             }
@@ -833,7 +845,7 @@ export default class EntryAbility extends UIAbility {
                 // update local preferences
                 await this.instPreferences.removeIconPack(data.uuid);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, ['icons']);
                 // propagate updated icon packs
                 AppStorage.set('IconPacks', this.instPreferences.icons);
             }
@@ -843,7 +855,7 @@ export default class EntryAbility extends UIAbility {
                 // update local preferences
                 await this.instPreferences.applyIconPack(data.uuid, data.force);
                 // update persist preferences
-                this.instPreferences.persists(this.dataPreferences!);
+                this.instPreferences.persists(this.dataPreferences!, ['items', 'icons'], true);
                 // propagate updated items
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 AppStorage.set('IconPacks', this.instPreferences.icons);

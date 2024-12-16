@@ -26,6 +26,15 @@
     },
 
     {
+      "name": "prompt_backup_hint",
+      "value": "更改未备份"
+    },
+    {
+      "name": "prompt_backup_action",
+      "value": "立即备份"
+    },
+
+    {
       "name": "item_sort_custom",
       "value": "自定义排序"
     },

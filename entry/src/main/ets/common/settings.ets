@@ -29,4 +29,6 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     ['EnableBiometricUnlock', false],
     ['AuthTypePriority',      'face' as AuthTypePriority],
     ['EnableBiometricAuth',   false],
+    // backup
+    ['EnableBackupReminder',    true],
 ]);
