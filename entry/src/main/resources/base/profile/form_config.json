@@ -4,7 +4,7 @@
       "name": "AigisWidget",
       "displayName": "$string:AigisWidget_display_name",
       "description": "$string:AigisWidget_desc",
-      "src": "./ets/aigiswidget/pages/AigisWidgetCard.ets",
+      "src": "./ets/widgets/AigisWidgetCard.ets",
       "uiSyntax": "arkts",
       "window": {
         "designWidth": 720,

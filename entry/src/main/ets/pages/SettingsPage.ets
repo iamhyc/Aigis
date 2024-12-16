@@ -121,6 +121,9 @@ export struct SettingsPage {
     @StorageProp('settingsEnableBiometricAuth')
     @Watch('onItChanged') EnableBiometricAuth: boolean = false;
     @State _EnableBiometricAuth: boolean = this.EnableBiometricAuth;
+    // backup
+    @StorageProp('settingsEnableBackupReminder')
+    @Watch('onItChanged') EnableBackupReminder: boolean = true;
 
     @State iconPacksCollapsed: boolean = true;
 
@@ -351,6 +354,12 @@ export struct SettingsPage {
                         // Import & Export
                         ListItemGroupHeader({name: $r('app.string.section_title_import_export')}).margin({bottom:-6})
                         ListItemGroup({style: ListItemGroupStyle.CARD}) {
+                            SettingListItemToggle({
+                                title: $r('app.string.setting_enable_backup_reminder_title'),
+                                description: $r('app.string.setting_enable_backup_reminder_desc'),
+                                disabled: !this.MasterKeyAvailable,
+                                selected: this.EnableBackupReminder,
+                            })
                             SettingListItem({ title: $r('app.string.setting_import_from_file') })
                                 .onClick(() => { this.handleImportFromFile(); })
                             SettingListItem({
@@ -457,6 +466,10 @@ export struct SettingsPage {
                 break;
             case            'EnableBiometricAuth':
                 value = this.EnableBiometricAuth;
+                break;
+            // backup
+            case            'EnableBackupReminder':
+                value = this.EnableBackupReminder;
                 break;
             default:
                 return;

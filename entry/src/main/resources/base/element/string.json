@@ -34,6 +34,15 @@
     },
 
     {
+      "name": "prompt_backup_hint",
+      "value": "Changes are not backed up"
+    },
+    {
+      "name": "prompt_backup_action",
+      "value": "Backup Now"
+    },
+
+    {
       "name": "item_sort_custom",
       "value": "Custom Sort"
     },

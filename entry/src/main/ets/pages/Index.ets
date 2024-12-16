@@ -1,8 +1,10 @@
-import { LengthUnit, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkUI';
+import { ExceptionPrompt, LengthUnit, MarginType, Offset, promptAction, SymbolGlyphModifier } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { scanCore, scanBarcode } from '@kit.ScanKit';
 
-import { FAKE_OTP_CODE, ONE_DAY_IN_MS, PREF_KEY_ITEMS, PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
+import { FAKE_OTP_CODE, ONE_DAY_IN_MS,
+    PREF_BACKUP_PROMPT,
+    PREF_KEY_ITEMS, PREF_PASSWORD_CHALLENGE_TIME } from '../common/conts';
 import { ScrollEventExtension, ScrollPosition } from '../common/eventExtension';
 import { IssuerName, OTP, OTPSchema, parseURI, TimedOTPSchema } from '../crypto/otpUtils';
 import { fuzzysearch } from '../common/utils';
@@ -11,15 +13,19 @@ import { PasswordInputDialog, TextInputDialog } from '../components/dialog';
 import { SettingsPage } from './SettingsPage';
 import { acquireAtlAuth, ATL1AuthAvailable, ATL3AuthAvailable, validateAtlAuth,
     validatePassword } from '../crypto/authUtils';
-import { AtlAuthResult, CodeResponseSchema, ImageMimeType, MasterKeyInfo, OTPItemInfo } from '../common/schema';
+import { AtlAuthResult, CodeResponseSchema, ImageMimeType,
+    ImporterSchema,
+    MasterKeyInfo, OTPItemInfo } from '../common/schema';
 import {
     BulkyUpdateRequestSchema,
     CodeRequestSchema, EVENT_CODE_REQUEST,
+    EVENT_EXPORT_REQUEST,
     EVENT_INSERT_ITEM_BEFORE,
     EVENT_MOVE_TO_TOP, EVENT_UPDATE_ITEM,
     EVENT_UPDATE_ITEMS,
     EVENT_UPDATE_PASSWORD,
     EVENT_UPDATE_SETTING,
+    FileExportRequestSchema,
     InsertItemBeforeRequestSchema,
     PasswordUpdateRequestSchema,
     SettingUpdateRequestSchema,
@@ -33,6 +39,9 @@ import { AuthTypePriority, DigitGroup, ItemSortOrder,
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
 import { decodeOtpauthMigrationLink } from '../crypto/googleAuth';
+import { picker } from '@kit.CoreFileKit';
+import { common } from '@kit.AbilityKit';
+import { aigisImporter } from '../importers';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -113,6 +122,8 @@ class DragState<T> {
 @Entry(storage)
 @Component
 struct Index {
+    @StorageProp(PREF_BACKUP_PROMPT) BackupPrompt: boolean = false;
+    @StorageProp('settingsEnableBackupReminder') EnableBackupReminder: boolean = true;
     @StorageProp(PREF_PASSWORD_CHALLENGE_TIME) PasswordChallengeTime: number = Date.now();
     @StorageProp('settingsPasswordReminderPeriod') PasswordReminderPeriod: PasswordReminderPeriod = 'biweekly';
     @StorageProp('EncMasterKey') EncMasterKey: MasterKeyInfo = {} as MasterKeyInfo;
@@ -135,9 +146,28 @@ struct Index {
 
     private inputDialogId: number = -1;
 
+    private promptShown(): boolean {
+        return this.EnableBackupReminder && this.BackupPrompt && this.EncMasterKey.keyAlias!==undefined;
+    }
+
     build() {
         RelativeContainer() {
             Navigation(this.navStack) {
+                if (this.promptShown()) {
+                    ExceptionPrompt({
+                        options: {
+                            tip: $r('app.string.prompt_backup_hint'),
+                            actionText: $r('app.string.prompt_backup_action'),
+                            isShown: true,
+                            marginType: MarginType.DEFAULT_MARGIN,
+                            marginTop: 6,
+                        },
+                        onActionTextClick: () => {
+                            this.executeExportToFile(aigisImporter.schema);
+                        },
+                    }).height(60)
+                }
+                //
                 Stack() {
                     // main content
                     if (this.EnableBiometricUnlock && !validateAtlAuth(this.atlAuth)) {
@@ -154,7 +184,7 @@ struct Index {
                         QrScanButton({addSheetShow: this.addSheetShow})
                     }
                 }
-                .height('100%')
+                .height(this.promptShown()? 'calc(100% - 60vp)' : '100%')
                 .width('100%')
                 .bindSheet($$this.editState.editPageShow,
                     ItemEditBuilder(
@@ -272,6 +302,33 @@ struct Index {
 
     aboutToAppear() {
         this.onDecKeyRequired();
+    }
+
+    private executeExportToFile(schema: ImporterSchema) {
+        const type = schema.type;
+        const documentSaveOptions = new picker.DocumentSaveOptions();
+        documentSaveOptions.newFileNames = [schema.export_filename];
+        documentSaveOptions.fileSuffixChoices = schema.format;
+        //
+        const context = getContext(this) as common.Context;
+        const documentViewPicker = new picker.DocumentViewPicker(context);
+        documentViewPicker.save(documentSaveOptions).then((uris) => {
+            if (uris[0]!==undefined) {
+                const uri = uris[0];
+                if (schema.export_password_required) {
+                    this.passwordInputDialogBuilder(
+                        $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_decrypt_import'),
+                        (password) => {
+                            context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri, password} as FileExportRequestSchema);
+                            //
+                            this.inputDialogId = -1;
+                            promptAction.closeCustomDialog(this.inputDialogId);
+                        }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                } else {
+                    context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri} as FileExportRequestSchema);
+                }
+            }
+        });
     }
 
     private showCustomDialog(builder: () => CustomBuilder) {

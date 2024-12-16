@@ -330,6 +330,14 @@
       "value": "导入 & 导出"
     },
     {
+      "name": "setting_enable_backup_reminder_title",
+      "value": "启用备份提醒"
+    },
+    {
+      "name": "setting_enable_backup_reminder_desc",
+      "value": "如果最新的变更没有备份，则显示备份数据库的提醒。"
+    },
+    {
       "name": "setting_import_from_file",
       "value": "从文件导入"
     },
