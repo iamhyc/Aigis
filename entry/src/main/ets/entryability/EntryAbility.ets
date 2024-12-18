@@ -541,6 +541,7 @@ export default class EntryAbility extends UIAbility {
     private localStorage: LocalStorage = new LocalStorage();
     private instPreferences?: PreferencesManager;
     private localSettings?: UserPreferences;
+    private mainWindow?: window.Window;
 
     onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
         if (want.uri) {
@@ -554,8 +555,8 @@ export default class EntryAbility extends UIAbility {
 
     onWindowStageCreate(windowStage: window.WindowStage): void {
         // listen on main window safe area change
-        const mainWindow = windowStage.getMainWindowSync();
-        mainWindow.on('avoidAreaChange', (data) => {
+        this.mainWindow = windowStage.getMainWindowSync();
+        this.mainWindow.on('avoidAreaChange', (data) => {
             if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {
                 let topRectHeight = data.area.topRect.height;
                 AppStorage.setOrCreate('topRectHeight', topRectHeight);
@@ -568,8 +569,6 @@ export default class EntryAbility extends UIAbility {
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
             .then(async (pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
-                // set main window privacy mode
-                mainWindow.setWindowPrivacyMode(false);
                 // try to load master key
                 const encMasterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
                 const decMasterKeyInfo = pref.getSync(PREF_DEC_MASTER_KEY, {}) as MasterKeyInfo;
@@ -599,7 +598,7 @@ export default class EntryAbility extends UIAbility {
                 // setup global user settings
                 this.initUserPreferences(pref);
                 // register event handler
-                this.registerEventHubHandlers(mainWindow);
+                this.registerEventHubHandlers();
                 // init index page
                 windowStage.loadContent('pages/Index', this.localStorage);
             })
@@ -626,6 +625,14 @@ export default class EntryAbility extends UIAbility {
 
     private applySettings(key: string, value: ValueType, init: boolean=false) {
         const settingKey = `settings${key}`;
+        // set main window privacy mode
+        if (key==='EnableScreenSecurity') {
+            if (this.instPreferences?.encrypted_secrets!==undefined) {
+                this.mainWindow?.setWindowPrivacyMode(value as boolean);
+            } else {
+                this.mainWindow?.setWindowPrivacyMode(true);
+            }
+        }
         // apply application context configurations
         const context = this.context.getApplicationContext();
         if (key==='AppLanguage') {
@@ -682,9 +689,9 @@ export default class EntryAbility extends UIAbility {
         }
     }
 
-    private registerEventHubHandlers(mainWindow: window.Window) {
+    private registerEventHubHandlers() {
         this.context.eventHub.on(EVENT_MINIMIZE_WINDOW_REQUEST, (data: MinimizeWindowRequest) => {
-            mainWindow.minimize();
+            this.mainWindow?.minimize();
         });
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {

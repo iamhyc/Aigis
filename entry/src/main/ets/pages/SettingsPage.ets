@@ -114,6 +114,8 @@ export struct SettingsPage {
     // security
     @StorageProp('settingsPasswordReminderPeriod')
     @Watch('onItChanged') PasswordReminderPeriod: PasswordReminderPeriod = 'biweekly';
+    @StorageProp('settingsEnableScreenSecurity')
+    @Watch('onItChanged') EnableScreenSecurity: boolean = true;
     @StorageProp('settingsEnableBiometricUnlock')
     @Watch('onItChanged') EnableBiometricUnlock: boolean = false;
     @StorageProp('settingsAuthTypePriority')
@@ -293,6 +295,12 @@ export struct SettingsPage {
                                     selected: this.PasswordReminderPeriod,
                                     entries: PasswordReminderSelection,
                                 })
+                                SettingListItemToggle({
+                                    title: $r('app.string.setting_enable_screen_security_title'),
+                                    description: $r('app.string.setting_enable_screen_security_desc'),
+                                    disabled: !this.MasterKeyAvailable,
+                                    selected: this.EnableScreenSecurity,
+                                })
                             }
                             if (true) {
                             // if (!this.EnableBiometricAuth) { //FIXME: Not Support Cause of "External Error"
@@ -457,6 +465,9 @@ export struct SettingsPage {
             // security
             case            'PasswordReminderPeriod':
                 value = this.PasswordReminderPeriod;
+                break;
+            case            'EnableScreenSecurity':
+                value = this.EnableScreenSecurity;
                 break;
             case            'EnableBiometricUnlock':
                 value = this.EnableBiometricUnlock;

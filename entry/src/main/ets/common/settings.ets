@@ -26,6 +26,7 @@ export const DefaultUserPreferences: UserPreferences = new Map<string, ValueType
     ['ShowIssuerIcons', true],
     // security
     ['PasswordReminderPeriod', 'biweekly' as PasswordReminderPeriod],
+    ['EnableScreenSecurity',  true],
     ['EnableBiometricUnlock', false],
     ['AuthTypePriority',      'face' as AuthTypePriority],
     ['EnableBiometricAuth',   false],

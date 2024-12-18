@@ -324,6 +324,14 @@
       "name": "setting_password_reminder_period_quarterly",
       "value": "每季度   "
     },
+    {
+      "name": "setting_enable_screen_security_title",
+      "value": "屏幕安全"
+    },
+    {
+      "name": "setting_enable_screen_security_desc",
+      "value": "阻止屏幕截图，以及其他试图在本应用中捕获屏幕的行为。"
+    },
 
     {
       "name": "section_title_import_export",
