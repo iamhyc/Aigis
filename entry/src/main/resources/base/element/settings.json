@@ -324,6 +324,14 @@
       "name": "setting_password_reminder_period_quarterly",
       "value": "Quarterly"
     },
+    {
+      "name": "setting_enable_screen_security_title",
+      "value": "Screen Security"
+    },
+    {
+      "name": "setting_enable_screen_security_desc",
+      "value": "Block screenshots and other attempts to capture the screen within the app."
+    },
 
     {
       "name": "section_title_import_export",

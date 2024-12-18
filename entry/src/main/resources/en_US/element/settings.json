@@ -342,6 +342,15 @@
       "value": "Import from File"
     },
     {
+      "name": "setting_enable_screen_security_title",
+      "value": "Screen Security"
+    },
+    {
+      "name": "setting_enable_screen_security_desc",
+      "value": "Block screenshots and other attempts to capture the screen within the app."
+    },
+
+    {
       "name": "setting_export_to_file",
       "value": "Export to File"
     },
