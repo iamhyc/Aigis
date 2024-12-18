@@ -3,13 +3,17 @@ import { IssuerName } from "../crypto/otpUtils";
 import { ImageMimeType } from "./schema";
 import { ValueType } from "./settings";
 
+export const EVENT_MINIMIZE_WINDOW_REQUEST: string = 'minimize-window';
+export interface MinimizeWindowRequest {
+
+}
+
 export const EVENT_CODE_REQUEST: string = 'code-request';
 export interface CodeRequestSchema {
     keyAlias: string,
     includeNext?: boolean,
     authToken?: Uint8Array,
 }
-
 
 export const EVENT_UPDATE_ITEM: string = 'update-item';
 export interface UpdateRequestSchema {

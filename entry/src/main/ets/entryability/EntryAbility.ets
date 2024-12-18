@@ -35,6 +35,7 @@ import {
     EVENT_ICON_PACK_REMOVAL_REQUEST,
     EVENT_IMPORT_REQUEST,
     EVENT_INSERT_ITEM_BEFORE,
+    EVENT_MINIMIZE_WINDOW_REQUEST,
     EVENT_MOVE_TO_TOP,
     EVENT_REMOVE_ITEM,
     EVENT_UPDATE_ITEM,
@@ -48,6 +49,7 @@ import {
     IconPackImportRequest,
     IconPackRemovalRequest,
     InsertItemBeforeRequestSchema,
+    MinimizeWindowRequest,
     MoveToTopRequestSchema,
     PasswordUpdateRequestSchema,
     RemovalRequestSchema,
@@ -551,9 +553,8 @@ export default class EntryAbility extends UIAbility {
     }
 
     onWindowStageCreate(windowStage: window.WindowStage): void {
-        // set main window in privacy mode
+        // listen on main window safe area change
         const mainWindow = windowStage.getMainWindowSync();
-        mainWindow.setWindowPrivacyMode(true);
         mainWindow.on('avoidAreaChange', (data) => {
             if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {
                 let topRectHeight = data.area.topRect.height;
@@ -567,6 +568,8 @@ export default class EntryAbility extends UIAbility {
         preferences.getPreferences(this.context, AIGIS_PREF_NAME)
             .then(async (pref: preferences.Preferences) => {
                 this.dataPreferences = pref;
+                // set main window privacy mode
+                mainWindow.setWindowPrivacyMode(false);
                 // try to load master key
                 const encMasterKeyInfo = pref.getSync(PREF_MASTER_KEY, {}) as MasterKeyInfo;
                 const decMasterKeyInfo = pref.getSync(PREF_DEC_MASTER_KEY, {}) as MasterKeyInfo;
@@ -578,6 +581,7 @@ export default class EntryAbility extends UIAbility {
                 if (passwordChallengeTimestamp===0 || passwordChallengeTimestamp>Date.now()) {
                     passwordChallengeTimestamp = Date.now();
                     pref.putSync(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
+                    pref.flush();
                 }
                 AppStorage.setAndProp(PREF_PASSWORD_CHALLENGE_TIME, passwordChallengeTimestamp);
                 // load backup prompt
@@ -595,7 +599,7 @@ export default class EntryAbility extends UIAbility {
                 // setup global user settings
                 this.initUserPreferences(pref);
                 // register event handler
-                this.registerEventHubHandlers();
+                this.registerEventHubHandlers(mainWindow);
                 // init index page
                 windowStage.loadContent('pages/Index', this.localStorage);
             })
@@ -678,7 +682,10 @@ export default class EntryAbility extends UIAbility {
         }
     }
 
-    private registerEventHubHandlers() {
+    private registerEventHubHandlers(mainWindow: window.Window) {
+        this.context.eventHub.on(EVENT_MINIMIZE_WINDOW_REQUEST, (data: MinimizeWindowRequest) => {
+            mainWindow.minimize();
+        });
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {
                 const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.authToken, data.includeNext, this.dataPreferences);
@@ -756,8 +763,9 @@ export default class EntryAbility extends UIAbility {
                 await this.instPreferences.updateMasterKeyInfo(data.password, newPassword, data.authLevel);
                 this.instPreferences.persists(this.dataPreferences, undefined, true);
                 // reset password challenge time
-                const _now = Date.now()
+                const _now = Date.now();
                 this.dataPreferences.putSync(PREF_PASSWORD_CHALLENGE_TIME, _now);
+                this.dataPreferences.flush();
                 AppStorage.set(PREF_PASSWORD_CHALLENGE_TIME, _now);
                 // propagate global storage
                 AppStorage.set('EncMasterKey', this.instPreferences.encMasterKeyInfo);
@@ -770,6 +778,7 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_UPDATE_PASSWORD_CHALLENGE_TIME, (data: UpdatePasswordChallengeTimeSchema) => {
             const timestamp = data.timestamp;
             this.dataPreferences?.putSync(PREF_PASSWORD_CHALLENGE_TIME, timestamp);
+            this.dataPreferences?.flush();
             AppStorage.set(PREF_PASSWORD_CHALLENGE_TIME, timestamp);
         });
         this.context.eventHub.on(EVENT_EXPORT_REQUEST, async (data: FileExportRequestSchema) => {

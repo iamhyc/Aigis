@@ -42,6 +42,7 @@ import { decodeOtpauthMigrationLink } from '../crypto/googleAuth';
 import { picker } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { aigisImporter } from '../importers';
+import { CardSwiperBuilder } from './CardSwiperPage';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -72,6 +73,20 @@ class EditState {
         this.editIcon = '';
         this.editIconMime = undefined;
         this.editNewItem = false;
+    }
+}
+
+class CardSheetState {
+    public cardSheetShow: boolean = false;
+
+    constructor() {}
+
+    show() {
+        this.cardSheetShow = true;
+    }
+
+    hide() {
+        this.cardSheetShow = false;
     }
 }
 
@@ -140,6 +155,7 @@ struct Index {
     @Provide selected: string = '';
     @Provide btnVisibility: Visibility = Visibility.Visible;
     @Provide editState: EditState = new EditState();
+    @Provide cardSheetState: CardSheetState = new CardSheetState();
     @State addSheetShow: boolean = false;
 
     @State settingPageTranslateX: string = '0%';
@@ -199,6 +215,7 @@ struct Index {
                     {
                         title: { title: $r('app.string.ItemEditPage_title') },
                         backgroundColor: $r('app.color.color_face'),
+                        blurStyle: BlurStyle.BACKGROUND_REGULAR,
                         showClose: false,
                         detents: [SheetSize.FIT_CONTENT, SheetSize.LARGE],
                         preferType: SheetType.BOTTOM,
@@ -208,12 +225,29 @@ struct Index {
                         // onWillDismiss: (action) => {},
                     }
                 )
+                // dummy container for card sheet
+                Column()
+                .bindSheet($$this.cardSheetState.cardSheetShow,
+                    CardSwiperBuilder(() => {
+                        this.cardSheetState.hide();
+                    }),
+                    {
+                        title: () => { this.sheetTitle($r('app.string.app_name')) },
+                        backgroundColor: $r('app.color.color_face'),
+                        blurStyle: BlurStyle.BACKGROUND_REGULAR,
+                        showClose: true,
+                        preferType: SheetType.BOTTOM,
+                        mode: SheetMode.OVERLAY,
+                        height: '77%',
+                    }
+                )
             }
             .title({builder: this.titleBar(), height: $r('sys.float.titlebar_default_height')})
             .titleMode(NavigationTitleMode.Mini)
             .backgroundColor($r('app.color.color_face'))
             .hideBackButton(true)
             .mode(NavigationMode.Stack)
+            .menus(this.titleBarMenu())
             .navDestination(this.pageJump)
             .customNavContentTransition((from: NavContentInfo, to: NavContentInfo, operation: NavigationOperation) => {
                 if (from.mode == NavDestinationMode.DIALOG || to.mode == NavDestinationMode.DIALOG) {
@@ -274,6 +308,26 @@ struct Index {
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
     }
 
+    @Builder titleBarMenu() {
+        Row({space:10}) {
+            Button({type: ButtonType.Circle}) {
+                SymbolGlyph($r('sys.symbol.rectangle_on_rectangle'))
+                    .fontWeight(FontWeight.Regular)
+                    .fontColor([$r('sys.color.font_primary')])
+                    .fontSize(24)
+            }
+            .height(36).width(36)
+            .backgroundColor($r('sys.color.ohos_id_color_toolbar_sub_bg_transparent'))
+            .onClick(() => {
+                this.cardSheetState.show();
+            })
+        }
+        .height('100%')
+        .backgroundColor($r('app.color.color_background'))
+        .margin({right: -6})
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+    }
+
     @Builder pageJump(name: string) {
         if (name==='settings') {
             SettingsPage({
@@ -281,6 +335,20 @@ struct Index {
                 pageTranslateX: this.settingPageTranslateX,
             })
         }
+    }
+
+    @Builder sheetTitle(name: ResourceStr) {
+        Row({space:8}) {
+            // app icon
+            Image($r('app.media.startIcon'))
+                .height(38).width(38)
+            // title string
+            Text(name)
+                .fontWeight(FontWeight.Bold)
+                .fontSize(20)
+        }
+        .height(38)
+        .width('100%')
     }
 
     onPageShow() {
@@ -638,6 +706,7 @@ struct OTPItem {
     @StorageProp('settingsShowIssuerIcons') ShowIssuerIcons: boolean = true;
     @LocalStorageProp(PREF_KEY_ITEMS) items: OTPItemInfo[] = [];
     @Consume editState: EditState;
+    @Consume cardSheetState: CardSheetState;
     @Consume selected: string;
     @Consume atlAuth: AtlAuthResult;
     @Link @Watch('onFilterTextChanged') filterText: string;
@@ -1062,6 +1131,7 @@ struct QrScanButton {
                 title: $r('app.string.add_sheet_title'),
             },
             backgroundColor: $r('app.color.color_face'),
+            blurStyle: BlurStyle.BACKGROUND_REGULAR,
             showClose: false,
             detents: [SheetSize.FIT_CONTENT],
             preferType: SheetType.BOTTOM,

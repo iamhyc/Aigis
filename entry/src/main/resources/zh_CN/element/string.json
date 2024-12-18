@@ -276,31 +276,6 @@
     {
       "name": "password_usage_generate_dec_key_atl3",
       "value": "生成解密密钥（ATL3）"
-    },
-
-    {
-      "name": "EntryFormAbility_desc",
-      "value": "Aigis Entry Form"
-    },
-    {
-      "name": "EntryFormAbility_label",
-      "value": "Aigis Card"
-    },
-    {
-      "name": "AigisWidget_desc",
-      "value": "Aigis 主界面"
-    },
-    {
-      "name": "AigisWidget_display_name",
-      "value": "Aigis 卡片"
-    },
-    {
-      "name": "entry_card_title",
-      "value": "查看令牌"
-    },
-    {
-      "name": "entry_card_title_split",
-      "value": "查看\n令牌"
     }
   ]
 }
