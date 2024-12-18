@@ -1,0 +1,41 @@
+{
+  "string": [
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "Aigis Entry Form"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "Aigis Card"
+    },
+    {
+      "name": "form_long_press_hint",
+      "value": "Long press on the card to to desktop."
+    },
+    {
+      "name": "form_added_success_prompt",
+      "value": "Added to Desktop."
+    },
+    {
+      "name": "form_added_fail_prompt",
+      "value": "Failed to add: %s"
+    },
+
+    {
+      "name": "AigisWidget_desc",
+      "value": "Aigis Entry Card"
+    },
+    {
+      "name": "AigisWidget_display_name",
+      "value": "Aigis Card"
+    },
+    {
+      "name": "entry_card_title",
+      "value": "Show Tokens"
+    },
+    {
+      "name": "entry_card_title_split",
+      "value": "Show\nTokens"
+    }
+  ]
+}

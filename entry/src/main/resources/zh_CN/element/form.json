@@ -1,0 +1,41 @@
+{
+  "string": [
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "Aigis Entry Form"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "Aigis Card"
+    },
+    {
+      "name": "form_long_press_hint",
+      "value": "长按卡片以添加到桌面"
+    },
+    {
+      "name": "form_added_success_prompt",
+      "value": "已添加到桌面"
+    },
+    {
+      "name": "form_added_fail_prompt",
+      "value": "添加失败：%s"
+    },
+
+    {
+      "name": "AigisWidget_desc",
+      "value": "Aigis 主界面"
+    },
+    {
+      "name": "AigisWidget_display_name",
+      "value": "Aigis 卡片"
+    },
+    {
+      "name": "entry_card_title",
+      "value": "查看令牌"
+    },
+    {
+      "name": "entry_card_title_split",
+      "value": "查看\n令牌"
+    }
+  ]
+}
