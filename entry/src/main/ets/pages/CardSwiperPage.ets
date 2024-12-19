@@ -1,15 +1,18 @@
 import { AddFormMenuItem } from "@ohos.arkui.advanced.FormMenu";
 import { formBindingData } from "@kit.FormKit";
-import { CardWidgetInfos, FormConfigInfo } from "../widgets";
+import { StaticCardWidgetInfos, FormConfigInfo, ItemEntryWidgetInfos } from "../widgets";
 import { LengthUnit, promptAction } from "@kit.ArkUI";
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { EVENT_MINIMIZE_WINDOW_REQUEST } from "../common/events";
+import { OTPItemInfo } from "../common/schema";
+import { IconManager } from "../common/icons";
 
 const COLUMN_ITEM_GAP: number = 8;
 
 @Builder
-export function CardSwiperBuilder(closeCallback: () => void) {
+export function CardSwiperBuilder(keyAlias: string, itemInfo: OTPItemInfo, closeCallback: () => void) {
     CardSwiperComponent({
-        closeCallback,
+        keyAlias, itemInfo, closeCallback,
     })
 }
 
@@ -25,7 +28,7 @@ function CardMenu(componentId: string, formInfo: FormConfigInfo, _formBindingDat
                 'ohos.extra.param.key.module_name': formInfo.moduleName,
             }
         }, componentId, {
-            formBindingData: formBindingData.createFormBindingData({}),
+            formBindingData: _formBindingData,
             callback: (error, _formId) => {
                 if (error?.code === 0) {
                     promptAction.showToast({message: $r('app.string.form_added_success_prompt'), duration: 500});
@@ -95,18 +98,34 @@ struct CardSwiperItem {
 @Component
 struct CardSwiperComponent {
     @StorageProp('bottomRectHeight') bottomRectHeight: number = 0;
+    @Require @Prop keyAlias: string;
+    @Require @Prop itemInfo: OTPItemInfo;
 
     closeCallback?: () => void;
+
+    private formImages(): Record<string, number> {
+        const validatedUri = IconManager.validateUri(this.itemInfo.icon, this.itemInfo.icon_mime);
+        if (validatedUri.startsWith('file:')) {
+            const file = fs.openSync(validatedUri);
+            return { 'icon': file.fd };
+        }
+        return {}
+    }
 
     build() {
         Column({space:COLUMN_ITEM_GAP}) {
             Swiper() {
-                ForEach(CardWidgetInfos,
+                ForEach(this.keyAlias? ItemEntryWidgetInfos(this.keyAlias, this.formImages(), this.itemInfo) : StaticCardWidgetInfos,
                     (item: FormConfigInfo, index: number) => {
                         CardSwiperItem({
                             closeCallback: this.closeCallback,
-                            componentId: `comp${index}`,
+                            componentId: `comp_${index}`,
                             formConfig: item,
+                            formBindingData: formBindingData.createFormBindingData({
+                                formImages: this.formImages(),
+                                keyAlias: this.keyAlias,
+                                itemInfo: this.itemInfo,
+                            }),
                         })
                     }
                 )

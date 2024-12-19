@@ -8,6 +8,7 @@
       "name": "EntryFormAbility_label",
       "value": "Aigis Card"
     },
+
     {
       "name": "form_long_press_hint",
       "value": "长按卡片以添加到桌面"
@@ -36,6 +37,15 @@
     {
       "name": "entry_card_title_split",
       "value": "查看\n令牌"
+    },
+
+    {
+      "name": "ItemWidget_desc",
+      "value": "在桌面上显示条目令牌"
+    },
+    {
+      "name": "ItemWidget_display_name",
+      "value": "条目令牌"
     }
   ]
 }

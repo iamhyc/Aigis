@@ -158,9 +158,14 @@ export class IconManager {
     }
 
     static validateUri(uri: string, mime?: ImageMimeType): string {
-        const resDir = getContext().resourceDir;
-        const isAbsPath = uri.startsWith('/data/storage');
+        let resDir: string;
+        try {
+            resDir = getContext().resourceDir;
+        } catch {
+            resDir = '';
+        }
 
+        const isAbsPath = uri.startsWith('/data/storage');
         uri = uri.trim();
         if (uri==='') {
             return '';

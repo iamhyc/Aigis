@@ -8,7 +8,7 @@ struct AigisWidgetCard {
             action: 'router',
             abilityName: 'EntryAbility',
         }) {
-            EntryCardBuilder('100%', '100%', 0);
+            EntryCardBuilder({height: '100%', width: '100%', radius: 0});
         }
     }
 }

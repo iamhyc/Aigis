@@ -1,3 +1,4 @@
+import { FormDimension } from ".";
 
 @Component
 struct APPIcon {
@@ -12,7 +13,7 @@ struct APPIcon {
 }
 
 @Builder
-export function EntryCardBuilder(cardHeight: string, cardWidth: string, borderRadius: number) {
+export function EntryCardBuilder(dimension: FormDimension) {
     Row() {
         Column() {
             APPIcon({icon_size:32})
@@ -27,10 +28,10 @@ export function EntryCardBuilder(cardHeight: string, cardWidth: string, borderRa
                 .fontColor($r('app.color.color_face_back'))
         }.width('75%')
     }
-    .height(cardHeight)
-    .width(cardWidth)
-    .borderRadius(borderRadius)
+    .height(dimension.height)
+    .width(dimension.width)
+    .borderRadius(dimension.radius)
     .backgroundColor($r('app.color.color_background'))
 }
 
-export const EntryCardBuilderWrapper: WrappedBuilder<[string, string, number]> = wrapBuilder(EntryCardBuilder);
+export const EntryCardBuilderWrapper: WrappedBuilder<[FormDimension]> = wrapBuilder(EntryCardBuilder);
