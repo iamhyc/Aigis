@@ -158,7 +158,7 @@ class PreferencesManager {
             item.code = {
                 timestamp: rawSecret.byteLength? Date.now() : 0,
                 code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
-                next: rawSecret.byteLength && includeNext? await otp.generateOTP(rawSecret, true): undefined,
+                next: (rawSecret.byteLength && includeNext)? await otp.generateOTP(rawSecret, true): undefined,
             }
             if (rawSecret.byteLength && dataPreferences) {
                 item.schema.counter += 1;

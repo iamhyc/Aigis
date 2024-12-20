@@ -1,10 +1,17 @@
-import { formBindingData, FormExtensionAbility, formInfo } from '@kit.FormKit';
 import { Want } from '@kit.AbilityKit';
+import { formBindingData, FormExtensionAbility, formInfo } from '@kit.FormKit';
 
 export default class EntryFormAbility extends FormExtensionAbility {
     onAddForm(want: Want) {
         // Called to return a FormBindingData object.
-        let formData = '';
+        if (want.parameters) {
+            const formId = want.parameters[formInfo.FormParam.IDENTITY_KEY].toString();
+            const isTempCard = want.parameters[formInfo.FormParam.TEMPORARY_KEY] as boolean;
+            if (isTempCard === false) {
+
+            }
+        }
+        let formData: Record<string, Object> = {};
         return formBindingData.createFormBindingData(formData);
     }
 
