@@ -1,5 +1,6 @@
 
 export const AIGIS_PREF_NAME = 'aigis-pref';
+export const AIGIS_PREF_WIDGET = 'aigis-widget-pref';
 
 export const PREF_KEY_SECRETS  = 'secrets';
 export const PREF_KEY_ITEMS    = 'items';

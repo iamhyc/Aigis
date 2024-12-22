@@ -32,7 +32,6 @@
       "name": "code_copied_prompt",
       "value": "Token Copied"
     },
-
     {
       "name": "prompt_backup_hint",
       "value": "Changes are not backed up"
@@ -41,7 +40,6 @@
       "name": "prompt_backup_action",
       "value": "Backup Now"
     },
-
     {
       "name": "item_sort_custom",
       "value": "Custom Sort"
@@ -62,7 +60,6 @@
       "name": "item_sort_account_name_descending",
       "value": "Account Name Descending"
     },
-
     {
       "name": "add_sheet_title",
       "value": "Add New Entry"
@@ -91,7 +88,6 @@
       "name": "error_input_uri_parse",
       "value": "Unsupported Content"
     },
-
     {
       "name": "delete_title",
       "value": "⚠ Delete Entry"
@@ -120,7 +116,6 @@
       "name": "button_text_delete",
       "value": "Delete"
     },
-
     {
       "name": "overwrite_title",
       "value": "⚠ Overwrite Entry"
@@ -133,7 +128,6 @@
       "name": "overwrite_fail_hint",
       "value": "The entry \"%s\" already exists. Please choose a different name."
     },
-
     {
       "name": "ItemEditPage_title",
       "value": "Edit Item"
@@ -234,7 +228,6 @@
       "name": "error_required_missing_check",
       "value": "Please check the required fields"
     },
-
     {
       "name": "auth_widget_atl1_title",
       "value": "Please enter the lock screen password"
@@ -247,7 +240,6 @@
       "name": "lock_page_hint",
       "value": "Tap on the screen for authentication."
     },
-
     {
       "name": "password_challenge_page_title",
       "value": "Mater Password Verification"
@@ -264,7 +256,6 @@
       "name": "password_challenge_page_bypass_hint",
       "value": "This master key verification has been skipped and we will continue tomorrow.\nWe will continue to remind you to validate your master key tomorrow in case you forget it and cannot access your encrypted data. The reminder cycle will be reset after successfully verifying the Master Key once."
     },
-
     {
       "name": "password_usage_title",
       "value": "Usage: %s"

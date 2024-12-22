@@ -8,6 +8,7 @@
       "name": "EntryFormAbility_label",
       "value": "Aigis Card"
     },
+
     {
       "name": "form_long_press_hint",
       "value": "Long press on the card to to desktop."
@@ -36,6 +37,15 @@
     {
       "name": "entry_card_title_split",
       "value": "Show\nTokens"
+    },
+
+    {
+      "name": "ItemWidget_desc",
+      "value": "Display entry tokens on the desktop"
+    },
+    {
+      "name": "ItemWidget_display_name",
+      "value": "Entry Token"
     }
   ]
 }
