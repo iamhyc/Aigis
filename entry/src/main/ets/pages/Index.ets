@@ -43,6 +43,7 @@ import { picker } from '@kit.CoreFileKit';
 import { common } from '@kit.AbilityKit';
 import { aigisImporter } from '../importers';
 import { CardSwiperBuilder } from './CardSwiperPage';
+import { DummyOTPItemInfo } from '../common/dummies';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
@@ -77,16 +78,22 @@ class EditState {
 }
 
 class CardSheetState {
+    public keyAlias: string = '';
+    public itemInfo: OTPItemInfo = DummyOTPItemInfo;
     public cardSheetShow: boolean = false;
 
     constructor() {}
 
-    show() {
+    show(keyAlias: string, itemInfo?: OTPItemInfo) {
+        this.keyAlias = keyAlias;
+        this.itemInfo = itemInfo ?? DummyOTPItemInfo;
         this.cardSheetShow = true;
     }
 
     hide() {
         this.cardSheetShow = false;
+        this.keyAlias = '';
+        this.itemInfo = DummyOTPItemInfo;
     }
 }
 
@@ -157,6 +164,7 @@ struct Index {
     @Provide editState: EditState = new EditState();
     @Provide cardSheetState: CardSheetState = new CardSheetState();
     @State addSheetShow: boolean = false;
+    @State cardSheetButtonTriggerValue: number = 0;
 
     @State settingPageTranslateX: string = '0%';
 
@@ -228,9 +236,11 @@ struct Index {
                 // dummy container for card sheet
                 Column()
                 .bindSheet($$this.cardSheetState.cardSheetShow,
-                    CardSwiperBuilder(() => {
-                        this.cardSheetState.hide();
-                    }),
+                    CardSwiperBuilder(
+                        this.cardSheetState.keyAlias,
+                        this.cardSheetState.itemInfo,
+                        () => { this.cardSheetState.hide(); },
+                    ),
                     {
                         title: () => { this.sheetTitle($r('app.string.app_name')) },
                         backgroundColor: $r('app.color.color_face'),
@@ -315,11 +325,13 @@ struct Index {
                     .fontWeight(FontWeight.Regular)
                     .fontColor([$r('sys.color.font_primary')])
                     .fontSize(24)
+                    .symbolEffect(new BounceSymbolEffect(), this.cardSheetButtonTriggerValue)
             }
             .height(36).width(36)
             .backgroundColor($r('sys.color.ohos_id_color_toolbar_sub_bg_transparent'))
             .onClick(() => {
-                this.cardSheetState.show();
+                this.cardSheetButtonTriggerValue += 1;
+                this.cardSheetState.show('');
             })
         }
         .height('100%')
@@ -921,6 +933,18 @@ struct OTPItem {
                     .height(40).width(40)
                     .backgroundColor($r('sys.color.warning'))
                     .onClick((() => { this.requestMoveToTop(); }))
+                    // add-to-desktop button
+                    // Button({ type: ButtonType.Circle }) {
+                    //     SymbolGlyph($r('sys.symbol.rectangle_on_rectangle'))
+                    //         .fontColor([Color.White])
+                    //         .fontSize(24)
+                    // }
+                    // .height(40).width(40)
+                    // .backgroundColor($r('sys.color.confirm'))
+                    // .onClick(() => {
+                    //     this.cardSheetState.show(this.keyAlias, this.item);
+                    //     this.listScroller?.closeAllSwipeActions();
+                    // })
                 }
                 //
                 Button({ type: ButtonType.Circle }) {

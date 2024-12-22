@@ -4,9 +4,7 @@ import { ImageMimeType } from "./schema";
 import { ValueType } from "./settings";
 
 export const EVENT_MINIMIZE_WINDOW_REQUEST: string = 'minimize-window';
-export interface MinimizeWindowRequest {
-
-}
+export interface MinimizeWindowRequest {}
 
 export const EVENT_CODE_REQUEST: string = 'code-request';
 export interface CodeRequestSchema {
@@ -91,4 +89,10 @@ export const EVENT_ICON_PACK_APPLY_REQUEST: string = 'apply-icon-pack';
 export interface IconPackApplyRequest {
     uuid: string,
     force?: boolean,
+}
+
+export const EVENT_ADD_CARD: string = 'add-card';
+export interface AddCardRequest {
+    formId: string,
+    keyAlias: string,
 }

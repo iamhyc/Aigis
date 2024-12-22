@@ -14,7 +14,9 @@ import { CodeResponseSchema, OTPItemInfo, SecretSchema,
     ImageMimeType} from '../common/schema'
 import { arrayRearrange, b32decode, isValidBase32String, stringToUint8Array,
     Uint8ArrayToString } from '../common/utils';
-import { AIGIS_PREF_NAME, FAKE_OTP_CODE,
+import { AIGIS_PREF_NAME,
+    AIGIS_PREF_WIDGET,
+    FAKE_OTP_CODE,
     MAX_ICON_PACK_SIZE,
     PREF_BACKUP_PROMPT,
     PREF_DEC_MASTER_KEY,
@@ -27,8 +29,11 @@ import { AuthLevelSupport, generateMasterKeyInHUKSV2, genUserAuthType,
     LATEST_KDF_VERSION } from '../crypto/authUtils';
 import { AES_KEY_USAGE, generateAesGcmMaterial, HUKSAgent, PARAMS_AES_DECRYPT } from '../crypto/huksUtils';
 import {
+    AddCardRequest,
     BulkyUpdateRequestSchema,
-    CodeRequestSchema, EVENT_CODE_REQUEST,
+    CodeRequestSchema,
+    EVENT_ADD_CARD,
+    EVENT_CODE_REQUEST,
     EVENT_EXPORT_REQUEST,
     EVENT_ICON_PACK_APPLY_REQUEST,
     EVENT_ICON_PACK_IMPORT_REQUEST,
@@ -61,7 +66,7 @@ import { buffer, util } from '@kit.ArkTS';
 import { IconManager } from '../common/icons';
 import { dispatchImporter } from '../importers';
 
-class PreferencesManager {
+export class PreferencesManager {
     private _instances: Map<string, OTP>;
     private _secrets: SecretSchema[];
     private _items: OTPItemInfo[];
@@ -149,7 +154,7 @@ class PreferencesManager {
         return otp;
     }
 
-    async requestCodeUpdate(keyAlias: string, authToken?: Uint8Array, includeNext?: boolean, dataPreferences?: preferences.Preferences): Promise<boolean> {
+    async requestCodeUpdate(keyAlias: string, authToken?: Uint8Array, includeNext?: boolean, dataPreferences?: preferences.Preferences): Promise<CodeResponseSchema|undefined> {
         const item = this._items.find(x => x.keyAlias===keyAlias);
         const secret = this._secrets.find(x => x.keyAlias===keyAlias);
         if (item && secret) {
@@ -158,16 +163,16 @@ class PreferencesManager {
             item.code = {
                 timestamp: rawSecret.byteLength? Date.now() : 0,
                 code: rawSecret.byteLength? await otp.generateOTP(rawSecret) : FAKE_OTP_CODE,
-                next: rawSecret.byteLength && includeNext? await otp.generateOTP(rawSecret, true): undefined,
+                next: (rawSecret.byteLength && includeNext)? await otp.generateOTP(rawSecret, true): undefined,
             }
             if (rawSecret.byteLength && dataPreferences) {
                 item.schema.counter += 1;
                 item.last_used_timestamp = Date.now();
                 this.persists(dataPreferences, ['items']);
             }
-            return true;
+            return item.code;
         } else {
-            return false;
+            return undefined;
         }
     }
 
@@ -538,10 +543,19 @@ class PreferencesManager {
 
 export default class EntryAbility extends UIAbility {
     private dataPreferences?: preferences.Preferences;
+    private widgetPref?: preferences.Preferences;
     private localStorage: LocalStorage = new LocalStorage();
     private instPreferences?: PreferencesManager;
     private localSettings?: UserPreferences;
     private mainWindow?: window.Window;
+
+    private WIDGET_PREF_LISTENER = () => {
+        preferences.removePreferencesFromCacheSync(this.context, {name:AIGIS_PREF_WIDGET});
+        this.widgetPref?.off('multiProcessChange');
+        this.widgetPref = undefined;
+        this.widgetPref = preferences.getPreferencesSync(this.context, {name:AIGIS_PREF_WIDGET});
+        this.widgetPref.on('multiProcessChange', this.WIDGET_PREF_LISTENER);
+    };
 
     onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
         if (want.uri) {
@@ -605,12 +619,15 @@ export default class EntryAbility extends UIAbility {
             .catch((err: BusinessError) => {
                 console.error("Failed to get preferences. code =" + err.code + ", message =" + err.message);
             });
+
+        this.WIDGET_PREF_LISTENER();
     }
 
     onWindowStageDestroy(): void {
         // Main window is destroyed, release UI related resources
         hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
         this.context.eventHub.off(EVENT_CODE_REQUEST);
+        this.widgetPref?.off('multiProcessChange', this.WIDGET_PREF_LISTENER);
     }
 
     onForeground(): void {
@@ -696,7 +713,7 @@ export default class EntryAbility extends UIAbility {
         this.context.eventHub.on(EVENT_CODE_REQUEST, async (data: CodeRequestSchema) => {
             if (this.instPreferences) {
                 const res = await this.instPreferences.requestCodeUpdate(data.keyAlias, data.authToken, data.includeNext, this.dataPreferences);
-                if (res) {
+                if (res!==undefined) {
                     this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 }
             }
@@ -876,6 +893,12 @@ export default class EntryAbility extends UIAbility {
                 this.localStorage.set(PREF_KEY_ITEMS, this.instPreferences.items);
                 AppStorage.set('IconPacks', this.instPreferences.icons);
             }
+        });
+        this.context.eventHub.on(EVENT_ADD_CARD, async (data: AddCardRequest) => {
+            if (this.widgetPref===undefined) { return; }
+            // flush changes
+            await this.widgetPref.put(data.formId, data.keyAlias);
+            await this.widgetPref.flush();
         });
     }
 }
