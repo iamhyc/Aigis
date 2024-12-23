@@ -6,7 +6,8 @@ import { SettingListItemInfo, SettingListItem, SettingListItemToggle,
     SettingListIconItem} from "../components/settings";
 import { AppLanguage, AuthTypePriority, DarkMode, DigitGroup,
     PasswordReminderPeriod,
-    ShowAccountName, ValueType } from "../common/settings";
+    ShowAccountName, ValueType,
+    ViewMode } from "../common/settings";
 import {
     ChangePasswordInputDialog,
     CustomSelectDialog, NewPasswordInputDialog, PasswordInputDialog } from "../components/dialog";
@@ -36,6 +37,12 @@ const DarkModeSelections: Map<ResourceStr, DarkMode> = new Map([
     [$r('app.string.setting_dark_mode_follow_system'), 'default'],
     [$r('app.string.setting_dark_mode_always_dark'), 'dark'],
     [$r('app.string.setting_dark_mode_always_light'), 'light'],
+]);
+
+const ViewModeSelections: Map<ResourceStr, ViewMode> = new Map([
+    [$r('app.string.setting_view_mode_compact'), 'compact'],
+    [$r('app.string.setting_view_mode_normal'),  'normal'],
+    [$r('app.string.setting_view_mode_large'),   'large'],
 ]);
 
 const AppLanguageSelections: Map<ResourceStr, AppLanguage> = new Map<ResourceStr, AppLanguage>([
@@ -104,6 +111,8 @@ export struct SettingsPage {
     @Watch('onItChanged') AppLanguage: AppLanguage = 'default';
     @StorageProp('settingsDarkMode')
     @Watch('onItChanged') DarkMode: DarkMode = 'default';
+    @StorageProp('settingsViewMode')
+    @Watch('onItChanged') ViewMode: ViewMode = 'compact';
     @StorageProp('settingsDigitGroup')
     @Watch('onItChanged') DigitGroup: DigitGroup = '3';
     @StorageProp('settingsShowAccountName')
@@ -244,6 +253,11 @@ export struct SettingsPage {
                                 title: $r('app.string.setting_dark_mode_title'),
                                 selected: this.DarkMode,
                                 entries: DarkModeSelections
+                            })
+                            SettingListItemSelect({
+                                title: $r('app.string.setting_view_mode_title'),
+                                selected: this.ViewMode,
+                                entries: ViewModeSelections,
                             })
                             SettingListItemSelect({
                                 title: $r('app.string.setting_digit_group_title'),
@@ -452,6 +466,9 @@ export struct SettingsPage {
                 break;
             case            'DarkMode':
                 value = this.DarkMode;
+                break;
+            case            'ViewMode':
+                value = this.ViewMode;
                 break;
             case            'DigitGroup':
                 value = this.DigitGroup;

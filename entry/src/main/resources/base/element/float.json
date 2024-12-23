@@ -11,14 +11,6 @@
     {
       "name": "add_circle_size",
       "value": "60vp"
-    },
-    {
-      "name": "issuer_icon_size",
-      "value": "48vp"
-    },
-    {
-      "name": "issuer_icon_radius",
-      "value": "24vp"
     }
   ]
 }

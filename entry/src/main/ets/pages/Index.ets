@@ -35,7 +35,8 @@ import { unifiedDataChannel } from '@kit.ArkData';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { AuthTypePriority, DigitGroup, ItemSortOrder,
     PasswordReminderPeriod,
-    ShowAccountName } from '../common/settings';
+    ShowAccountName,
+    ViewMode} from '../common/settings';
 import { IconManager } from '../common/icons';
 import { IssuerIcon } from '../components/icons';
 import { decodeOtpauthMigrationLink } from '../crypto/googleAuth';
@@ -47,6 +48,52 @@ import { DummyOTPItemInfo } from '../common/dummies';
 
 const REFRESH_INTERVAL = 100;//ms
 const storage = LocalStorage.getShared();
+
+interface OTPItemUISpec {
+    itemHeight: number,
+    iconSize: number,
+    iconFontSize: number,
+    titleFontSize: number,
+    codeDigitsFontSize: number,
+    nextCodeFontSize: number,
+    hiddenDigitsFontSize: number,
+    progressBarHeight: number,
+}
+const CompactItemUISpec: OTPItemUISpec = {
+    itemHeight: 64,
+    iconSize: 48,
+    iconFontSize: 28,
+    titleFontSize: 14,
+    codeDigitsFontSize: 26,
+    nextCodeFontSize: 16,
+    hiddenDigitsFontSize: 18,
+    progressBarHeight: 2,
+};
+const NormalItemUISpec: OTPItemUISpec = {
+    itemHeight: 96,
+    iconSize: 56,
+    iconFontSize: 32,
+    titleFontSize: 17,
+    codeDigitsFontSize: 28,
+    nextCodeFontSize: 16,
+    hiddenDigitsFontSize: 18,
+    progressBarHeight: 3,
+};
+const LargeItemUISpec: OTPItemUISpec = {
+    itemHeight: 128,
+    iconSize: 64,
+    iconFontSize: 36,
+    titleFontSize: 20,
+    codeDigitsFontSize: 30,
+    nextCodeFontSize: 16,
+    hiddenDigitsFontSize: 18,
+    progressBarHeight: 4,
+};
+const OTPItemUIOptions: Map<ViewMode, OTPItemUISpec> = new Map([
+    ['compact', CompactItemUISpec],
+    ['normal',  NormalItemUISpec],
+    ['large',   LargeItemUISpec],
+]);
 
 class EditState {
     public editPageShow: boolean = false;
@@ -713,6 +760,7 @@ struct OTPItem {
     @StorageProp('settingsPreviewNextToken') PreviewNextToken: boolean = false;
     @StorageProp('settingsItemSortOrder') ItemSortOrder: ItemSortOrder = 'custom';
     @StorageProp('settingsEnableDoubleClickCopy') EnableDoubleClickCopy: boolean = false;
+    @StorageProp('settingsViewMode') @Watch('onViewModeChanged') ViewMode: ViewMode = 'compact';
     @StorageProp('settingsDigitGroup') DigitGroup: DigitGroup = '3';
     @StorageProp('settingsShowAccountName') ShowAccountName: ShowAccountName = 'always';
     @StorageProp('settingsShowIssuerIcons') ShowIssuerIcons: boolean = true;
@@ -730,6 +778,7 @@ struct OTPItem {
     @Prop keyAlias: string;
     @Prop schema: OTPSchema;
     @Prop favorite: boolean | undefined;
+    @State uiSpec: OTPItemUISpec = OTPItemUIOptions.get(this.ViewMode) ?? CompactItemUISpec;
     @State validatedIcon: string = IconManager.validateUri(this.icon, this.icon_mime);
     @Watch('onTimePassed') @State passed_time: number = 0;
     @State showPreviewToken: boolean = false;
@@ -828,16 +877,15 @@ struct OTPItem {
                     if (this.validatedIcon) {
                         Image(this.validatedIcon)
                             .margin({left: $r('app.float.visual_space')})
-                            .borderRadius($r('app.float.issuer_icon_radius'))
-                            .height($r('app.float.issuer_icon_size'))
-                            .width($r('app.float.issuer_icon_size'))
+                            .height(this.uiSpec.iconSize).width(this.uiSpec.iconSize)
+                            .borderRadius(Math.floor(this.uiSpec.iconSize/2))
                             .alt(this.schema.issuer)
                     } else {
                         IssuerIcon({
                             issuer: this.schema.issuer,
-                            iconSize: $r('app.float.issuer_icon_size'),
-                            iconRadius: $r('app.float.issuer_icon_radius'),
-                            fontSize: 28,
+                            iconSize: `${this.uiSpec.iconSize}vp`,
+                            iconRadius: `${Math.floor(this.uiSpec.iconSize/2)}vp`,
+                            fontSize: this.uiSpec.iconFontSize,
                         })
                             .margin({left: $r('app.float.visual_space')})
                     }
@@ -846,12 +894,12 @@ struct OTPItem {
                 Column({ space: '4vp' }) {
                     Text() {
                         Span(this.schema.issuer)
-                            .fontSize($r('sys.float.Subtitle_S'))
+                            .fontSize(this.uiSpec.titleFontSize)
                             .fontWeight(FontWeight.Bold)
                             .fontColor($r('sys.color.font_primary'))
                         if (this.ShowAccountName==='always' || (this.ShowAccountName==='smart' && this.hasDuplicateIssuers())) {
                             Span(` (${this.schema.name})`)
-                                .fontSize($r('sys.float.Subtitle_S'))
+                                .fontSize(this.uiSpec.titleFontSize)
                                 .fontWeight(FontWeight.Normal)
                                 .fontColor($r('sys.color.font_secondary'))
                         }
@@ -862,21 +910,21 @@ struct OTPItem {
 
                     if (this.selected===this.keyAlias && this.code.code!==FAKE_OTP_CODE) {
                         Text() {
-                            Span(this.codeDigits()).fontSize(this.showPreviewToken? 16 : 26)
+                            Span(this.codeDigits()).fontSize(this.showPreviewToken? this.uiSpec.nextCodeFontSize : this.uiSpec.codeDigitsFontSize)
                             if ((this.schema as TimedOTPSchema).period && this.showPreviewToken) {
                                 Span(' ◂ ').fontSize(16)
-                                Span(this.nextDigits()).fontSize(26)
+                                Span(this.nextDigits()).fontSize(this.uiSpec.codeDigitsFontSize)
                             }
                         }
-                        .lineHeight(this.showPreviewToken? 26 : undefined)
+                        .lineHeight(this.showPreviewToken? this.uiSpec.codeDigitsFontSize : undefined)
                     } else {
                         Text(this.hiddenDigits())
                             .fontWeight(FontWeight.Medium)
-                            .fontSize($r('sys.float.Subtitle_L'))
+                            .fontSize(this.uiSpec.hiddenDigitsFontSize)
                             .letterSpacing(5)
                     }
                 }
-                .width(`calc(100% - ${this.ShowIssuerIcons?'80vp':'16vp'})`)
+                .width(`calc(100% - ${this.ShowIssuerIcons?32+this.uiSpec.iconSize:16}vp)`)
                 .alignItems(HorizontalAlign.Start)
                 .margin(this.ShowIssuerIcons? {} : {left: $r('app.float.visual_space')})
             }
@@ -890,7 +938,7 @@ struct OTPItem {
                 Progress({value: 0, total:(this.schema as TimedOTPSchema).period*1000})
                     .value((this.schema as TimedOTPSchema).period*1000 - this.passed_time)
                     .color($r('app.color.color_ribbon'))
-                    .height('2vp')
+                    .height(this.uiSpec.progressBarHeight)
                     .width('100%')
                     .zIndex((2))
                     .style({enableSmoothEffect:true})
@@ -898,7 +946,7 @@ struct OTPItem {
             // divider bar at the end
             Divider().strokeWidth('1px').zIndex(2)
         }
-        .height('64vp')
+        .height(this.uiSpec.itemHeight)
         .width('100%')
         .backgroundColor($r('app.color.color_face'))
         .onClick(() => {
@@ -1001,6 +1049,10 @@ struct OTPItem {
                 this.showPreviewToken = true;
             });
         }
+    }
+
+    private onViewModeChanged() {
+        this.uiSpec = OTPItemUIOptions.get(this.ViewMode) ?? CompactItemUISpec;
     }
 
     private onPeriodicCodeUpdated() {
