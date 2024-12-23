@@ -63,6 +63,22 @@
       "value": "Always Light Mode"
     },
     {
+      "name": "setting_view_mode_title",
+      "value": "View Mode"
+    },
+    {
+      "name": "setting_view_mode_compact",
+      "value": "Compact"
+    },
+    {
+      "name": "setting_view_mode_normal",
+      "value": "Normal"
+    },
+    {
+      "name": "setting_view_mode_large",
+      "value": "Large"
+    },
+    {
       "name": "setting_language",
       "value": "Language"
     },

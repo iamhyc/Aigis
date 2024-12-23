@@ -63,6 +63,22 @@
       "value": "始终浅色模式        "
     },
     {
+      "name": "setting_view_mode_title",
+      "value": "视图模式"
+    },
+    {
+      "name": "setting_view_mode_compact",
+      "value": "紧凑模式     "
+    },
+    {
+      "name": "setting_view_mode_normal",
+      "value": "标准模式     "
+    },
+    {
+      "name": "setting_view_mode_large",
+      "value": "宽松模式     "
+    },
+    {
       "name": "setting_language",
       "value": "语言"
     },
