@@ -1,9 +1,13 @@
 import { AigisContentSchema, ImporterSchema } from '../common/schema';
+import { AegisImporter } from './aegis';
 import { AigisImporter } from './aigis';
 
+const aegisImporter = new AegisImporter();
 const aigisImporter = new AigisImporter();
 export const ImporterSelections: Map<string, ImporterSchema> = new Map([
     [aigisImporter.schema.type, aigisImporter.schema],
+    //
+    [aegisImporter.schema.type, aegisImporter.schema],
 ]);
 
 export interface ImporterBehavior {
@@ -14,6 +18,8 @@ export interface ImporterBehavior {
 
 export function dispatchImporter(type: string): ImporterBehavior | undefined {
     switch (type) {
+        case 'aegis':
+            return aegisImporter;
         case 'aigis':
             return aigisImporter;
         default:
@@ -21,4 +27,4 @@ export function dispatchImporter(type: string): ImporterBehavior | undefined {
     }
 }
 
-export { aigisImporter, AigisContentSchema, ImporterSchema };
+export { aegisImporter, aigisImporter, AigisContentSchema, ImporterSchema };
