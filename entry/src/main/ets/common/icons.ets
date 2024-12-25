@@ -37,8 +37,9 @@ export class IconManager {
         const arrayBuffer = new ArrayBuffer(1*1024*1024); //1MB
         const tempPackFile = sync? fs.openSync(manifestFile) : await fs.open(manifestFile);
         const readLen = sync? fs.readSync(tempPackFile.fd, arrayBuffer) : await fs.read(tempPackFile.fd, arrayBuffer);
-        const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
+        fs.closeSync(tempPackFile);
         // convert into `IssuerIconsMap`
+        const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
         const subMap: IssuerIconsMap = new Map();
         for (const icon of iconPack.icons) {
             for (const _issuer of icon.issuer) {

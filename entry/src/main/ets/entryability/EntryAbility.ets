@@ -427,8 +427,9 @@ export class PreferencesManager {
             const arrayBuffer = new ArrayBuffer(1*1024*1024); //1MB
             const tempPackFile = await fs.open(tempFolderPath + '/pack.json');
             const readLen = await fs.read(tempPackFile.fd, arrayBuffer);
-            const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
+            await fs.close(tempPackFile);
             // move to `uuid` folder
+            const iconPack: IconPackSchema =JSON.parse( buffer.from(arrayBuffer, 0, readLen).toString() );
             const fileDirPath = getContext(this).filesDir;
             const targetFolderPath: string = fileDirPath + '/' + iconPack.uuid;
             if (await fs.access(targetFolderPath)) {
@@ -825,6 +826,8 @@ export default class EntryAbility extends UIAbility {
                 const importer = dispatchImporter(data.type);
                 const key = importer?.schema.export_password_required? data.password : masterKey.keyAlias;
                 const result = await importer?.save(file.fd, key??'', content);
+                await fs.close(file);
+                //
                 if (result && this.dataPreferences) {
                     promptAction.showToast({message: $r('app.string.setting_export_message_success', data.uri)});
                     AppStorage.set(PREF_BACKUP_PROMPT, false);
@@ -861,6 +864,8 @@ export default class EntryAbility extends UIAbility {
                 // TODO: restore settings
             } catch (error) {
                 promptAction.showToast({message: $r('app.string.setting_import_message_failed_decryption'), duration: 1000});
+            } finally {
+                await fs.close(file);
             }
         })
         this.context.eventHub.on(EVENT_ICON_PACK_IMPORT_REQUEST, async (data: IconPackImportRequest) => {
