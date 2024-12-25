@@ -66,6 +66,7 @@ import { buffer, util } from '@kit.ArkTS';
 import { IconManager } from '../common/icons';
 import { dispatchImporter } from '../importers';
 
+
 export class PreferencesManager {
     private _instances: Map<string, OTP>;
     private _secrets: SecretSchema[];
@@ -863,6 +864,7 @@ export default class EntryAbility extends UIAbility {
                 }
                 // TODO: restore settings
             } catch (error) {
+                console.error((error as BusinessError).message);
                 promptAction.showToast({message: $r('app.string.setting_import_message_failed_decryption'), duration: 1000});
             } finally {
                 await fs.close(file);

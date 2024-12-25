@@ -2,7 +2,7 @@
   "modelVersion": "5.0.0",
   "description": "Please describe the basic information.",
   "dependencies": {
-    "scrypt": "^1.0.2"
+    "scrypt": "file:vendor/scrypt.har"
   },
   "devDependencies": {
     "@ohos/hypium": "1.0.19",
