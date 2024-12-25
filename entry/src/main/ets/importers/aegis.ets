@@ -93,12 +93,9 @@ async function scryptKeyDeriveWrapper(password: string, material: ScryptMaterial
 }
 
 async function callScryptKeyDerive(password: string, material: ScryptMaterial): Promise<Uint8Array> {
-    console.time('scryptKeyDerive');
     const task = new taskpool.Task(scryptKeyDeriveWrapper, password, material);
-    const result = await taskpool.execute(task, taskpool.Priority.HIGH);
-    console.timeEnd('scryptKeyDerive');
-    console.log(`${(result as Uint8Array).buffer}`);
-    return (result as Uint8Array);
+    const result: Uint8Array = await taskpool.execute(task, taskpool.Priority.HIGH) as Uint8Array;
+    return result;
 }
 
 export class AegisImporter implements ImporterBehavior {
@@ -232,7 +229,7 @@ export class AegisImporter implements ImporterBehavior {
             if (slot.type!==1) { continue; }
             const scrypt = slot as ScryptSlotSchema;
             const salt = hexToUint8Array(scrypt.salt);
-            const material: ScryptMaterial = { n:scrypt.n, r:scrypt.r, p:scrypt.p, salt, length:32 };
+            const material: ScryptMaterial = { N:scrypt.n, r:scrypt.r, p:scrypt.p, salt, length:32 };
             const key: Uint8Array = await callScryptKeyDerive(password, material);
             //
             try {
@@ -254,7 +251,7 @@ export class AegisImporter implements ImporterBehavior {
 
     private async encryptAegisDB(password: string, db: AegisDBSchema): Promise<AegisExportSchema> {
         const salt = await generateRandomAad32();
-        const material: ScryptMaterial = { n:32768, r:8, p:1, salt, length:32 };
+        const material: ScryptMaterial = { N:32768, r:8, p:1, salt, length:32 };
         const key: Uint8Array = await callScryptKeyDerive(password, material);
 
         // derive master key
@@ -285,7 +282,7 @@ export class AegisImporter implements ImporterBehavior {
                         nonce: uint8ArrayToHex(slot_nonce),
                         tag: uint8ArrayToHex(slot_tag),
                     },
-                    n: material.n, r: material.r, p: material.p,
+                    n: material.N, r: material.r, p: material.p,
                     salt: uint8ArrayToHex(salt),
                     repaired: false, is_backup: false,
                 } as ScryptSlotSchema],
