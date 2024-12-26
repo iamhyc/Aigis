@@ -139,6 +139,7 @@ export class AegisImporter implements ImporterBehavior {
                     type: item.type, issuer: item.issuer, name: item.name,
                     algorithm: item.info.algo,
                     digits: item.info.digits,
+                    counter: 0,
                     groups: item.groups,
                     note: item.note,
                     period: item.info.period,
@@ -155,7 +156,9 @@ export class AegisImporter implements ImporterBehavior {
         const entries: ItemEntrySchema[] = [];
         for (let i = 0; i < content.items.length; i++) {
             const item = content.items[i];
-            const secret = content.secrets[i];
+            const secret = content.secrets.find(x => x.keyAlias===item.keyAlias);
+            if (secret===undefined) { continue; }
+            //
             entries.push({
                 uuid: util.generateRandomUUID(),
                 favorite: item.favorite,
@@ -164,6 +167,7 @@ export class AegisImporter implements ImporterBehavior {
                 issuer: item.schema.issuer,
                 note: item.schema.note,
                 groups: item.schema.groups,
+                icon: '',
                 info: {
                     secret: secret.secret,
                     algo: item.schema.algorithm,
@@ -176,7 +180,7 @@ export class AegisImporter implements ImporterBehavior {
         const export_db: AegisDBSchema = {
             version: 3, entries, groups: []
         };
-        const exported = this.encryptAegisDB(password, export_db);
+        const exported = await this.encryptAegisDB(password, export_db);
         try {
             await fs.write(fd, JSON.stringify(exported));
             return true;
@@ -199,6 +203,7 @@ export class AegisImporter implements ImporterBehavior {
             algName: 'GcmParamsSpec',
             iv: { data: nonce },
             authTag: { data: new Uint8Array(16) },
+            aad: { data: new Uint8Array() },
         } as cryptoFramework.GcmParamsSpec);
         //
         const encryptUpdate = await cipher.update({data: plaintext});
@@ -213,6 +218,7 @@ export class AegisImporter implements ImporterBehavior {
             algName: 'GcmParamsSpec',
             iv: { data: hexToUint8Array(params.nonce) },
             authTag: { data: hexToUint8Array(params.tag) },
+            aad: { data: new Uint8Array() },
         } as cryptoFramework.GcmParamsSpec);
         //
         const decryptUpdate = await decoder.update({data: cipherText});

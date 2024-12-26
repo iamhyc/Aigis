@@ -104,6 +104,21 @@ export class PreferencesManager {
         return this._secrets;
     }
 
+    async leaked_secrets(): Promise<SecretSchema[] | undefined> {
+        const secrets = Array.from(this._secrets);
+        for (const secret of secrets) {
+            if (secret.encrypted) {
+                try {
+                    secret.secret = await this.decryptSecret(secret.secret, secret.encrypted);
+                    secret.encrypted = undefined;
+                } catch {
+                    return undefined;
+                }
+            }
+        }
+        return secrets;
+    }
+
     get items() {
         const items = Array.from(this._items);
         // NOTE: leak plaintext secret
@@ -820,7 +835,7 @@ export default class EntryAbility extends UIAbility {
                 const content: AigisContentSchema = {
                     masterKey,
                     items: this.instPreferences.items,
-                    secrets: this.instPreferences.encrypted_secrets!,
+                    secrets: (await this.instPreferences.leaked_secrets())!,
                     settings: settingString,
                 };
                 //
