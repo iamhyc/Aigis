@@ -637,14 +637,20 @@ export struct SettingsPage {
                         if (uris[0]!==undefined) {
                             const uri = uris[0];
                             if (schema.export_password_required) {
-                                this.passwordInputDialogBuilder(
-                                    $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_decrypt_import'), false, undefined,
-                                    (password) => {
-                                        context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri, password} as FileExportRequestSchema);
-                                        //
-                                        this.inputDialogId = -1;
-                                        promptAction.closeCustomDialog(this.inputDialogId);
-                                    }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                                this.showCustomDialog(() => {
+                                    this.passwordInputDialogBuilder(
+                                        $r('app.string.setting_setup_password_title'), $r('app.string.password_usage_encrypt_export'), false, undefined,
+                                        async (password) => {
+                                            if (await validatePassword(this.EncMasterKey, password)) {
+                                                context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri, password} as FileExportRequestSchema);
+                                            } else {
+                                                promptAction.showToast({message:$r('app.string.setting_input_wrong_password'), duration:500});
+                                            }
+                                            //
+                                            this.inputDialogId = -1;
+                                            promptAction.closeCustomDialog(this.inputDialogId);
+                                        }, () => { promptAction.closeCustomDialog(this.inputDialogId); });
+                                });
                             } else {
                                 context.eventHub.emit(EVENT_EXPORT_REQUEST, {type, uri} as FileExportRequestSchema);
                             }
