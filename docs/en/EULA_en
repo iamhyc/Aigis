@@ -1,0 +1,64 @@
+Aigis Application User Agreement
+
+This "User Agreement" (hereinafter referred to as "the Agreement") is made between you and the developer of the Aigis application (hereinafter referred to as "the Application"), Hong Yuncong. Before downloading, installing, or using the Application, please carefully read and understand the entire content of this Agreement. By agreeing to all the terms of this Agreement, you are indicating your consent to abide by the terms and conditions herein.
+
+1. Application Introduction
+
+    Aigis (hereinafter referred to as "the Application") is a meta-service application designed to provide users with open-source two-factor authentication (2FA) token management. We pledge that during the provision of services, the Application will not request any permissions from users, nor will it store or transfer any data without user consent. Users have full control over their privacy and data.
+
+2. User Data and Privacy Protection
+
+    a) Data Collection and Use: The Application does not actively collect, store, or transfer any personal data from users unless the user voluntarily provides relevant information.
+    
+    b) User Control: All data involved in the Application (including but not limited to user-generated data, device information, etc.) is fully controlled by the user. Users can delete or export related data at any time.
+    
+    c) Privacy Protection: The Application is committed to protecting user privacy and will not provide, share, or sell user personal information to third parties under any circumstances without user consent.
+
+3. Application Features and Permissions
+
+    a) No Additional Permission Requirements: The Application will not request any sensitive permissions during installation or use, nor will it access other data on the user's device. Users may choose to provide information required for specific features during use.
+    
+    b) Data Storage and Transfer: The Application will not store, transfer, or disclose any user data without the user's consent. All data storage and management are entirely determined by the user.
+
+4. Open Source Code and Licensing
+
+    a) Source Code Availability: The source code of the Application is licensed under the AGPLv3 open-source license. Users can freely access the open-source project on GitHub, view, modify, and distribute the source code. Source code URL: https://github.com/iamhyc/Aigis
+    
+    b) AGPLv3 License: Under the AGPLv3 license, you may freely use, modify, and distribute the source code of the Application. However, if you modify and re-release the code, you must provide the corresponding source code and indicate the original author of the Application upon release.
+
+5. Disclaimer
+
+    a) Risk of Application Use: The Application only provides basic functionality and services. The development team is not responsible for any direct or indirect losses caused by using the Application.
+    
+    b) Service Changes and Termination: The development team reserves the right to modify, update, or discontinue the Application at any time without prior notice. We do not assume any liability for any losses arising from these changes.
+
+6. User Responsibilities
+
+    a) Compliance with Laws and Regulations: Users must comply with relevant laws and regulations when using the Application and may not use the Application for any illegal or improper activities.
+    
+    b) Reasonable Use: Users should ensure that their use of the Application does not cause unnecessary interference or damage to the Application, and avoid misuse, attacks, or destruction of its normal operation.
+
+7. Modification and Termination of the Agreement
+
+    a) Modification of the Agreement: The development team reserves the right to modify this Agreement at any time and will publish the modified Agreement within the Application or in other appropriate places. The modified Agreement will take effect immediately upon publication. If the user continues to use the Application, it indicates acceptance of the new terms.
+    
+    b) Termination of Use: Users may terminate the use of the Application at any time. If users no longer wish to use the Application, they may delete it and cease accessing related services.
+
+8. Applicable Law and Dispute Resolution
+
+    a) The interpretation and application of this Agreement shall be governed by the laws of the People's Republic of China.
+    
+    b) In the event of any disputes regarding this Agreement, the parties shall resolve the matter through friendly negotiation. If negotiation fails, either party may file a lawsuit in a court with jurisdiction over the location of the Application.
+
+9. Contact Information
+
+    If you have any questions or feedback about this Agreement or the Application, please feel free to contact us via the following methods:
+    
+    - Email: ychong@petalmail.com
+    - GitHub Discussions: https://github.com/iamhyc/Aigis/discussions
+
+---
+
+Thank you for using the Aigis Application! We are committed to providing you with a secure and convenient user experience.
+
+Last updated on: November 12, 2024
