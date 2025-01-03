@@ -1,97 +1,32 @@
-<p align="center">
-    <a href="./docs/en/README.md">English</a>
-    &nbsp;&nbsp;
-    <a href="./docs/zh-CN/README.md">简体中文</a>
-</p>
-
-# Aigis
+# 下架公告 / Take Down Notice
 
 > [!NOTE]
-> 本元服务已正式上架应用市场，请搜索“Aigis”使用！
+>
+> 为什么会发生这种事：[[OPEN] 今天的AGC审核人员依然趾高气昂 / [OPEN] Today's AGC auditors are still high and mighty](https://github.com/iamhyc/Aigis/issues/30)
 
-HarmonyOS NEXT 的 [Aegis Authenticator](https://github.com/beemdevelopment/Aegis) 的轻量级替代品，采用纯 ArkTS 实现，无任何三方依赖。
+于2025年1月4日零时，Aigis 已发起全网下架请求，即将终止通过 HarmonyOS AG 进行应用分发。v1.0.0 版本已终止上架流程，当前AG中上架的最新版本为 v0.8.0。
 
-<p float="left">
-  	<img height="400px" alt="screenshot_main_page_light" src="./docs/zh-CN/images/screenshot_main_page_light.jpg" />
-  	&nbsp;&nbsp;
-  	<img height="400px" alt="screenshot_edit_page_light" src="./docs/zh-CN/images/screenshot_edit_page_light.jpg" />
-  	&nbsp;&nbsp;
-    <img height="400px" alt="screenshot_add_card" src="./docs/zh-CN/images/screenshot_add_card.jpg" />
-  	&nbsp;&nbsp;
-  	<img height="400px" alt="screenshot_settings_page_light" src="./docs/zh-CN/images/screenshot_settings_page_light.jpg" />
-</p>
+请尽快将您的数据迁移至其他软件。对于鸿蒙NEXT系统，只推荐开源的“[OTP令牌](https://github.com/SolidFaker/ohtotptoken)”，不推荐其他闭源/有网络权限/有抄袭嫌疑的 2FA/MFA 软件，包括但不限于：一日MFA，星御TOTP验证器，Dove验证器，手机令牌，Ezi身份验证器 等。
 
+### 数据迁移
 
-### 安全设计 (for version `>=2.0.0`)
+- **使用AG版本**（v0.8.0）
 
-```mermaid
-flowchart LR
+  - **未设置主密钥**
 
-Dst1[["OTP 令牌"]]
-Dst2[("条目项 & 设置项")]
-Dst4[["APP页面"]]
+    请在条目编辑页面（条目上右滑），通过 分享链接 或 分享二维码，逐个条目导出到其他支持的软件。
 
-Src0(["生物认证 (ATL1)"])
+  - **已设置主密钥**
 
-Src1(["生物认证 (ATL3)"])
+    1. 请先通过 Aigis“设置 > 导出到文件”，导出“Aigis (.JSON)”格式的备份文件；
+    2. 在系统设置中，通过“应用和元服务 > 元服务 Tab”，找到 Aigis 并点进去“移除元服务”以卸载Aigis（数据将会被完全清除）；
+    3. 在AG中，搜索 Aigis 并重新安装Aigis；
+    4. 通过 Aigis“设置 > 从文件导入”，导入 步骤1 中备份的文件，注意不要勾选“同时设置为主密钥”；
+    5. 参考“未设置主密钥”的情形，逐个导出条目到其他支持软件。
 
-Src2(["主密钥"])
-Src2a["dec_master_key"]
-Via2[("加密的密钥<br/>(AES256-GCM)")]
-Src2b["enc_master_key"]
+- **使用GitHub版本**（v1.0.0）
 
-subgraph "用户输入"
-Src0
-Src1
-Src2
-end
+  1. 请通过自签名方式安装 [Release v1.0.0](https://github.com/iamhyc/Aigis/releases) 中的 "entry-default-unsigned.hap" ；
+  2. 通过 Aigis“设置 > 导出到文件”，选择导出格式“Aegis 身份验证器”（需输入 主密钥 验证，用于加密备份文件）；
+  3. 在安卓手机（或卓易通）上安装 [Aegis Authenticator](https://github.com/beemdevelopment/Aegis)，导入步骤2中备份的JSON文件。
 
-subgraph "HUKS (TEE)"
-Src2a
-Src2b
-end
-
-subgraph "APP 沙箱"
-Via2
-Dst2
-end
-
-subgraph "前端"
-Dst1
-Dst4
-end
-
-Src1--认证-->Src2a
-Src2--Scrypt-->Src2a--解密-->Via2--计算-->Dst1
-Src2--Scrypt-->Src2b--加密-->Via2
-
-Src0--认证-->Dst2--展示-->Dst4
-```
-
-**安全回退设计**: 如果 ATL3 因任何原因失效，系统将提示输入密码以解密 “加密密钥”，然后重新导入 “dec_master_key”，但不进行授权。如果 ATL1 因任何原因失效，APP 将无法访问，直至重新安装。
-
-### 路线图
-
-请参考置顶议题 [Aigis 路线图](https://github.com/iamhyc/Aigis/issues/28)
-
-### 贡献指南
-
-> TODO
-
-### 参考内容
-
-- [Aegis Authenticator - ctypto/otp](https://github.com/beemdevelopment/Aegis/tree/master/app/src/main/java/com/beemdevelopment/aegis/crypto/otp)
-
-- [Aegis Authenticator - docs/decrypt.py](https://github.com/beemdevelopment/Aegis/blob/master/docs/decrypt.py)
-
-- [Github - pyotp](https://github.com/pyauth/pyotp.git)
-
-- HarmonyOS NEXT 官方文档
-  
-  - [文档中心 - 元服务开发指南](https://developer.huawei.com/consumer/cn/doc/atomic-guides-V5/atomic-service-V5)
-
-  - [文档中心 - 设计指南](https://developer.huawei.com/consumer/cn/doc/design-guides/design-concepts-0000001795698445)
-
-  - [文档中心 - 开发指南](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/application-dev-guide-V5?catalogVersion=V5)
-
-  - [文档中心 - API参考](https://developer.huawei.com/consumer/cn/doc/harmonyos-references-V5/development-intro-api-V5?catalogVersion=V5)
