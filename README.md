@@ -1,5 +1,7 @@
 # 下架公告 / Take Down Notice
 
+当前（2025-01-06 09：55：00 GMT+0800）Aigis已成功下架，该项目现在存档且开发无限期停止。
+
 > [!NOTE]
 >
 > 为什么会发生这种事：[[OPEN] 今天的AGC审核人员依然趾高气昂 / [OPEN] Today's AGC auditors are still high and mighty](https://github.com/iamhyc/Aigis/issues/30)
